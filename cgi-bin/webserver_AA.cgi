@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
-use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/cgi-bin/"
+use lib "../cgi-bin/";
+use lib "./RNASERVER";
 use CGI;
 use RNASERVER::TRANS2;
 use RNASERVER::IRE;
@@ -14,14 +15,12 @@ $rv=CGI::new();
 $debug=0;
 
 #Dir-Localisations
-$TEMPPICSDIROA='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/session/';
-$TEMPDIR='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/tmp';
-#$IPADRESSFORPICTURE='wb2x01.biozentrum.uni-wuerzburg.de';
-$GENSCANLIB='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/genscanlinux';
-$GENSCANFILE='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/genscanlinux';
-$TRNASCANFOLDER='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/tRNAscan-SE/bin';
-#$VIENNAFOLDDIR='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.4.18/src/Utils'; #pointing to the the Program Fold of the Vienna package
-$VIENNARNAFOLDDIR='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/src/bin'; #pointing to the RNAfold dir
+$TEMPPICSDIROA='../session/';
+$TEMPDIR='../tmp';
+$GENSCANLIB='../bin/genscanlinux';
+$GENSCANFILE='../bin/genscanlinux';
+$TRNASCANFOLDER='../bin/tRNAscan-SE/bin';
+$VIENNARNAFOLDDIR='../bin/ViennaRNA-2.6.4/src/bin'; #pointing to the RNAfold dir
 $MAXFOLDINGLEN=1500;
 $MAXFOLDINGLENUTR=1500;
 
@@ -75,14 +74,6 @@ if ($BUNCHOFFASTA eq 'ON') {
 		die;
 	}
 	@FASTASEQ=split (/>/,$SEQUENCESTARTCHECKED);
-		#}
-		#else {
-			#$FASTASEQ[0]=">".$SEQUENCESTARTCHECKED;
-			#}
-	###debugging ####
-	#foreach $fc (@FASTASEQ) {
-		#	print "DEBUGGING: $fc<br>";
-		#}
 	
 	#### Okay till now we have checked if there is more than one fasta and we have put each entry into an array
 	for ($seqcountfs=1;$seqcountfs<@FASTASEQ;$seqcountfs++){
@@ -105,11 +96,6 @@ if ($BUNCHOFFASTA eq 'ON') {
 		print '"></iframe><hr><br>';
 
 
-# comment by liang
-#		$job=&jobnumber; 
-#                #creates a unique number for job! herewith can manage the deal with the picture!!!!
-#
-#		&startproggi;
 	}
 }
 else {
@@ -124,7 +110,6 @@ else {
 
 }
 
-#&startproggi;
 
 sub startproggi {
 	&readandcheckinput;
@@ -155,10 +140,10 @@ sub startproggi {
 	}
 
 &drawcoloredsequence;
-print "<hr>References:<br><sup>1</sup>Burge, C. and Karlin, S. (1997) Prediction of complete gene structures in human genomic DNA. J. Mol. Biol. 268, 78-94 ";
-print "<br><sup>2</sup>Lowe, T.M. and Eddy, S.R. (1997) tRNAscan-SE: A program for improved detection of transfer RNA genes in genomic sequence, Nucl. Acids Res., 25, 955-964.<br>";
+print "<hr>References:<br><sup>1</sup>Lorenz, R., Bernhart, S.H., Hoener zu Siederdissen, C., Tafer, H., Flamm, C., Stadler, P.F. and Hofacker, I.L., 2011. ViennaRNA Package 2.0. Algorithms for molecular biology, 6, pp.1-14.";
+print "<br><sup>2</sup>Chan, P.P., Lin, B.Y., Mak, A.J. and Lowe, T.M., 2021. tRNAscan-SE 2.0: improved detection and functional classification of transfer RNA genes. Nucleic acids research, 49(16), pp.9077-9096.";
+print "<br><sup>3</sup>Burge, C. and Karlin, S., 1997. Prediction of complete gene structures in human genomic DNA. Journal of molecular biology, 268(1), pp.78-94.<br>";
 
-#print "XXXXXXXXXXXXXXXX";
 }
 #################################################################
 #################################################################
@@ -181,24 +166,17 @@ sub mainrun {
 				for ($count=0;$count<$hits;$count++){
 					print " Schistosoma: <br>";
 					print "  Position:   $transcionareturnvalues[$count*6+0]<br>";
-					#print "<br><br>Possible hit detected at nt: $transcionareturnvalues[$count*6+0] (pointing to the ggua of stem1)<br>";
 					$transcionareturnvalues[$count*6+4]=uc ($transcionareturnvalues[$count*6+4]);
 					$transcionareturnvalues[$count*6+2]=uc ($transcionareturnvalues[$count*6+2]);
 					print "  Stem1:      $transcionareturnvalues[$count*6+4]<br>";
 					print "  Structure:  $transcionareturnvalues[$count*6+5]<br>";
 					print "  Energy:     $transcionareturnvalues[$count*6+3]<br>";
 					print "  Sm-Site:    $transcionareturnvalues[$count*6+2] at pos: $transcionareturnvalues[$count*6+1]<br>";
-					#print '<table border=1><tr><td align="center"><font face="monospace">Stem1:</td><td align="center"><font face="monospace">'."$transcionareturnvalues[$count*6+4]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">Structure:</td><td align="center"><font face="monospace">'."$transcionareturnvalues[$count*6+5]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">Energy:</td><td align="center"><font face="monospace">'."$transcionareturnvalues[$count*6+3]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">SM-Site:</td><td align="center"><font face="monospace">'."$transcionareturnvalues[$count*6+2] at position: $transcionareturnvalues[$count*6+1]".'</td></tr>';
-					#print '</table><br>';
 					@transsplicing=(@transsplicing,$transcionareturnvalues[$count*6+0]-35,($transcionareturnvalues[$count*6+1]+length $transcionareturnvalues[$count*6+2])-1); #for the formatted output of sequence
 				}
 			}
 			#this checkes the c. elegans consensus !!
 			@transcelegansvalues=RNASERVER::TRANS2::celegans($SEQUENCECHECKED);	
-			#print "<b> <big>Putative trans-splicing C.elegans-consensus</b></big> search:";
 			if (@transcelegansvalues==1){
 				#print "No hit detected<br>";
 				print " C. elegans:  none<br>";
@@ -207,7 +185,6 @@ sub mainrun {
 				$hits=pop @transcelegansvalues;
 				for ($count=0;$count<$hits;$count++){
 					$transcelegansvalues[$count*10+5]=uc($transcelegansvalues[$count*10+5]);
-					#print "<br><br>Possible hit detected at nt: $transcelegansvalues[$count*10+0] (pointing to the ggua of stem1)<br>";
 					print " C.elegans:<br>  Position:   $transcelegansvalues[$count*10+0]  pointing to ggua of stem1<br>";
 					
 					print "  Stem1:      $transcelegansvalues[$count*10+1]<br>";
@@ -222,14 +199,6 @@ sub mainrun {
 					
 					
 					
-					#print "<table border=1>\n<tr>\n";
-					#print '<td align="center"><font face="monospace">Stem1:</td> <td align="center"><font face="monospace">'."$transcelegansvalues[$count*10+1]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">Structure:</td><td align="center"><font face="monospace">'."$transcelegansvalues[$count*10+2]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">Stem2:</td><td align="center"><font face="monospace">'."$transcelegansvalues[$count*10+3]".'</td></tr><tr><td align="center"><font face="monospace">Structure</td><td align="center"><font face="monospace">'."$transcelegansvalues[$count*10+4]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">Sm-Site:</td><td align="center"><font face="monospace">'."$transcelegansvalues[$count*10+5]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">Stem3:</td><td align="center"><font face="monospace">'."$transcelegansvalues[$count*10+6]".'</td></tr><tr><td align="center"><font face="monospace">Structure</td><td align="center"><font face="monospace">'."$transcelegansvalues[$count*10+7]".'</td></tr>';
-					#print '<tr><td align="center"><font face="monospace">Potential leader:</td><td align="center">'."$transcelegansvalues[$count*10+8]".'</td></tr>' if ($transcelegansvalues[$count*10+8] !=0);
-					#print '</table><br>';
 					@transsplicing=(@transsplicing,$transcelegansvalues[$count*10+0]-21,($transcelegansvalues[$count*10+9]+(length $transcelegansvalues[$count*10+5])+(length $transcelegansvalues[$count*10+6])));
 				}
 			}
@@ -238,12 +207,9 @@ sub mainrun {
 		if ($DOIRE==1){
 			#So jetzt machen wir den gleichen Spass wie mit trans
 			@irereturnvalues=RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
-			#print "<b><big>Iron-responsive element</b></big> search:";
-			#print "<b>Iron-resp Ele.:</b> none";
 			$irelineprintout=0;
 			if (@irereturnvalues>1){
 				########new #####
-				#$tempp=@irereturnvalues;
 				
 				$posprintout=0;
 				for ($count=0;$count<=@irereturnvalues-1;$count=$count+7){
@@ -253,15 +219,12 @@ sub mainrun {
 				    if ($posprintout!=$irereturnvalues[$count+0]) {
 				    @ire=(@ire,$irereturnvalues[$count+0]-16,$irereturnvalues[$count+0]+22) if ($posprintout!=$irereturnvalues[$count+0]);
 				    print " Position:     $irereturnvalues[$count+0]<br>" if ($posprintout!=$irereturnvalues[$count+0]);
-				    #print " Quality:      $irereturnvalues[$count+1]<br>";
 				   		
 				    print " Sequence:     $irereturnvalues[$count+2]<br>" if ($posprintout!=$irereturnvalues[$count+0]); 
 			        }
 				    print " Structure:    $irereturnvalues[$count+3]";
 			    
 				    printf ("  %2f kcal/mol ",$irereturnvalues[$count+4]);
-				    #print "Quality: good $irereturnvalues[$count+5] $irereturnvalues[$count+6] <br>" if ($irereturnvalues[$count+1] == 1);
-				    #print "Quality: bad $irereturnvalues[$count+5] $irereturnvalues[$count+6] <br>" if ($irereturnvalues[$count+1] ==2);
 				    print "Quality: good <br>" if ($irereturnvalues[$count+1] == 1);
 				    print "Quality: bad <br>" if ($irereturnvalues[$count+1] ==2);
 
@@ -359,11 +322,6 @@ sub readandcheckinput {
 	$xxx='OFF';
 	$xxx=~/(OFF)/;  #what the hell is this doing? This shall change the register $1 from ON that it got from IRE to something undefined, here freely choosen off!!!		$xxx=~/(OFF)/;  #what the hell is this doing? This shall change the register $1 from ON that it got from IRE to something undefined, here freely choosen off!!!	
 
-	#check and correct SEQUENCE
-	
-	#knocking out the next line due to the use of @FASTASEQ !!!
-	#$SEQUENCE=$rv->param("SEQUENCE");
-	
 	
 	# First check if it is in a fasta-format!!!
 	#Set $2 to a special value!!
@@ -372,12 +330,6 @@ sub readandcheckinput {
 
 
 
-#################################################################
-#	$SEQUENCE=~/^(>[ ]?([A-Za-z0-9: ]+))/;
-#	$removefastatag=$1;
-#	$SEQNAMECHECKED=$2 if ($2 ne 'NOFASTA');
-#	$SEQUENCE=~s/$removefastatag// if ($2 ne 'NOFASTA');
-	
 
 ## changed into following scripts, by liang
         $SEQUENCE=~/^(>(.*))\n/;
@@ -454,8 +406,6 @@ sub additionalinformation {
 	#prints out the length and origin of the pasted sequence!	
 	print "<pre>\n";
 	$dnarna='unknown' if ($dnarna eq '');
-		#print $rv->p("You submitted a $SEQUENCELENGTH nt long sequence of $dnarna origin.");
-		
 	#For the picture creation	
 	open (SEQPIC,">$TEMPDIR/$job.seq"); #don't know if this works!!	
 	print SEQPIC ">$job\n$SEQUENCECHECKED\n"; #shall create a fasta-format sequence file !!!
@@ -560,15 +510,15 @@ sub additionalinformation {
    print"</pre>";
 
 
-	$md5in=`md5sum $TEMPDIR/$job.seq`;
-	$md5in=~/([0-9abcdef]{32})/;
-	$md5sum=$1;
-	$actualdir=cwd();
-	chdir "$TEMPDIR";
-	$answerconvert=system("convert "."$job".'_ss.ps'.' -crop 0x0'." $job"."_"."$md5sum".".jpg");  # new version
+	#$md5in=`md5sum $TEMPDIR/$job.seq`;
+	#$md5in=~/([0-9abcdef]{32})/;
+	#$md5sum=$1;
+	#$actualdir=cwd();
+	#chdir "$TEMPDIR";
+	#$answerconvert=system("convert "."$job".'_ss.ps'.' -crop 0x0'." $job"."_"."$md5sum".".jpg");  # new version
 	##old script 
 	##$answerconvert=system("convert rna.ps -crop 0x0 $job"."_$md5sum.jpg");  # for original vienna package
-	print '<img src="'."/cgi-bin/get_result_picture.pl?"."$job"."_"."$md5sum".'"><br>';
+	#print '<img src="'."/cgi-bin/get_result_picture.pl?"."$job"."_"."$md5sum".'"><br>';
 
 }
 
@@ -1140,6 +1090,15 @@ sub drawcoloredsequence {
 	&drawcoloredstructure;
     }
 
+	my $seq_file = "$TEMPDIR/$job.seq";
+    #my $svg_file = "$TEMPDIR/${job}_ss.svg";
+
+    # Run RNAfold with input and output specified
+    system("$VIENNARNAFOLDDIR/RNAfold --infile=$seq_file | $VIENNARNAFOLDDIR/RNAplot -o svg --filename-full");
+	
+	#print "<img src='$svg_path' width='800' height='650' alt='RNA Structure'>";
+	print "<br>Folding:</br><br>";
+	print "<br><img src='$TEMPDIR/"."$job"."_"."ss".".svg' width='452' height='650' alt='RNA Structure'<br>";
     
     print "<br><br>Legend:<br><b>BOLD</b> marks EXONS<br><u>UNDERLINED</u> marks IRE or TRANSSPLICNG hits<br>";
     print "<i>ITALIC</i> marks putative UTRs<br>";
@@ -1610,12 +1569,14 @@ if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1) {
 
 sub createpicture {
 # comment out by liang
-# new ViennaRNA does not have the old FOLD program but rather incorporated in the same program RNAfold 
+# new ViennaRNA does not have the old FOLD program but rather incorporated in the same program RNAfold AA
 		@answerout=`$VIENNARNAFOLDDIR/RNAfold -i $job.seq`;
 		#print $rv->p("@answerout");
 		#print $rv->p("Answerd:<br>@answerout");  #3_ss.ps		
 		
 		#Evaluate the number of stems in the structure
+
+		
 		
 		$joinedanswer=join('',@answerout);
 		$joinedanswer=~s/\n//g;
@@ -1633,18 +1594,13 @@ sub createpicture {
 		$actualdir=cwd();
 		chdir "$TEMPDIR";
 		
-		#Create the picture !!
-
-# comment out by liang
-# because I will use a seperated cgi to complete it
-# for changed vienna package (our version)
-#		$answerconvert=system("convert "."$job".'_ss.ps'.' -crop 0x0'." $job"."_"."$md5sum".".jpg");
-
-#		$answerconvert=system("convert rna.ps -crop 0x0 $job"."_$md5sum.jpg");  # for original vienna package
-		#print $rv->p("Answerconvert: $answerconvert");  #3_ss.ps
-#                $answermove=system("mv $job.jpg $TEMPPICSDIR/$job.jpg");
-		#print $rv->p("Answermove: $answermove"); 
 		
+		
+		#next line will be commented out, so that it can be used at an other postiion in the proggi
+		#print '<img src="'."../results/$job.jpg".'">';
+		
+		#Print this information right after the picture !!!
+	
 		#next line will be commented out, so that it can be used at an other postiion in the proggi
 		#print '<img src="'."../results/$job.jpg".'">';
 		
@@ -1947,6 +1903,7 @@ sub drawcoloredstructure {
             push (@nooutputpossible,"PolyA-Signal from $polyasignal[$c] to $polyasignal[$c+1]");
         }
     }
+
     #Processing the smsites
     for ($c=0;$c<=@smsite-1;$c=$c+2){
         $mark_in_seq_possible=1;
@@ -2033,8 +1990,6 @@ sub drawcoloredstructure {
         $change_italic{$utr[$c+1]}='utrend';
     }
 
-    #print $rv->h3("");
-    #print $rv->h1("Summary");
     
     #Print out the predicted protein! reformat for a nicer looking on the page	
     #&predprotein;
@@ -2181,11 +2136,6 @@ sub drawcoloredstructure {
         }
     }
 
-    #for debugging only
-    #$seq[30]='<span style="underline-color: yellow">'.$seq[30];
-    #$seq[45]=$seq[45].'</span>';
-    ################
-
 
     for ($c=1;$c<=@seq-1;$c++){
         print "$seq[$c]";
@@ -2199,14 +2149,6 @@ sub drawcoloredstructure {
     #print;
     @seq=();
     print "<br>Output not possible:<br>@nooutputpossible<br>" if (@nooutputpossible>0);
-    #print "<br><br>Legend:<br><b>BOLD</b> marks EXONS<br><u>UNDERLINED</u> marks IRE or TRANSSPLICNG hits<br>";
-    #print "<i>ITALIC</i> marks putative UTRs<br>";
-    #print "<font color=red>RED </font> marks SMSITES or snRNP-binding motifs<br><font color=blue>BLUE</font> marks AU-rich regions<br>";
-    #print "<font color=fuchsia>FUCHSIA</font> with <font color=green>GREEN</font> marks Stemm-GG-Pairs<br>";
-    #print "<font color=lime>LIME</font> marks PolyA-signal<br><font color=purple>PURPLE</font> marks a Promotor<br>";
-    #print "<br>Pr.A1.bin.site = Protein A1 binding site<br>";
-    
-    #print "<br><br>%change_fontcolor<br><br>";
 }
 
 

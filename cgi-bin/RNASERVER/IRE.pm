@@ -1,8 +1,9 @@
 package RNASERVER::IRE;
 
 use strict;
-use lib "/usr/local/lib/perl5/site_perl/5.18.2";
-use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/interfaces/Perl"; 
+use lib "/usr/local/lib/perl5/site_perl/5.18.2"; #perl library path
+use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/interfaces/Perl";
+use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/cgi-bin/";
 use RNA;
 $RNA::noLonelyPairs=1;	#important for correct use of the RNA-module!
 

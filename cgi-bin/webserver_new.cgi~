@@ -1,10 +1,11 @@
-#!/usr/bin/perl -I/var/www/rnaanalyzer/cgi-bin/
 
 use CGI;
 use RNASERVER::TRANS2;
 use RNASERVER::IRE;
 use Bio::Tools::Genscan;
 use Cwd;
+use CGI::Carp qw(fatalsToBrowser warningsToBrowser);
+
 
 $rv=CGI::new();
 
@@ -16,14 +17,30 @@ $TEMPDIR='/var/www/rnaanalyzer/tmp';
 #$IPADRESSFORPICTURE='wb2x01.biozentrum.uni-wuerzburg.de';
 $GENSCANLIB='/var/www/rnaanalyzer/bin/genscanlinux';
 $GENSCANFILE='/var/www/rnaanalyzer/bin/genscanlinux';
-$TRNASCANFOLDER='/var/www/rnaanalyzer/bin/tRNAscan-SE-1.23/bin';
-$VIENNAFOLDDIR='/var/www/rnaanalyzer/bin/ViennaRNA-1.5/Utils'; #pointing to the the Program Fold of the Vienna package
-$VIENNARNAFOLDDIR='/var/www/rnaanalyzer/bin/ViennaRNA-1.5/Progs'; #pointing to the RNAfold dir
+$TRNASCANFOLDER='/var/www/rnaanalyzer/bin/tRNAscan-SE/bin';
+#$VIENNAFOLDDIR='/var/www/rnaanalyzer/bin/ViennaRNA-2.4.18/src/Utils'; #pointing to the the Program Fold of the Vienna package
+$VIENNARNAFOLDDIR='/var/www/rnaanalyzer/bin/ViennaRNA-2.4.18/src/bin'; #pointing to the RNAfold dir
 $MAXFOLDINGLEN=1500;
 $MAXFOLDINGLENUTR=1500;
 
 
+
+
 print $rv->header();
+
+
+
+# Debug: Print all parameters received (from Joahnnes delete later)
+print "<pre>";
+foreach my $param ($rv->param) {
+    my $value = $rv->param($param);
+    print "$param: $value\n";
+}
+print "</pre>";
+
+
+
+
 #print '<body bgcolor="#000080" text="FFFFFF">';
 print '<body text="#000000" bgcolor="#C0C0C0">';
 print '<font face="monospace">';
@@ -535,7 +552,7 @@ sub additionalinformation {
 		print "<br><b>Here is the folding of your sequence:</b><br>";
 
                 # comment out by liang
-		#print '<img src="'."/cgi-bin/get_result_picture.pl?"."$job"."_"."$md5sum".'"><br>';
+		# print '<img src="'."/cgi-bin/get_result_picture.pl?"."$job"."_"."$md5sum".'"><br>';
 	        
 	}
    print"</pre>";
@@ -546,7 +563,9 @@ sub additionalinformation {
 	$md5sum=$1;
 	$actualdir=cwd();
 	chdir "$TEMPDIR";
-	$answerconvert=system("convert rna.ps -crop 0x0 $job"."_$md5sum.jpg");  # for original vienna package
+	$answerconvert=system("convert "."$job".'_ss.ps'.' -crop 0x0'." $job"."_"."$md5sum".".jpg");  # new version
+	##old script 
+	##$answerconvert=system("convert rna.ps -crop 0x0 $job"."_$md5sum.jpg");  # for original vienna package
 	print '<img src="'."/cgi-bin/get_result_picture.pl?"."$job"."_"."$md5sum".'"><br>';
 
 }
@@ -1589,7 +1608,8 @@ if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1) {
 
 sub createpicture {
 # comment out by liang
-		@answerout=`$VIENNAFOLDDIR/Fold $job.seq`;
+# new ViennaRNA does not have the old FOLD program but rather incorporated in the same program RNAfold 
+		@answerout=`$VIENNARNAFOLDDIR/RNAfold -i $job.seq`;
 		#print $rv->p("@answerout");
 		#print $rv->p("Answerd:<br>@answerout");  #3_ss.ps		
 		

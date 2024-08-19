@@ -13,7 +13,7 @@
 </header>
 
 <main>
-    <form action="../cgi-bin/webserver_new.cgi" method="post">
+    <form action="../cgi-bin/webserver_AA.cgi" method="post">
         <section>
             <p>With this web interface, you can search your RNA/DNA for several known RNA structures and retrieve some general information about your sequence.</p>
             <p>Please choose your options below!</p>
