@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RNA Analyzer</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header>
+    <h1>RNA Analyzer</h1>
+</header>
+
+<main>
+    <form action="../cgi-bin/webserver_AA.cgi" method="post">
+        <section>
+            <p>With this web interface, you can search your RNA/DNA for several known RNA structures and retrieve some general information about your sequence.</p>
+            <p>Please choose your options below!</p>
+        </section>
+
+        <hr>
+
+        <section>
+            <label for="seqname">Name your sequence (optional)</label>
+            <input type="text" name="SEQNAME" id="seqname" size="30">
+        </section>
+
+        <section>
+            <label for="fasta">If several FASTA-sequences are provided, please check the box</label>
+            <input type="checkbox" name="FASTA" id="fasta" value="ON"> 
+            <a target="_blank" href="SEQUENCEinfo.html">Click here to get more information on this feature</a>
+        </section>
+
+        <section>
+            <label for="origin"><a target="_blank" href="SEQUENCEinfo.html">SEQUENCE</a></label>
+            <input type="checkbox" name="ORIGIN" id="origin" value="ON" checked> Sequence is RNA
+        </section>
+
+        <section>
+            <textarea rows="10" name="SEQUENCE" cols="64" placeholder="Enter your sequence here..."></textarea>
+        </section>
+
+        <section>
+            <input type="submit" value="Submit" name="START">
+            <input type="reset" value="Reset" name="RESET">
+        </section>
+
+        <hr>
+
+        <section>
+            <p>Special features:</p>
+            <input type="checkbox" name="IRE" value="ON" checked>
+            <a target="_blank" href="IREinfo.htm">IRE</a>
+            <input type="checkbox" name="TRANS" value="ON" checked>
+            <a target="_blank" href="TRANSinfo.html">Trans-splicing structure</a>
+        </section>
+    </form>
+
+    <p><a target="_blank" href="examples.html">Examples to test</a></p>
+    <p>If you need more information or if RNAAnalyzer was useful for you, you might have a look at / cite:</p>
+    <p>Peter Bengert and Thomas Dandekar<br> 
+    A software tool-box for analysis of regulatory RNA elements<br> 
+    Nucl. Acids. Res. 2003 31: 3441-3445.</p>
+    <p>The RNAAnalyzer has temporarily been down due to migration problems. This should be fixed now.</p> 
+</main>
+
+</body>
+</html>

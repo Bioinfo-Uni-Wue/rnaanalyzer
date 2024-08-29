@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  nginx:
+    image: nginx:latest
+    container_name: rna_analyzer_nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./rnaanalyzer:/var/www/rnaanalyzer:ro
+      - ./cgi-bin:/usr/lib/cgi-bin
+    depends_on:
+      - perl
+    networks:
+      - rna_analyzer_net
+
+  perl:
+    image: perl:latest
+    container_name: rna_analyzer_perl
+    volumes:
+      - ./rnaanalyzer:/var/www/rnaanalyzer
+      - ./cgi-bin:/usr/lib/cgi-bin
+    working_dir: /var/www/rnaanalyzer
+    command: ["perl", "-MCPAN", "-e", "install CGI Bio::Perl"]
+    networks:
+      - rna_analyzer_net
+
+networks:
+  rna_analyzer_net:
+    driver: bridge

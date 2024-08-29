@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+  <head>
+    <title>AnDom-Server</title>
+    <META NAME="keywords" CONTENT="annotation, protein sequence, protein structure, SCOP, domain, PSSM, IMPALA, RPS-BLAST, Web-Server, bioinformatics, biochemistry">
+    <META NAME="description" CONTENT="AnDom - Annotation of protein domains: a web-server to predict structural domains (SCOP) in protein sequences using PSSM profiles with IMPALA or RPS-BLAST">
+    <META NAME="author" CONTENT="Steffen Schmidt">
+
+    <LINK REL="SHORTCUT ICON" HREF="http://andom.bioapps.biozentrum.uni-wuerzburg.de/favicon.ico" TYPE="image/ico">
+
+    <link rel="stylesheet" type="text/css" href="http://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de/andom.css">
+
+<!--[if gte ie 5.5000]>
+<link rel="stylesheet" type="text/css" href="http://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de/ie_andom.css">
+<![endif]>
+
+
+  </head>
+
+  <body>
+
+    <!-- Header / Left-Bar DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD -->
+    <div id="menu" >
+      <div id="top">
+ 	<img src="http://andom.bioapps.biozentrum.uni-wuerzburg.de/images/AnDom.gif" alt="AnDom Header with links" usemap="#AnDom_Map" border="0"> 
+ 	  <MAP NAME="AnDom_Map"> 
+ 	    <AREA SHAPE="rect" ALT="Biozentrum Wuerzburg" COORDS="38,75,173,124" HREF="http://www.biozentrum.uni-wuerzburg.de/bioinformatik/homepage.html">
+ 	    <AREA SHAPE="rect" ALT="Uni Heidelberg" COORDS="100,14,233,66" HREF="http://www.uni-heidelberg.de">
+ 	    <AREA SHAPE="rect" ALT="Bork Group at EMBL" COORDS="17,14,92,66" HREF="http://www.bork.embl.de">
+ 	  </MAP> 
+      </div>
+      <div id="links">
+        Links
+        <div><a href="index.html" id="search" >Search</a></div>
+        <div><a href="Usage.html" id="usage"  >Usage</a></div>
+        <div><a href="Example.html" id="example">Example</a></div>
+        <div><a href="http://www.ncbi.nlm.nih.gov:80/entrez/query.fcgi?cmd=Retrieve&amp;db=PubMed&amp;list_uids=11911710&amp;dopt=Abstract" id="cite"   >Citation</a></div>
+        <div>&nbsp;</div>
+      </div>
+
+      <div id="colorcode">
+        SCOP
+	<p><a href="http://scop.mrc-lmb.cam.ac.uk/scop/data/scop.b.b.html"><table><tr><td width="25px">1/a<span>all &alpha;                     </span></td><td bgcolor="#000000" width="14px">&nbsp;</td></tr></table></a></p>
+	<p><a href="http://scop.mrc-lmb.cam.ac.uk/scop/data/scop.b.c.html"><table><tr><td width="25px">2/b<span>all &beta;                      </span></td><td bgcolor="#FF0000" width="14px">&nbsp;</td></tr></table></a></p>
+	<p><a href="http://scop.mrc-lmb.cam.ac.uk/scop/data/scop.b.d.html"><table><tr><td width="25px">3/c<span>&alpha; + &beta;                </span></td><td bgcolor="#00FF00" width="14px">&nbsp;</td></tr></table></a></p>
+	<p><a href="http://scop.mrc-lmb.cam.ac.uk/scop/data/scop.b.e.html"><table><tr><td width="25px">4/d<span>&alpha; / &beta;                </span></td><td bgcolor="#0000FF" width="14px">&nbsp;</td></tr></table></a></p>
+	<p><a href="http://scop.mrc-lmb.cam.ac.uk/scop/data/scop.b.f.html"><table><tr><td width="25px">5/e<span>multidomain                     </span></td><td bgcolor="#FF00FF" width="14px">&nbsp;</td></tr></table></a></p>
+	<p><a href="http://scop.mrc-lmb.cam.ac.uk/scop/data/scop.b.g.html"><table><tr><td width="25px">6/f<span>membrane &amp; cell&nbsp;surface</span></td><td bgcolor="#FFFF00" width="14px">&nbsp;</td></tr></table></a></p>
+	<p><a href="http://scop.mrc-lmb.cam.ac.uk/scop/data/scop.b.h.html"><table><tr><td width="25px">7/g<span>small proteins                  </span></td><td bgcolor="#00FFFF" width="14px">&nbsp;</td></tr></table></a></p>
+      </div>
+
+      <table><tr><td height="20px">&nbsp;</td></tr></table>
+
+     <div id="bottom">&nbsp;</div>
+    </div>
+
+    <div id="alltext"><div id="mainpage">
+    <!-- FORM -->
+    <form action="http://andom.bioapps.biozentrum.uni-wuerzburg.de/cgi-bin/start_impala.cgi" method="post">
+      <!-- seqid -->
+      <p>
+	<b><a href="Usage.html#Identifiers">Protein-Identifier</a></b>: 
+      </p>
+      <p>
+	<input type="TEXT" name="seqid" size="20">
+	  <cite>(e.g. KPY1_ECOLI or P14178 or 2506795)</cite>
+      </p>
+      <!-- seq -->
+      <p>
+	<b><a href="Usage.html#Identifiers">Protein-Sequence</a></b>:
+	<cite>(in FASTA-format or raw sequence  - digits will be ignored):</cite>
+      </p>
+      <p>
+	<textarea cols="70" rows="8" name="seq">REMOVEMEPLEASE</textarea>
+      </p>
+      <!-- Run / Reset -->
+      <p>
+	<input value="Run" type="submit">
+	<input value="Reset form" type="reset">
+      </p>
+   
+      <!-- Parameters -->
+      <p>
+	<b><a href="Usage.html#Parameters">Parameters:</a></b>
+      </p>
+      <table summary="Parameters">
+	<!-- Method -->
+	  <tr><td>Method:</td>
+	    <td><select name="method">
+		<option> IMPALA</option>
+		<option selected="selected"> RPS-BLAST</option>
+	      </select>
+	    </td>
+ 	    <td></td> 
+	  </tr>
+	<!-- Database -->
+	  <tr><td>Database:</td>
+	    <td><select name="database">
+		<option> SCOP 1.59</option>
+		<option> SCOP 1.63</option>
+		<option selected="selected"> SCOP 1.65</option>
+	      </select>
+	    </td>
+	    <td></td>
+	  </tr>
+	  <!-- Expect -->
+	  <tr><td>Expect:</td>
+	    <td>
+	      <select name="expect">
+		<option>1e-10</option>
+		<option>1e-5</option>
+		<option>1e-3</option>
+ 		<option>1e-2</option>
+		<option>1</option>
+		<option selected="selected">10</option>
+	      </select>
+	    </td>
+	  </tr>
+	  <!-- Filter (SEG) -->
+	  <tr><td>Filter:</td>
+	    <td>
+	      <input checked="checked" value="Y" name="seg" type="checkbox">
+	      Low complexity (SEG)
+	    </td>
+	  </tr>
+      </table>
+    </form>
+    <hr size=1 noshade></hr>
+    <address><a href="mailto:s&#115;&#099;&#104;&#109;&#105;&#100;&#116;&#064;&#114;&#105;&#099;&#115;&#046;&#098;&#119;&#104;&#046;&#104;&#097;&#114;&#118;&#097;&#114;&#100;&#046;&#101;&#100;&#117;">S&#116;&#101;&#102;&#102;&#101;&#110;&#032;S&#099;&#104;&#109;&#105;&#100;&#116;</a></address>
+<!-- Created: Sun Jan 25 18:56:17 EST 2004 -->
+<!-- hhmts start -->
+Last modified: Wed Sep 15 9:48:09 EDT 2004
+<!-- hhmts end -->
+	</div>    </div>
+  </body>
+</html>
