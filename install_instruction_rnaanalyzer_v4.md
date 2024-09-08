@@ -8,6 +8,18 @@ All files for RNA Analyzer will reside in:
 /var/www/rnaanalyzer
 ```
 
+## Download Project 
+git pull https://github.com/Department-of-Bioinformatics/rnaanalyzer.git
+
+## Adjust rights and permissions
+
+
+### Installing Nginx
+sudo apt install nginx
+sudo service nginx start
+sudo service nginx status
+
+
 ## Nginx Configuration
 
 Nginx configuration is located at:
@@ -17,7 +29,7 @@ or/and copied to
 /etc/nginx/sites-available/rnaanalyzer.bioinfo-wuerz.de
 ```
 
-### Installing Nginx
+
 
 1. Copy the Nginx configuration file to the Nginx `sites-available` directory.
 2. Adjust the necessary script lines according to your server setup.
@@ -28,6 +40,15 @@ Run the following commands to install necessary dependencies:
 ```bash
 sudo apt update
 sudo apt install fcgiwrap perl cpanminus spawn-fcgi
+```
+
+### Installing Perl Packages
+
+To install the necessary Perl modules, use the following commands:
+```bash
+cpan CGI
+cpan Bio::Perl
+cpanm Bio::Perl
 ```
 
 ## Configuring fcgiwrap
@@ -76,14 +97,7 @@ Ensure the following Perl packages are installed:
 - **RNASERVER::TRANS2** (Custom)
 - **RNASERVER::IRE** (Custom)
 
-### Installing Perl Packages
 
-To install the necessary Perl modules, use the following commands:
-```bash
-cpan CGI
-cpan Bio::Perl
-cpanm Bio::Perl
-```
 
 ### Verifying Perl Module Installation
 
