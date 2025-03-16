@@ -1,0 +1,10 @@
+#menu {
+  position: absolute;
+  z-index: -1;
+}
+
+#top {
+  background-image: url("http://andom.bioapps.biozentrum.uni-wuerzburg.de/images/AnDom.jpg");
+}
+
+
