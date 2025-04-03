@@ -1,0 +1,20 @@
+version: "3.8"
+services:
+  rnaanalyzer-app:
+    image: rnaanalyzer-app
+    volumes:
+      - rnaanalyzer_data:/var/www/rnaanalyzer
+    ports:
+      - "9000:9000"
+
+  rnaanalyzer-nginx:
+    image: rnaanalyzer-nginx
+    volumes:
+      - rnaanalyzer_data:/var/www/rnaanalyzer
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+
+volumes:
+  rnaanalyzer_data:
+
