@@ -1,35 +1,34 @@
-
 # RNA Analyzer Installation Guide
 
 ## Source Directory
 
 All files for RNA Analyzer will reside in:
+
 ```
 /var/www/rnaanalyzer
 ```
 
-## Download Project 
+## Download Project
+
 git pull https://github.com/Department-of-Bioinformatics/rnaanalyzer.git
 
 ## Adjust rights and permissions
 
-
 ### Installing Nginx
+
 sudo apt install nginx
 sudo service nginx start
 sudo service nginx status
-
 
 ## Nginx Configuration
 
 Nginx configuration is located at:
 nginx.conf in rnaalyer folder
-or/and copied to 
+or/and copied to
+
 ```
 /etc/nginx/sites-available/rnaanalyzer.bioinfo-wuerz.de
 ```
-
-
 
 1. Copy the Nginx configuration file to the Nginx `sites-available` directory.
 2. Adjust the necessary script lines according to your server setup.
@@ -37,6 +36,7 @@ or/and copied to
 ## Dependencies Installation (Ubuntu)
 
 Run the following commands to install necessary dependencies:
+
 ```bash
 sudo apt update
 sudo apt install fcgiwrap perl cpanminus spawn-fcgi
@@ -45,6 +45,7 @@ sudo apt install fcgiwrap perl cpanminus spawn-fcgi
 ### Installing Perl Packages
 
 To install the necessary Perl modules, use the following commands:
+
 ```bash
 cpan CGI
 cpan Bio::Perl
@@ -54,7 +55,9 @@ cpanm Bio::Perl
 ## Configuring fcgiwrap
 
 ### Step 1: Open Port 9000
+
 To verify that port 9000 is open and being used, run:
+
 ```bash
 sudo iptables -L | grep 9000
 nc -zv <your_server_ip> 9000
@@ -62,11 +65,15 @@ sudo ss -tuln | grep 9000
 ```
 
 ### Step 2: Edit fcgiwrap Configuration
+
 Edit the `fcgiwrap.service` file:
+
 ```bash
 sudo nano /etc/systemd/system/fcgiwrap.service
 ```
+
 Update the service file to listen on port 9000:
+
 ```ini
 [Unit]
 Description=Simple CGI Server
@@ -81,14 +88,17 @@ Group=www-data
 ## Nginx Configuration for fcgiwrap
 
 To configure Nginx for fcgiwrap, edit the Nginx configuration file:
+
 ```bash
 sudo nano /etc/nginx/sites-available/rnaanalyzer.bioinfo-wuerz.de
 ```
+
 Append the necessary configurations to enable CGI processing via fcgiwrap.
 
 ## Perl Modules
 
 Ensure the following Perl packages are installed:
+
 - **CGI** (Core)
 - **Bio::Tools::Genscan** (Part of BioPerl)
 - **Bio::SeqIO** (Part of BioPerl)
@@ -97,11 +107,10 @@ Ensure the following Perl packages are installed:
 - **RNASERVER::TRANS2** (Custom)
 - **RNASERVER::IRE** (Custom)
 
-
-
 ### Verifying Perl Module Installation
 
 Test the installation of the Perl modules with the following script:
+
 ```perl
 use strict;
 use warnings;
@@ -116,6 +125,7 @@ print "All modules loaded successfully.
 ```
 
 If custom modules are in a non-standard location, specify the path as follows:
+
 ```perl
 use lib '/path/to/your/modules';
 ```
@@ -125,39 +135,54 @@ use lib '/path/to/your/modules';
 ### Genscan
 
 Extract and install Genscan:
+
 ```bash
-tar -xzf genscan.tar.gz
-cd genscan
-make
+cd /var/www/rnaanalyzer/bin 
+    wget -O /var/www/rnaanalyzer/bin/genscan.zip "https://www.coreunitrdm.biozentrum.uni-wuerzburg.de/index.php/s/ZspAjbN4nqmpTwd/download" 
+unzip /var/www/rnaanalyzer/bin/genscan.zip -d /var/www/rnaanalyzer/bin
+rm /var/www/rnaanalyzer/bin/genscan.zip
+chmod a+x /var/www/rnaanalyzer/bin/genscanlinux
+chmod a+r /var/www/rnaanalyzer/bin/genscanlinux/*.smat
 ```
 
 ### tRNAscan-SE
 
 Clone the source and install:
+
 ```bash
-git clone https://github.com/UCSC-LoweLab/tRNAscan-SE.git
-cd tRNAscan-SE/
-./configure --prefix=/path/rnaanalyzer/bin/tRNAscan-SE/
-automake --add-missing
-sudo make
-cp tRNAscan-SE bin/
-cp tRNAscan-SE.conf bin/
+mkdir /tmp/tRNAscan-SE 
+## Installing tRNAscan-SE:
+git clone https://github.com/UCSC-LoweLab/tRNAscan-SE.git /tmp/tRNAscan-SE 
+cd /tmp/tRNAscan-SE
+autoreconf -fi 
+./configure --prefix=/var/www/rnaanalyzer/bin/tRNAscan-SE 
+make 
+mkdir -p /var/www/rnaanalyzer/bin/tRNAscan-SE/bin
+cp tRNAscan-SE /var/www/rnaanalyzer/bin/tRNAscan-SE/bin/
+cp tRNAscan-SE.conf /var/www/rnaanalyzer/bin/tRNAscan-SE/bin/
+cp -R lib/ /var/www/rnaanalyzer/bin/tRNAscan-SE/
+
+# Set PERL5LIB so Perl can locate tRNAscan-SE's Perl modules
+export PERL5LIB="/var/www/rnaanalyzer/bin/tRNAscan-SE/lib:$PERL5LIB"
 ```
 
 ### Infernal (Required for tRNAscan-SE)
 
 Install Infernal:
+
 ```bash
+cd /var/www/rnaanalyzer/bin
 wget http://eddylab.org/software/infernal/infernal.tar.gz
 tar zxf infernal.tar.gz
 cd infernal-1.1.5
-./configure --prefix=/path/rnaanalyzer/bin/tRNAscan-SE/
+./configure --prefix=/var/www/rnaanalyzer/bin/tRNAscan-SE/
 make
 ```
 
 Create symbolic links:
+
 ```bash
-cd /path/rnaanalyzer/bin/tRNAscan-SE/bin
+cd /var/www/rnaanalyzer/bin/tRNAscan-SE/bin
 ln -s ../infernal-1.1.5/src/cmsearch cmsearch
 ln -s ../infernal-1.1.5/src/cmscan cmscan
 ln -s ../infernal-1.1.5/src/cmstat cmstat
@@ -165,77 +190,111 @@ ln -s ../infernal-1.1.5/src/cmstat cmstat
 
 ### ViennaRNA Package
 
-Install via package manager:
 ```bash
-sudo apt install viennarna
-```
-
-If not available, install from source:
-```bash
-wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_6_x/ViennaRNA-2.4.14.tar.gz
-tar -xzf ViennaRNA-2.4.14.tar.gz
-cd ViennaRNA-2.4.14
+cd /var/www/rnaanalyzer/bin/
+wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_7_x/ViennaRNA-2.7.0.tar.gz
+tar -xzf ViennaRNA-2.7.0.tar.gz
+cd ViennaRNA-2.7.0
 ./configure
 make
 sudo make install
 ```
 
-## Set Permissions for RNA Analyzer Directory
+#### Set Permissions for RNA Analyzer Directory
 
 Set ownership and permissions for the RNA Analyzer files:
+
 ```bash
 sudo chown -R www-data:www-data /var/www/rnaanalyzer
 sudo find /var/www/rnaanalyzer -type d -exec chmod 755 {} ;
 sudo find /var/www/rnaanalyzer -type f -exec chmod 644 {} ;
 ```
 
-## Adjust Paths in RNA Analyzer Scripts
+#### Adjust Paths in RNA Analyzer Scripts
 
 Run the following commands to update paths in the RNA Analyzer scripts:
 
 1. Adjust the base path:
+
 ```bash
 find /var/www/rnaanalyzer/cgi-bin -type f \( -name "*.cgi" -or -name "*.pl" \) -exec sed -i 's|/storage/srv/bioapps/rnaanalyzer|/var/www/rnaanalyzer|g' {} +
 ```
 
-2. Update ViennaRNA paths:
+1. Update ViennaRNA paths:
+
 ```bash
 find /var/www/rnaanalyzer/cgi-bin -type f \( -name "*.cgi" -or -name "*.pl" \) -exec sed -i 's|/var/www/rnaanalyzer/bin/ViennaRNA-1.5/Progs|/var/www/rnaanalyzer/bin/ViennaRNA-2.4.18/src/bin/|g' {} +
 find /var/www/rnaanalyzer/cgi-bin -type f \( -name "*.cgi" -or -name "*.pl" \) -exec sed -i 's|/var/www/rnaanalyzer/bin/ViennaRNA-1.5/Utils|/var/www/rnaanalyzer/bin/ViennaRNA-2.4.18/src/Utils|g' {} +
 ```
 
-## Adjust SVG File Path
-
-In the file `rnaanalyzer/cgi-bin/webserver_AA.cgi`, update the path for SVG image generation:
-```perl
-print "<br><img src='/tmp/"."$job"."_"."ss".".svg' width='452' height='650' alt='RNA Structure'<br>";
-```
 ## RFAM
-mkdir rnanalyzer/databases/rfam
 
+```
+mkdir /var/www/rnaanalyzer/databases/
+mkdir /var/www/rnaanalyzer/databases/rfam
+cd ../databases/rfam
 wget https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz
-
 gunzip Rfam.cm.gz
+```
 
-#we need infernal but it is already installed in tRNAscan folder
+## CPC2_standalone (CPC2 (requires python3 and bipython)
 
-../bin/tRNAscan-SE/infernal-1.1.5/src
-
-cmpress Rfam.cm
-
-## CPC2 (requires python3 and bipython)
-mkdir bin/cpc2
-
+```
+mkdir /var/www/rnaanalyzer/bin/cpc2
 wget https://github.com/gao-lab/CPC2_standalone/archive/refs/tags/v1.0.1.tar.gz
-gunzip v1.0.1.tar.gz | tar -xvf 
+gunzip v1.0.1.tar.gz | tar -xvf
 cd libs/libsvm/
 gzip -dc libsvm-3.18.tar.gz | tar xf -
 cd libsvm-3.18/
 make clean && make
+```
 
 # check python dependencies
-# important install biopython systemwide 
+
+## important install biopython systemwide
 
 sudo pip3 install biopython
 
+## Adjust SVG File Path
 
+In the file `/var/www/rnaanalyzer/cgi-bin/webserver_AA.cgi`, update the path for SVG image generation:
+
+> in file /var/www/rnaanalyzer/cgi-bin/webserver_AA.cgi  replace print "<br><img src='$TEMPDIR/"."$job"."\_"."ss".".svg' width='452' height='650' alt='RNA Structure'<br>"; with print "<br><img src='/tmp/"."$job"."\_"."ss".".svg' width='452' height='650' alt='RNA Structure'<br>";
+
+```
+sed -i 's/$TEMPDIR///tmp//g' /var/www/rnaanalyzer/cgi-bin/webserver_AA.cgi
+```
+
+## add miRNA target scan
+
+```
+sudo pip3 install pandas
+```
+miRanda good tool used globally but really old. but no other good replacement. checked RRNAhybrid as well was much slower. Other known tools for this are species specific like TARGETSCAN. 
+Local installion of miRanda was not possible due to old libraries. Instead conda was used to install and then miRanda binary was extracted which works well. 
+A python wrapper was made to execute miranda and also parse the output. WOrks well but time is an issue. A full scan takes ~2 minutes which gives a timeout on CGI. Need to think ideas about this.
+
+## augustus
+
+# requires lots of libraries
+```
+git clone https://github.com/Gaius-Augustus/Augustus.git
+cd Augutus
+make augutus 
+```
+
+might require boost libraries and sql
+
+```
+sudo apt install libboost-all-dev
+sudo apt install libmysql++-dev
+sudo apt install libsqlite3-dev
+sudo apt install libgsl-dev
+sudo apt install liblpsolve55-dev
+```
+OR
+system-wide install
+
+```
+sudo apt install augustus
+```

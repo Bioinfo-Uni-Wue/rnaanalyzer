@@ -24,6 +24,10 @@ $VIENNARNAFOLDDIR='../bin/ViennaRNA-2.6.4/src/bin'; #pointing to the RNAfold dir
 $CMSCAN='../bin/tRNAscan-SE/infernal-1.1.5/src'; #CMSCAN directory
 $RFAM='../databases/rfam/Rfam.cm';
 $CPC='../bin/cpc2/CPC2_standalone-1.0.1/bin';
+$HMMER='../bin/hmmer/bin';
+$MIRBASE='../databases/mirbase/mature.fa';
+$MIRANDA='../bin/miranda/bin';
+$AUGUSTUS='../bin/Augustus/bin/augustus';
 $MAXFOLDINGLEN=1500;
 $MAXFOLDINGLENUTR=1500;
 
@@ -403,7 +407,7 @@ sub oppositestrand {
 ##################################################
 ##################################################
 
-
+##calls all the new subrotines
 sub additionalinformation {
   
 	#prints out the length and origin of the pasted sequence!	
@@ -424,7 +428,7 @@ sub additionalinformation {
 	$SEQGENSCAN='';
 	
 	#Create the genscan statistics output!
-	@answergenscan=`$GENSCANFILE/genscan $GENSCANLIB/HumanIso.smat $TEMPDIR/$job.genscan >$TEMPDIR/$job.genscanout`;
+	# @answergenscan=`$GENSCANFILE/genscan $GENSCANLIB/HumanIso.smat $TEMPDIR/$job.genscan >$TEMPDIR/$job.genscanout`;
         #    -v -cds	gives more infos for debugging
 	
 	chdir $TEMPDIR;	
@@ -457,7 +461,7 @@ sub additionalinformation {
 	
 	&promotor; #search for promotor	
 	
-	&exons;	  # very time consuming, let s take a look 	
+	#&exons;	  # very time consuming, let s take a look 	
 		
 	############################################################
 	# Trying to calculate potential 5' and 3' UTR
@@ -485,12 +489,18 @@ sub additionalinformation {
 	
 	&tRNA; #search for tRNA
 
-	&RNAMOTIF; 
+	&RNAMOTIF;
 
 	&CPC2;
 
+	&microRNA;
+
+	#&miRNAtarget;
+
+	&AUGUSTUS;
+
 	
-	$genscan->close(); #was located in front of the ARE
+	# $genscan->close(); #was located in front of the ARE
 				
 	#########################################################
 	#Looking for serveral other regulatory signals
@@ -633,9 +643,6 @@ sub csfce {
 	print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
 
 }
-
-
-
 
 
 
@@ -1452,7 +1459,7 @@ sub tRNA {
 	######################################################################
 	#Looking for tRNAs using tRNAscan-SE
 
-	$answertrnascan=`$TRNASCANFOLDER/tRNAscan-SE -Q -y -f $TEMPDIR/$job.trnascanout $TEMPDIR/$job.genscan`;
+	$answertrnascan=`$TRNASCANFOLDER/tRNAscan-SE -Q -y -f $TEMPDIR/$job.trnascanout $TEMPDIR/$job.seq`;
 	open (TRNA,"$TEMPDIR/$job.trnascanout");
 	$line=<TRNA>;
 	if ($line=~/Length/){
@@ -1498,89 +1505,91 @@ sub smsite {
 	}
 }
 
-sub exons {
+# sub exons {
     
-	#print $rv->h3("Results of the exon/gene search");	
-	#print "Exons:&nbsp;&nbsp;";
-	$grepanswer=`grep "NO EXONS" $TEMPDIR/$job.genscanout`;
+# 	#print $rv->h3("Results of the exon/gene search");	
+# 	#print "Exons:&nbsp;&nbsp;";
+# 	$grepanswer=`grep "NO EXONS" $TEMPDIR/$job.genscanout`;
 
-	#print $rv->p("No gene/exon detected") if ($grepanswer=~/NO EXONS/);
-	#print "none<br>" if ($grepanswer=~/NO EXONS/);
-	if ($grepanswer=~/NO EXONS/) {
-		print "<b>Exons<sup>1</sup>:</b>        none<br>";
-	}
-	else {
-		print "<b>Exons<sup>1</sup>:</b>        start  -   end       type\n";
-	}
-	print $grepanswer;
-	$genscan = Bio::Tools::Genscan->new(-file => "$TEMPDIR/$job.genscanout");
-	while(my $gene = $genscan->next_prediction()) {
-	    my @exonspresent=$gene->exons();	    
-	    foreach my $exon ($gene->exons()) {
-		my $loc = $exon->location;
-		#print "Coding exon: " if ($exon->is_coding()==1);
-		#print "Noncoding exon: " if ($exon->is_coding()==0);
-		printf (" Exon:         %-6d - %6d",$loc->start, $loc->end);
-		print "     coding<br>" if ($exon->is_coding()==1);
-		print "     noncoding<br>" if ($exon->is_coding()==0);
-		@exons=(@exons,$loc->start,$loc->end); #adding to the drawseq array!		
-	    }
+# 	#print $rv->p("No gene/exon detected") if ($grepanswer=~/NO EXONS/);
+# 	#print "none<br>" if ($grepanswer=~/NO EXONS/);
+# 	if ($grepanswer=~/NO EXONS/) {
+# 		print "<b>Exons<sup>1</sup>:</b>        none<br>";
+# 	}
+# 	else {
+# 		print "<b>Exons<sup>1</sup>:</b>        start  -   end       type\n";
+# 	}
+# 	print $grepanswer;
+# 	$genscan = Bio::Tools::Genscan->new(-file => "$TEMPDIR/$job.genscanout");
+# 	while(my $gene = $genscan->next_prediction()) {
+# 	    my @exonspresent=$gene->exons();	    
+# 	    foreach my $exon ($gene->exons()) {
+# 		my $loc = $exon->location;
+# 		#print "Coding exon: " if ($exon->is_coding()==1);
+# 		#print "Noncoding exon: " if ($exon->is_coding()==0);
+# 		printf (" Exon:         %-6d - %6d",$loc->start, $loc->end);
+# 		print "     coding<br>" if ($exon->is_coding()==1);
+# 		print "     noncoding<br>" if ($exon->is_coding()==0);
+# 		@exons=(@exons,$loc->start,$loc->end); #adding to the drawseq array!		
+# 	    }
 
-	    foreach my $utr ($gene->utrs()) {#What the hell does this print out ????
-		printf ("UTR:           %-6d - %6d     ",$loc->start,$loc->end);
-		print $utr->primary_tag, " <br>";
-	    }
-	    #print "---------------------------------\n";
-		my $prot = $gene->predicted_protein;
-	   	@predprot=split ('',$prot->seq);		
-	}
+# 	    foreach my $utr ($gene->utrs()) {#What the hell does this print out ????
+# 		printf ("UTR:           %-6d - %6d     ",$loc->start,$loc->end);
+# 		print $utr->primary_tag, " <br>";
+# 	    }
+# 	    #print "---------------------------------\n";
+# 		my $prot = $gene->predicted_protein;
+# 	   	@predprot=split ('',$prot->seq);		
+# 	}
 
 # comment out by liang 
+################################################
+## replacing genscan we need to still use the code below and also @predprot would be nice so the predicted protein still works
 
-if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1) {
+# if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1) {
 
-		#then we have an RNA without a coding region
-		#were we will scan for highly structured regions doing it that way:
-		#we start at the beginning an take 150nt, fold them, calc the stems, if above a certain level, we will print out a message!
-		my $count=0;
-		my $len=length $SEQUENCECHECKED;
-		my $query='';
-		my @answer=();
-		my $printout=0;
-		my $last=0;
-		print "<b>Region:        From     To    Stems   Energy Remark</b><br>";
-		for ($count=0;$count<=$len;$count=$count+100){
-			if ($count+150<$len){
-				$query=substr($SEQUENCECHECKED,$count,150);
-				printf ("<br> Pos:       %6d - %6d",$count,$count+150);
-			}
-			else {
-				$query=substr($SEQUENCECHECKED,$count,$len-$count);
-	           		printf ("<br> Pos:       %6d - %6d",$count,$len);	
-				$last=1;
-			}
-			@answer=&checkstemsonly($query,1);
-			#print "<br>ANswer: @answer";
-			print "      $answer[0]" if ($answer[0] == $answer[1]);
-			print "    $answer[0]-$answer[1]" if ($answer[0] != $answer[1]);
-			print "    $answer[2]";
-			if ($answer[0]>=3 && $answer[1]>=3){ #wenn mehr oder genau 3 stems / 150 nt
-				print "   **<br>";
-				$printout=1;
-			}
-			else {
-				print "<br>";
-			}
-			last if ($last==1);
-		}
-		if ($printout==1) {
-			print "** Three or more stem loops in this region! This is a highly structured region. <br>Please check whether tRNA, rRNA or another highly structured RNA is encoded here!<br>";
-		}
-		else {
-			print "<br>";
-		}
-	}
-}
+# 		#then we have an RNA without a coding region
+# 		#were we will scan for highly structured regions doing it that way:
+# 		#we start at the beginning an take 150nt, fold them, calc the stems, if above a certain level, we will print out a message!
+# 		my $count=0;
+# 		my $len=length $SEQUENCECHECKED;
+# 		my $query='';
+# 		my @answer=();
+# 		my $printout=0;
+# 		my $last=0;
+# 		print "<b>Region:        From     To    Stems   Energy Remark</b><br>";
+# 		for ($count=0;$count<=$len;$count=$count+100){
+# 			if ($count+150<$len){
+# 				$query=substr($SEQUENCECHECKED,$count,150);
+# 				printf ("<br> Pos:       %6d - %6d",$count,$count+150);
+# 			}
+# 			else {
+# 				$query=substr($SEQUENCECHECKED,$count,$len-$count);
+# 	           		printf ("<br> Pos:       %6d - %6d",$count,$len);	
+# 				$last=1;
+# 			}
+# 			@answer=&checkstemsonly($query,1);
+# 			#print "<br>ANswer: @answer";
+# 			print "      $answer[0]" if ($answer[0] == $answer[1]);
+# 			print "    $answer[0]-$answer[1]" if ($answer[0] != $answer[1]);
+# 			print "    $answer[2]";
+# 			if ($answer[0]>=3 && $answer[1]>=3){ #wenn mehr oder genau 3 stems / 150 nt
+# 				print "   **<br>";
+# 				$printout=1;
+# 			}
+# 			else {
+# 				print "<br>";
+# 			}
+# 			last if ($last==1);
+# 		}
+# 		if ($printout==1) {
+# 			print "** Three or more stem loops in this region! This is a highly structured region. <br>Please check whether tRNA, rRNA or another highly structured RNA is encoded here!<br>";
+# 		}
+# 		else {
+# 			print "<br>";
+# 		}
+# 	}
+# }
 
 sub createpicture {
 # comment out by liang
@@ -1668,7 +1677,10 @@ sub checkstemsonly {
 		my @structure;
 		my $energy;
 		if ($inwhattodo==1 && length $inseq<=$MAXFOLDINGLENUTR){
-			@struct=`echo $inseq | $VIENNARNAFOLDDIR/RNAfold`;
+			@struct=`echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
+			if ($? != 0) { ##added by AA, error handling
+    			return ("RNAfold failed", 0);
+			}
 			$struct[1]=~/([().]+) \(([+-. 0-9]+)\)/;
 			@structure=split('',$1);
 			$energy=$2;
@@ -1706,7 +1718,9 @@ sub checkstemsonly {
 		return ($fldstemszu,$fldstemsauf,$energy) if ($fldstemsauf>$fldstemszu);
 
 		print "ERROR ERROR!!!!  This line should N O T be reached!!!";
-	
+
+		##alright we shall undo this change and return after the lines below AA
+
 		#######ATTENTION THESES LINES BELOW ARE NOT PRINTED!!!! BECAUSE WE RETURN ABOVE !!!!!!#####
 		###########################################################################################
 		###########################################################################################
@@ -2168,18 +2182,18 @@ sub drawcoloredstructure {
 
 
 sub RNAMOTIF {
-
-	my $tblout_file = "$TEMPDIR/$job.tblout";  # Table format output
+    my $tblout_file = "$TEMPDIR/$job.tblout";  # Table format output
 	my $output_file = "$TEMPDIR/$job.out";     # Full verbose output
 
 	# Run cmscan, saving outputs to files and suppressing screen output
 	my $cmd = "$CMSCAN/cmscan -E 0.00001 --tblout $tblout_file -o $output_file $RFAM $TEMPDIR/$job.seq > /dev/null 2>&1";
 	system($cmd);
 
-	my $format = "%-12s %-12s %-6s %-6s %-8s %-10s %-10s\n";
+	my $format = "%-12s %-12s %-6s %-6s %-8s %-10s %-20s\n";
 
 	my $found = 0;
 
+	print "<pre>\n";
 	print "<b>RNA motif search:</b><br>\n";
 
 	# Read and parse the tabular output (--tblout)
@@ -2188,16 +2202,16 @@ sub RNAMOTIF {
 		next if $line =~ /^#/;  # Skip comments
 		chomp $line;
 		my @columns = split(/\s+/, $line, 18);
-		next unless @columns >= 16;  # Ensure enough columns exist
+		next unless @columns >= 16;
 
-		# Extract relevant fields (adjust indices if needed)
 		my ($match, $family, $from, $to, $score, $e_value, $description) = ($columns[0], $columns[1], $columns[7], $columns[8], $columns[14], $columns[15], $columns[17]);
 
-		# Print or store parsed results
-		push @results, sprintf($format, $match, $family, $from, $to, $score, $e_value, $description);
+		my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
 
-		$found = 1; 
+		push @results, sprintf($format, $match, $family_link, $from, $to, $score, $e_value, $description);
+		$found = 1;
 	}
+	
 	close $fh_tbl;
 
 	
@@ -2207,13 +2221,11 @@ sub RNAMOTIF {
 		print "-" x 80, "\n";  # Simple separator
 
 		# Print stored results
-		print "@results\n";
+		print @results;
 	} else {
 		print "No motif recognized\n";
-
-	print "<br></br>";
-	}
-
+    }
+	print "</pre>\n";
 }
 
 sub CPC2 {
@@ -2271,7 +2283,212 @@ sub CPC2 {
 
 }
 
+sub microRNA {
+
+	if (19 < $SEQUENCELENGTH && $SEQUENCELENGTH < 25) {
+
+		my $mirbase_output = "$TEMPDIR/$job.mirtbl";
+		my $mirbase_out    = "$TEMPDIR/$job.mir";
+
+		my $mirna_search = "$HMMER/nhmmer -Z 1.06 -E 1 --rna --watson --tblout $mirbase_output -o $mirbase_out $TEMPDIR/$job.seq $MIRBASE";
+
+		system($mirna_search);
+
+		my $format = "%-18s %-6s %-6s %-10s %-8s %-15s %-40s\n";
+
+		my @results;
+
+		open my $fh_tbl, '<', $mirbase_output or die "Cannot open tblout file: $!";
+		while (my $line = <$fh_tbl>) {
+			next if $line =~ /^#/;
+			chomp $line;
+			my @columns = split(/\s+/, $line);
+			next unless @columns >= 17;
+			my $desc_full = join(" ", @columns[15..$#columns]);
+
+			my ($match, $from, $to, $e_value, $score) =
+    			($columns[0], $columns[7], $columns[8], $columns[12], $columns[13]);
+
+			# Extract accession and description
+			my ($accession, $desc_text) = $desc_full =~ /(MIMAT\d+)\s+(.*)/;
+			unless ($accession) {
+				$accession = '-';
+				$desc_text = $desc_full;
+			}
+
+			push @results, {
+				match       => $match,
+				from        => $from,
+				to          => $to,
+				score       => $score + 0,    # force numeric
+				e_value     => $e_value + 0,  # force numeric
+				accession   => $accession,
+				description => $desc_text
+			};
+		}
+		close $fh_tbl;
+
+		my $total = scalar @results;
+
+		if ($total) {
+			print "<b>miRNA search:</b><br>\n";
+			printf $format, "Match", "From", "To", "E-Value", "Score", "Accession", "Description";
+			print "-" x 120, "\n";
+
+			# Split into human vs others (e.g., match starts with hsa- or description contains Homo sapiens)
+			my (@human_hits, @other_hits);
+			foreach my $hit (@results) {
+				if ($hit->{match} =~ /^hsa-/i || $hit->{description} =~ /Homo sapiens/i) {
+					push @human_hits, $hit;
+				} else {
+					push @other_hits, $hit;
+				}
+			}
+
+			# Sort both groups by E-value ascending
+			@human_hits = sort { $a->{e_value} <=> $b->{e_value} } @human_hits;
+			@other_hits = sort { $a->{e_value} <=> $b->{e_value} } @other_hits;
+
+			my @top_hits = (@human_hits, @other_hits);
+			@top_hits = @top_hits[0..2] if @top_hits > 3;
+
+			foreach my $hit (@top_hits) {
+				my $link = "<a href=\"https://www.mirbase.org/hairpin/$hit->{accession}\" target=\"_blank\">$hit->{accession}</a>";
+				printf $format, $hit->{match}, $hit->{from}, $hit->{to}, $hit->{e_value}, $hit->{score}, $link, $hit->{description};
+			}
+
+			print "<br><b>Total hits found:</b> $total<br>\n";
+			print "Due to the number of hits, it is likely to be a microRNA<br>\n";
+		} else {
+			print "Not a microRNA<br></br>\n";
+		}
+
+		print "<br></br>";
+	}
 
 
-print "Seqeunce is: $SEQUENCECHECKED";
-print "\nlength of input is $SEQUENCELENGTH"
+}
+
+sub miRNAtarget{
+
+	##microRNA target scan using miRANDA 
+	##installed and tried miranda, each scan takes ~2 minutes. Might be too slow for a websever. 
+	##made a wrapper for miRanda using python
+	##update: still too long run time. maybe make a parallel script and then incorporate later.
+
+	my $mitar_input = "$TEMPDIR/$job.seq";
+	my $miranda_out = "$TEMPDIR/$job.miranda";
+	my $parsed = "$TEMPDIR/$job.target";
+
+	my $RUN_miranda="python3 $MIRANDA/miranda_wrapper.py $MIRBASE $mitar_input $miranda_out";
+	my $exit_code = system($RUN_miranda);
+	if ($exit_code != 0) {
+    	print "miRanda execution failed with exit code: $exit_code\n";
+	}
+
+}
+
+
+########################
+##augustus replacing the old genscan; need to check the whole sub for errors
+sub AUGUSTUS {
+
+
+	(my $dna_sequence = $SEQUENCECHECKED) =~ tr/uU/tT/;
+    my $species_model = @_;
+	my $output_gff = "$TEMPDIR/$job.augustus";
+	my $input_dna = "$TEMPDIR/$job.dna.fa";
+    $species_model ||= "human";  # default to 'human' if not passed
+    
+	
+	@predprot = ();              # clear previous results
+    @exons = ();                 # clear exon location array
+    my $found_exon = 0;
+
+	open(my $fh, '>', $input_dna) or die "Cannot write input: $!";
+	print $fh ">$job\n$dna_sequence\n";
+	close($fh);
+
+    # Run AUGUSTUS
+    my $augustus_cmd = "$AUGUSTUS --species=$species_model $input_dna > $output_gff 2>&1";
+    system($augustus_cmd) == 0 or die "Failed to run AUGUSTUS: $!";
+
+    open(my $GFF, '<', $output_gff) or die "Can't open AUGUSTUS output: $!";
+    my $protein_seq = '';
+
+    while (my $line = <$GFF>) {
+        chomp $line;
+        next if $line =~ /^#/;
+
+        my @fields = split("\t", $line);
+        next unless @fields >= 9;
+
+        my ($seqid, $source, $type, $start, $end, $score, $strand, $phase, $attributes) = @fields;
+
+        if ($type eq "CDS") {
+            $found_exon = 1;
+            push @exons, ($start, $end);
+
+            # Optionally print exon info
+            printf(" Exon:         %-6d - %6d     coding<br>", $start, $end);
+        }
+
+        if ($type eq "protein") {
+            if ($attributes =~ /sequence\s+"?([^"]+)"?/) {
+                $protein_seq = $1;
+            }
+        }
+    }
+    close $GFF;
+
+    if ($found_exon) {
+        print "<b>Exons<sup>1</sup>:</b>        start  -   end       type<br>";
+        @predprot = split('', $protein_seq);
+    } else {
+        print "<b>Exons<sup>1</sup>:</b>        none<br>";
+        &scan_structured_regions();  # fallback RNA scan
+    }
+}
+
+
+sub scan_structured_regions {
+    my $count = 0;
+    my $len = length $SEQUENCECHECKED;
+    my $printout = 0;
+    my $last = 0;
+
+    print "<b>Region:        From     To    Stems   Energy Remark</b><br>";
+
+    while ($count <= $len) {
+        my ($query, @answer);
+        if ($count + 150 < $len) {
+            $query = substr($SEQUENCECHECKED, $count, 150);
+            printf("<br> Pos:       %6d - %6d", $count, $count + 150);
+        } else {
+            $query = substr($SEQUENCECHECKED, $count, $len - $count);
+            printf("<br> Pos:       %6d - %6d", $count, $len);
+            $last = 1;
+        }
+
+        @answer = &checkstemsonly($query, 1);
+        print "      $answer[0]" if $answer[0] == $answer[1];
+        print "    $answer[0]-$answer[1]" if $answer[0] != $answer[1];
+        print "    $answer[2]";
+
+        if ($answer[0] >= 3 && $answer[1] >= 3) {
+            print "   **<br>";
+            $printout = 1;
+        } else {
+            print "<br>";
+        }
+
+        last if $last;
+        $count += 100;
+    }
+
+    if ($printout) {
+        print "** Three or more stem loops in this region! This is a highly structured region. <br>Please check whether tRNA, rRNA or another highly structured RNA is encoded here!<br>";
+    } else {
+        print "<br>";
+    }
+}
