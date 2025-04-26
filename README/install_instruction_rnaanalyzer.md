@@ -235,6 +235,7 @@ mkdir /var/www/rnaanalyzer/databases/rfam
 cd ../databases/rfam
 wget https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz
 gunzip Rfam.cm.gz
+cmpress Rfam.cm
 ```
 
 ## CPC2_standalone CPC2 (requires python3 and bipython)
@@ -298,6 +299,8 @@ system-wide install
 ```
 sudo apt install augustus
 ```
+## new commit ##
+
 # some more libraries if already not installed 
 ```
 sudo apt install autoconf automake libtool
