@@ -1,32 +1,38 @@
 #!/usr/bin/perl
-
-
-use Cwd;
 use strict;
 use warnings;
+use File::Slurp;
+use Cwd qw(abs_path);
 
+# Set paths
+my $rnafold_bin = '../bin/ViennaRNA-2.6.4/src/bin/RNAfold';  # ✅ update this path
+my $input_file  = './test.seq';
+my $output_file = './test.foldout';
 
-my $TEMPDIR='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/tmp';
-my $VIENNARNAFOLDDIR='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/src/bin'; #pointing to the RNAfold dir
+# Check everything
+die "RNAfold binary not found at $rnafold_bin" unless -x $rnafold_bin;
+die "Input file not found: $input_file" unless -e $input_file;
 
+# Absolute paths
+$input_file  = abs_path($input_file);
+$output_file = abs_path($output_file);
 
-sub process_rna {
-    my $fold;
-    my $svg;
-	my $seq_file = "$TEMPDIR/job.seq";
-    my $fold_file = "$TEMPDIR/job.fold";
-    my $svg_file = "$TEMPDIR/job.svg";
+# Construct command
+my $cmd = "$rnafold_bin --infile=$input_file --outfile=$output_file";
 
-    print "Temporary Directory: $TEMPDIR\n";
-    print "Sequence File: $seq_file\n";
-    print "Fold File: $fold_file\n";
-    print "SVG File: $svg_file\n";
+print "Running RNAfold:\n$cmd\n\n";
 
-    
+# Run command and capture output
+my $output = `$cmd 2>&1`;
+my $exit_code = $? >> 8;
 
-    # Run RNAfold with input and output specified
-    system("$VIENNARNAFOLDDIR/RNAfold --infile=$seq_file | $VIENNARNAFOLDDIR/RNAplot -o svg --filename-full > $svg_file");
-    
+# Print result
+print "Exit code: $exit_code\n";
+print "RNAfold output:\n$output\n";
+
+# Show folded output if successful
+if ($exit_code == 0 && -e $output_file) {
+    print "\n--- RNAfold .foldout contents ---\n";
+    print read_file($output_file);
 }
 
-process_rna()

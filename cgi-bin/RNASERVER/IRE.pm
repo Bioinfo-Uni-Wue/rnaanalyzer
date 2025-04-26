@@ -1,7 +1,7 @@
 package RNASERVER::IRE;
 
 use strict;
-use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/interfaces/Perl";
+use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl";
 use lib "/usr/local/lib/perl5/site_perl/5.18.2"; #perl library path
 use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/cgi-bin/";
 use RNA;
@@ -119,7 +119,7 @@ sub suboptimalfindire {
 	my $hitbeforecdscutoff=200;
 	my $hitaftercdscutoff=2000;
 	#energycutoff=??;
-	my $pathtornasuboptandrnafold='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/src/bin/RNAsubopt'; #Please locate your version of RNAfold / RNAsubopt
+	my $pathtornasuboptandrnafold='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt'; #Please locate your version of RNAfold / RNAsubopt
 
 	###########################################
 

@@ -237,7 +237,7 @@ wget https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz
 gunzip Rfam.cm.gz
 ```
 
-## CPC2_standalone (CPC2 (requires python3 and bipython)
+## CPC2_standalone CPC2 (requires python3 and bipython)
 
 ```
 mkdir /var/www/rnaanalyzer/bin/cpc2
@@ -297,4 +297,40 @@ system-wide install
 
 ```
 sudo apt install augustus
+```
+# some more libraries if already not installed 
+```
+sudo apt install autoconf automake libtool
+sudo apt-get install libmpfr4
+sudo apt-get install libmpfr-dev
+sudo apt install perl-doc  # important to check perl module information
+```
+
+# perl modules
+```
+sudo cpan install JSON # for reading inputs
+sudo cpan install File::Slurp  #for creating and storing correct job folder
+```
+
+# updating ViennaRNA to 2.7.0
+```
+wegt https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_7_x/ViennaRNA-2.7.0.tar.gz
+tar -xzf ViennaRNA-2.7.0.tar.gz
+cd ViennaRNA-2.7.0
+
+./configure --prefix=/rnaanalyzer/bin/ViennaRNA-2.7.0
+
+make # takes a bit of time needs patience
+make install # installs the correct libraries in right location. last time it was not so right!
+```
+
+# installing InstaRNA
+
+```
+https://github.com/BackofenLab/IntaRNA.git
+
+./configure --prefix=/path/to/IntaRNA --with-vrna=/path/to/ViennaRNA-2.7.0 --disable-pkg-config
+
+make
+make install
 ```

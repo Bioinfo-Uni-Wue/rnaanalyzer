@@ -1,9 +1,8 @@
 package RNASERVER::TRANS2;
 
+use Cwd qw(abs_path);
 use strict;
-use lib "/usr/local/lib/perl5/site_perl/5.18.2";
-use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/interfaces/Perl";
-use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/cgi-bin/";
+use lib '/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/perl';
 use RNA;
 use RNASERVER::COMMON;
 
@@ -69,14 +68,18 @@ sub celegans {
                     $gguakorrektpresent=0;
 		    #$stem1test=substr($gensq,($seqscan2-16+1),($seqscan1+16-($seqscan2-16)));
                     $stem1test=substr($gensq,($seqscan2-18+1),($seqscan1+16-($seqscan2-18)));
-		    $string=$stem1test;
+		            $string=$stem1test;
                     $string = uc($string);
+                    
                     $length = length($string);
                     #printf("length = %d\n", $length); #if ($istty);
-                    $structure=$string;
-                    $min_en = RNA::fold($string, $structure);
+                    # $structure=$string;
+                      # Save the original nucleotide sequence
+                    ($structure, $min_en) = RNA::fold($string);
+                    
                     $stem1string=$string;
                     $stem1structure=$structure;
+                
 		    #print "\n$stem1string\n$stem1structure";
                     ########## Versuch das ggua-Motif anhand des fold-outputs besser zu evaluieren #########
                     @stem1stringarray=split ("",$stem1string);
@@ -106,6 +109,8 @@ sub celegans {
                     #genauer den Teil mit 3 of 4 must at least pair !!!!!!!
                     for ($seqscan3=$seqscan2-2;$seqscan3>=$seqscan2-5;$seqscan3=$seqscan3-1) {
                         $seqscan3ersatz=$seqscan3;
+                        
+
                         #for ($bulgestem1=$seqscan2-3;$bulgestem1>=$seqscan2-5;$bulgestem1--){
                             #if ($bulgestem1==$seqscan3){
                              #   $seqscan3ersatz++;
@@ -123,25 +128,33 @@ sub celegans {
                     #Dann suchen wir den loop davor und schauen ob ja auch brav mind 3 U vorkommen !!!
                         $ucount=0;$acount=0;
 			#print "\nCountUs from $seqscan1 -2 bis $seqscan2 +1";
+                        
+
                         for ($seqscan4=$seqscan1-2;$seqscan4>=$seqscan2+1;$seqscan4=$seqscan4-1) {
                             $ucount++ if ($gen[$seqscan4] eq 'u');
                             $acount++ if ($gen[$seqscan4] eq 'a');
                             $loop1nt++;
                             
                         }
+                        
+
 			#print "\nUcount=$ucount";
-                        if ($ucount>=1){ #&& ($seqscan1-$seqscan2-$acount-$ucount<6)) {
+                        if ($ucount>=1){ #&& ($seqscan1-$seqscan2-$acount-$ucount<6)) 
                             #print "\nUcount passed";
 				$Gremark=$seqscan1;
                             $trans1=$seqscan1+4;
                             $trans2=$seqscan2-5;      #zeigt auf den Anfang der non-obligatory-features
                             #Testen ob der Stamm verlngert werden kann!
+                            
+
                             while ($Gremark-$trans1+$matchc+3>0 && 0<$trans1 && $trans1<$genlen && 1<$trans2 && $trans2<$genlen) {
                                 $trans1++;$trans2=$trans2-1;
                                 $matchc++ if (($gen[$trans1] eq 'a') && ($gen[$trans2] eq 'u'));
                                 $matchc++ if (($gen[$trans1] eq 'c') && ($gen[$trans2] eq 'g'));
                                 $matchc++ if (($gen[$trans1] eq 'g') && ($gen[$trans2]=~/c|u/));
                                 $matchc++ if (($gen[$trans1] eq 'u') && ($gen[$trans2]=~/a|g/));
+                                
+
                             }
                             #Testen ob das G/U U/A U/A U motif am Ende des splicing stems ist
                             $b1=0;$b2=0;$b3=0;$b4=0;$b5=0;
@@ -151,7 +164,7 @@ sub celegans {
                             $b4++ if ($gen[$trans2+3]=~/u|a/);
                             $b5++ if ($gen[$trans2+5] eq 'u');
                             $motifsum=$a1+$a2+$b1+$b2+$b3+$b4+$b5;
-                            
+                           
                             #Jetzt wird gecheckt ob eine Sm-Site downstream in der Naehe ist.
 			    #my $newupperlimit;
 			   #$newupperlimit=80;
@@ -176,6 +189,7 @@ sub celegans {
                                         if ((($seqscan7-$seqscan6)>5)){ #| $smsitepresent==1) {
                                             if (($gen[$seqscan7]=~/a|g/) && ($gen[$seqscan7+1]=~/a|g/)||($gen[$seqscan7] eq 'c' && $gen[$seqscan7+1] eq 'a')) {
 						    $smsite='';
+                            
 						    
 						    #for ($xfgf=1;$xfgf<10;$xfgf++){}
 						    
@@ -197,7 +211,8 @@ sub celegans {
                                                 $length = length($string);
                                                 #printf("length = %d\n", $length); #if ($istty);						   						  
                                                 $structure=$string; # wierd way to allocate space						 
-                                                $min_en = RNA::fold($string, $structure);
+                                                ($structure, $min_en) = RNA::fold($string);
+                                                
                                                 ######### Diese Zeile startet den Versuch, zu pruefen, ob das GGUA wirklich gepaart ist, und ob davor ein loop ist #####
                                              
                                                     
@@ -398,6 +413,7 @@ sub celegans {
                                                 #print "\nTest auf 2 Stems war positiv, falls eine 1 folgt : $alternativefoldpass2";	      					   
                                                 ################### Ende dieser Prfung #######################
                                                 $stem2string=$string; $stem2structure=$structure;
+                                                
                                                 #print "\n***\n";
                    ################# Ab hier Suchroutine weg !!! ##################################################
                                                 $sumenergy=0;						  
@@ -413,7 +429,7 @@ sub celegans {
 							$string=$stem3test;
 							$string = uc($string);
 							$structure=$string;
-							$min_en = RNA::fold($string, $structure);								
+							($structure, $min_en) = RNA::fold($string);							
 							#print"\nStem3: $string\n       $structure";
 							@structstem3=split ("",$structure);
 							$klammer3=0;
@@ -422,6 +438,8 @@ sub celegans {
 								$klammer3++;
 							    }
 							}
+                            
+
 							#print "\nKlammer3:$klammer3";
 							####################################################################
 
@@ -429,6 +447,8 @@ sub celegans {
 							   
 								if ($klammer3>1 && $newhit==0) {
 								    $newhit=1;
+                                    
+
 								    #$stem3test=substr($gensq,($point12),($point13-$point12+1));
 								    #$string=$stem3test;
 								    #$string = uc($string);
@@ -439,9 +459,10 @@ sub celegans {
 								    
 								    $leaderseq='';
 								    
-								
-								    #print "\nAchtung! Diese Strukturen von stem1 und stem3 sind nur gefaltet, aber nicht ausgetestet!";
-								    
+
+
+
+
 								    push (@returnvalues,$seqscan1,$stem1string,$stem1structure,$stem2string,$stem2structure,$smsite,$string,$structure); #ev noch leader !!;
 								    if ($leaderseq eq '') {
 									    push (@returnvalues,0);
@@ -509,7 +530,8 @@ sub ciona {#seems to work for the moment !!!!!!
 	my $checkseq=substr($gensq,$pos-$len-$unten1,$unten1+$len);
 	my $string=$checkseq;
 	my $structure=$string;   #obligatory! weird way to allocate space, but absolutely needed !!!!
-	my $min_en=RNA::fold($string,$structure);
+	my $min_en;
+    ($structure, $min_en) = RNA::fold($string);
 	my @struct=split ("",$structure);
 	#print "folded seq: $string\nfolded str: $structure\n";
 	my @stringarr=split ("",$string);
