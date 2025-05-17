@@ -20,6 +20,7 @@ my $ire       = $q->param("IRE") // '';
 my $trans     = $q->param("TRANS") // '';
 my $rnamo     = $q->param("RNAmotif") // '';
 my $mirna     = $q->param("mirna") // '';
+my $trna      = $q->param("trna") // '';
 my $coding    = $q->param("run_coding") // '';
 my $species   = $q->param("species") // '';
 my $mirna_target    =  $q->param("mirna_target") // '';
@@ -89,9 +90,8 @@ print <<'HTML';
   </style>
 </head><body>
 <div class="results-container">
-<h2> Batch Results</h2>
+<h2> Results</h2>
 HTML
-
 
 
 # On first submission, launch jobs
@@ -115,6 +115,7 @@ unless ($is_refresh) {
             TRANS      => $trans,
             RNAmotif   => $rnamo,
             mirna      => $mirna,
+            trna       => $trna,
             run_coding => $coding,
             species    => $species,
             mirna_target => $mirna_target,
@@ -140,15 +141,18 @@ foreach my $jid (@job_ids) {
 
 # Table display
 print "<table>";
+my $elapsed = $q->param('elapsed_time') || 0;
+print "<p>Elapsed time: <span id='timer'>$elapsed</span> seconds</p>" unless $all_done;
+
 print "<tr><th>#</th><th>Job ID</th><th>Status</th></tr>";
 
 for (my $i = 0; $i < @job_ids; $i++) {
     my $jid = $job_ids[$i];
     my $result_file = "../tmp/jobs/job_$jid/result.txt";
-
-    my $status = -e $result_file
+   
+       my $status = -e $result_file
         ? "<a class='status-button' href='../tmp/jobs/job_$jid/result.html' target='_blank'>View Result</a>"
-        : " Still processing";
+        : "Processing";
 
     print "<tr><td>" . ($i + 1) . "</td><td>$jid</td><td>$status</td></tr>";
 }
@@ -157,6 +161,7 @@ print "</table>";
 # Completion or waiting message
 if ($all_done) {
     print "<p class='done-msg'>All jobs completed.</p>";
+    print "<p>Elapsed time: <span id='timer'>$elapsed</span> seconds</p>";
 } else {
     print "<p class='waiting-msg'> Waiting for jobs to finish...</p>";
 }
@@ -166,17 +171,35 @@ print "<form id='refreshForm' method='POST' action='batchsubmit.cgi'>\n";
 foreach my $jid (@job_ids) {
     print "<input type='hidden' name='job_ids' value='$jid'>\n";
 }
+print "<input type='hidden' id='elapsed_time' name='elapsed_time' value='$elapsed'>\n";
 print "</form>\n";
 
 # Auto-refresh script if still processing
 unless ($all_done) {
     print <<'JS';
-<script>
+  <script>
+  let seconds = parseInt(document.getElementById('timer').textContent);
+  const timerEl = document.getElementById('timer');
+  const hiddenInput = document.getElementById('elapsed_time');
+
+  function updateTimer() {
+    seconds++;
+    timerEl.textContent = seconds;
+    hiddenInput.value = seconds;
+  }
+
+  setInterval(updateTimer, 1000);
+
+  // Auto-refresh
   setTimeout(function() {
     document.getElementById('refreshForm').submit();
   }, 5000);
-</script>
+  </script>
 JS
 }
+
+
+
+
 
 print "</div></body></html>";

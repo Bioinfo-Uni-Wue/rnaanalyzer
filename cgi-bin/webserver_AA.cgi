@@ -68,6 +68,7 @@ my $params = decode_json($params_json);
 my $do_rnamotif = $params->{RNAmotif};
 my $do_augustus = $params->{run_coding};
 my $do_mirna    = $params->{mirna};
+my $do_trna     = $params->{trna};
 my $do_IRE      = $params->{IRE};
 my $do_TRANS    = $params->{TRANS};
 my $species     = $params->{species};
@@ -95,12 +96,12 @@ sub startproggi {
     ####### Initializing some variables for the colored output ########
     @exons=();@transsplicing=();@ire=();@smsite=();@aurichregion=();
     @stemggpairs=();@polyasignal=();@utr=();@cds=();
-    print $cgi->h2("Here are the results for JOB ID: $job with sequence name:  $SEQNAMECHECKED");
+    print $cgi->h2("Here are the results for JOB ID: $job with sequence name: $SEQNAMECHECKED");
 
     &mainrun;
 
-    # Additional information 
-    &additionalinformation;
+    # running analysis
+    &analysis;
 
     # Optionally handle opposite strand analysis
     if ($DOOPPOSITE == 1) {
@@ -322,7 +323,7 @@ sub oppositestrand {
 ##################################################
 
 ##calls all the new subrotines
-sub additionalinformation {
+sub analysis {
   
 	chdir $TEMPDIR;	
 
@@ -355,8 +356,9 @@ sub additionalinformation {
 
 	&smsite;
 
-	
+	if (do_trna){
 	&tRNA; #search for tRNA
+    }
 
 	if ($do_rnamotif){
 	&RNAMOTIF; #motif search		
@@ -1849,9 +1851,9 @@ sub miRNAtarget {
 ##augustus replacing the old genscan; need to check the whole sub for errors
 sub AUGUSTUS {
     (my $dna_sequence = $SEQUENCECHECKED) =~ tr/uU/tT/;
-    my ($species_model) = @_;
-    $species_model ||= "human";
-    my %utr_supported_species = map { $_ => 1 } qw(human);
+    my ($species) = @_;
+    $species ||= "human";
+    my %utr_supported_species = map { $_ => 1 } qw(human);  # what is this doing?
 
     my $output_gff = "$TEMPDIR/$job.augustus";
     my $input_dna = "$TEMPDIR/$job.dna.fa";
@@ -1873,7 +1875,7 @@ sub AUGUSTUS {
     print $fh ">$job\n$dna_sequence\n";
     close($fh);
 
-    my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on --UTR=on --species=$species_model $input_dna > $output_gff 2>&1";
+    my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on --UTR=on --species=$species $input_dna > $output_gff 2>&1";
     system($augustus_cmd) == 0 or die "Failed to run AUGUSTUS: $!";
 
     # Parse Augustus output
@@ -2211,6 +2213,8 @@ sub scan_structured_regions {
 
 
 print "<br>*Pr.A1.bin.site = Protein A1 binding site<br>";
+
+
 
 write_file("$TEMPDIR/result.txt", "done\n");
 

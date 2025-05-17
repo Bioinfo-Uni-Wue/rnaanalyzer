@@ -9,7 +9,8 @@
 <body>
 
   <header>
-    <img src="your-logo.png" alt="RNA Analyzer Logo" class="logo" />
+    <a href="."> <!-- add the actual link here when putting on server -->
+    <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" /></a>
   </header>
 
   <main>
@@ -17,12 +18,10 @@
       <form action="../cgi-bin/batchsubmit.cgi" method="post" onsubmit="showLoading()">
 
       <section>
-        <p>With this web interface, you can search your RNA/DNA for several known RNA structures and retrieve some general information about your sequence.</p>
-        <p>Please choose your options below!</p>
+        <p>With this recently web application, you can search your RNA/DNA for several known RNA structures and retrieve some general information about your sequence.</p>
+        <p>Please choose which searches you would like to perform below!</p>
       </section>
-
-      <hr />
-
+      
       <!-- <section>
         <label for="seqname">Name your sequence (optional)</label>
         <input type="text" name="SEQNAME" id="seqname" />
@@ -40,25 +39,25 @@
       </section>
 
       <section>
-        <textarea name="SEQUENCE" rows="8" placeholder="Enter your sequence here..."></textarea>
+        <textarea name="SEQUENCE" rows="10" placeholder="Enter your sequence here..."></textarea>
       </section>
 
       <section>
         <div class="checkbox-group">
-        <p><b>Scan:</b></p>
+        <p><b>Motif Scans:</b></p>
         <label><input type="checkbox" name="IRE" value="ON" checked />
         <a href="IREinfo.htm" target="_blank">IRE</a></label>
+        <label><input type="checkbox" name="trna scan" value="ON" checked />
+        tRNA scan</a></label>
+        <label><input type="checkbox" name="mirna" value="ON" checked />
+        miRNA scan</a></label>
+        <label><input type="checkbox" name="RNAmotif" value="ON" checked />
+        RNA motif scan</a></label>
         <label><input type="checkbox" name="TRANS" value="ON" checked />
         <a href="TRANSinfo.html" target="_blank">Trans-splicing structure</a></label>
-        <label><input type="checkbox" name="RNAmotif" value="ON" checked />
-        <a href="https://rfam.org" target="_blank">RNA motif</a></label>
-        <label><input type="checkbox" name="mirna" value="ON" checked />
-        <a href="https://www.mirbase.org" target="_blank">miRNA scan</a></label>
-        <label><input type="checkbox" name="mirna_target" value="ON" unchecked />
-        miRNA Target scan</label>
       </div>
       </section>  
-
+      
       <label>
         <input type="checkbox" id="run_coding" name="run_coding" value="yes" onchange="toggleSpeciesDropdown()">
         Run Coding Prediction using Augustus
@@ -74,7 +73,13 @@
           <option value="saccharomyces">S. cerevisiae</option>
         </select>
       </div>
-    
+      
+      <label><input type="checkbox" name="mirna_target" value="ON" unchecked />
+        miRNA Target scan
+        <span style="font-weight: normal; font-size: smaller;">can take long based on input sequence length</span>
+      </label>
+      
+
       <div id="submit">
         <div id="button-group">
           <input type="submit" value="Submit">
@@ -118,10 +123,12 @@
           document.getElementById('button-group').style.display = 'none';
           document.getElementById('loading').style.display = 'flex';
         }        
+      </script>
     
-    </script>
+
+      
   </main>
 </body>
 </html>
 <!-- 
-link to databases used and importnat -->
+link to databases used and important -->

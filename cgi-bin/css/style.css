@@ -1,0 +1,32 @@
+/* Global reset and layout */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    
+}
+  
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+  
+  
+  /* Top bar with logo */
+header {
+    background-color: #0056b3;
+    padding: 1rem 0;
+    text-align: center;
+    color: white;
+}
+  
+.logo {
+    max-height: 60px;
+    width: auto;
+}
+ 
+  
