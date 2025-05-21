@@ -30,67 +30,29 @@ my @job_ids = $q->multi_param('job_ids');
 my $is_refresh = scalar @job_ids > 0;
 
 print $q->header();
+
 print <<'HTML';
 <html><head>
   <title>Batch Results</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #f4f6f8;
-      padding: 20px;
-    }
-    .results-container {
-      background: #fff;
-      padding: 20px;
-      border-radius: 10px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-      max-width: 700px;
-      margin: auto;
-    }
-    h2 {
-      color: #003c7f;
-    }
-    table {
-      border-collapse: collapse;
-      width: 100%;
-      margin-top: 15px;
-    }
-    th, td {
-      padding: 12px 15px;
-      text-align: center;
-    }
-    th {
-      background-color: #34495e;
-      color: white;
-    }
-    tr:nth-child(even) {
-      background-color: #f2f2f2;
-    }
-    .status-button {
-      padding: 6px 10px;
-      background-color: #47b92f;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      text-decoration: none;
-    }
-    .status-button:hover {
-      background-color: #2980b9;
-    }
-    .done-msg {
-      margin-top: 20px;
-      color: green;
-      font-weight: bold;
-    }
-    .waiting-msg {
-      margin-top: 20px;
-      color: orange;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/batchresults.css">
 </head><body>
+<header>
+    <a href="localhost">    <!--- change after putting on server -->
+      <img src="../images/logo.png" alt="RNA Analyzer Logo" class="logo" />
+    </a>
+    <div class="header-text">
+      <h1>RNA Analyzer 2.0</h1>
+      <p>Webserver for RNA Sequence Overview</p>
+    </div>
+    <div class="header-links">
+      <a href="../htdocs/about.html" target="_blank">About</a> |
+      <a href="../htdocs/contact.html" target="_blank">Contact</a> |
+      <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
+    </div>
+  </header>
+
 <div class="results-container">
-<h2> Results</h2>
+<h2>Results</h2>
 HTML
 
 

@@ -19,16 +19,42 @@ html, body {
   /* Top bar with logo */
 header {
     background-color: #004188;
-    padding: 0;
-    text-align: left;
+    display: flex;
+    align-items: center;
+    padding: 1rem;
     color: white;
 }
-  
+
 .logo {
-    height: 100px;
-    width: 250px;
+    height: 80px;
+    width: auto;
+    margin-right: 1rem;
 }
-  
+
+.header-text h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.2rem;
+}
+
+.header-text p {
+    font-size: 1rem;
+    opacity: 0.85;
+}
+
+.header-links {
+margin-left: auto; /* this pushes it to the far right */
+text-align: right;
+}
+
+.header-links a {
+  margin: 0 10px;
+  color: #ccc;
+  text-decoration: none;
+}
+
+.header-links a:hover {
+  text-decoration: underline;
+}
   /* Main content box */
 main {
     width: 100%;
@@ -69,10 +95,10 @@ input[type="submit"],
 input[type="reset"] {
     background-color: #0154ace3;
     color: #fff;
-    width: 100%;
+    width: 10%;
     border: none;
-    padding: 0.75rem 1.5rem;
-    margin-top: 0.5rem;
+    padding: 0.6rem 1.5rem;
+    margin: 0.25rem;
     border-radius: 4px;
     cursor: pointer;
     font-size: 1rem;
@@ -83,7 +109,13 @@ input[type="reset"] {
   input[type="reset"]:hover {
     background-color: #0079fa;
 }
-  
+
+input[type="reset"] {
+  background-color: #6c757d;
+  color: white;
+  margin-top: 0.5rem;
+}
+
 a {
     color: #007bff;
     text-decoration: none;
@@ -138,5 +170,64 @@ hr {
   
   .checkbox-group a:hover {
     text-decoration: underline;
+  }
+
+  .links {
+    margin-top: 3rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #ccc;
+    font-size: 0.9rem;
+        
+  }
+  
+  .bottom-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 2rem;
+    padding-top: 1.5rem;
+  }
+  
+  .bottom-left {
+    flex: 1;
+    min-width: 300px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2rem;
+    justify-content: flex-start;
+  }
+  
+  .text-group {
+    min-width: 150px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  
+  .text-group p {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+  
+  .text-group a {
+    text-decoration: none;
+  }
+  
+  .text-group a:hover {
+    text-decoration: underline;
+  }
+  
+  .bottom-logos {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+    justify-content: flex-end;
+  }
+  
+  .bottom-logos img {
+    height: 80px;
+    margin: 20px;
   }
   

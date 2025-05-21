@@ -1,0 +1,109 @@
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+  }
+ 
+header {
+    background-color: #004188;
+    display: flex;
+    align-items: center;
+    padding: 1rem;
+    color: white;
+}
+
+.logo {
+    height: 80px;
+    width: auto;
+    margin-right: 1rem;
+}
+
+.header-text h1 {
+    font-size: 1.8rem;
+    margin-bottom: 0.2rem;
+}
+
+.header-text p {
+    font-size: 1rem;
+    opacity: 0.85;
+}
+
+.header-links {
+margin-left: auto; /* this pushes it to the far right */
+text-align: right;
+}
+
+.header-links a {
+  margin: 0 10px;
+  color: #ccc;
+  text-decoration: none;
+}
+
+.header-links a:hover {
+  text-decoration: underline;
+}
+  
+  .results-container {
+    background: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    max-width: 700px;
+    margin: auto;
+    margin-top: 2rem;
+  }
+  
+  h2 {
+    color: #003c7f;
+  }
+  
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 15px;
+  }
+  
+  th, td {
+    padding: 12px 15px;
+    text-align: center;
+  }
+  
+  th {
+    background-color: #34495e;
+    color: white;
+  }
+  
+  tr:nth-child(even) {
+    background-color: #f2f2f2;
+  }
+  
+  .status-button {
+    padding: 6px 10px;
+    background-color: #47b92f;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  
+  .status-button:hover {
+    background-color: #2980b9;
+  }
+  
+  .done-msg {
+    margin-top: 20px;
+    color: green;
+    font-weight: bold;
+  }
+  
+  .waiting-msg {
+    margin-top: 20px;
+    color: orange;
+  }
+  
