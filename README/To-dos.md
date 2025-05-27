@@ -24,6 +24,8 @@ Also implementated
     5. Suppress Sensitive Errors
     Avoid exposing internal paths or raw input in error messages; log safely.
 
+    6. Also put a filter so users cannot input same input sequence name.
+
 # converting to python
 
 with the dealine being pushed, we shall focus on python conversion now.

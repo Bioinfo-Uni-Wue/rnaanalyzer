@@ -49,7 +49,7 @@ To install the necessary Perl modules, use the following commands:
 ```bash
 cpan CGI
 cpan Bio::Perl
-cpanm Bio::Perl
+cpanm Bio::Perl  #if fcapnm is available 
 ```
 
 ## Configuring fcgiwrap
@@ -99,13 +99,15 @@ Append the necessary configurations to enable CGI processing via fcgiwrap.
 
 Ensure the following Perl packages are installed:
 
-- **CGI** (Core)
-- **Bio::Tools::Genscan** (Part of BioPerl)
-- **Bio::SeqIO** (Part of BioPerl)
-- **File::Temp** (Core)
-- **File::Basename** (Core)
-- **RNASERVER::TRANS2** (Custom)
-- **RNASERVER::IRE** (Custom)
+```
+    cpan CGI (Core)
+    cpan Bio::Tools::Genscan** (Part of BioPerl)
+    cpan Bio::SeqIO** (Part of BioPerl)
+    cpan File::Temp** (Core)
+    cpan File::Basename** (Core)
+    RNASERVER::TRANS2** (Custom) # no installation needed
+    RNASERVER::IRE** (Custom)   # no installation needed
+```
 
 ### Verifying Perl Module Installation
 

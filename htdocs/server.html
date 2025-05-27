@@ -25,7 +25,7 @@
   
 
   <main>
-      <form action="../cgi-bin/batchsubmit.cgi" method="post" onsubmit="showLoading()">
+      <form action="../cgi-bin/batchsubmit.cgi" method="post" enctype="multipart/form-data" onsubmit="return validateForm(event)">
 
       <section>
         <p>With this web application, you can search your RNA/DNA for several known RNA structures and retrieve some general information about your sequence.</p>
@@ -33,12 +33,11 @@
       </section>
 
       <section>
-        <label for="origin"><a href="SEQUENCEinfo.html" target="_blank">SEQUENCE</a></label>
-        <input type="checkbox" name="ORIGIN" id="origin" value="ON" checked /> Sequence is RNA
+        <textarea name="SEQUENCE" rows="10" placeholder="Enter your sequence here..."></textarea>
       </section>
 
       <section>
-        <textarea name="SEQUENCE" rows="10" placeholder="Enter your sequence here..."></textarea>
+        OR Upload FASTA file:  <input type="file" name="fasta_file"><br>
       </section>
 
       <section>
@@ -112,11 +111,19 @@
     <br>
     <p><a href="examples.html" target="_blank">Examples to test</a></p>
     <script>
-      function showLoading() {
-        document.getElementById('button-group').style.display = 'none';
-        document.getElementById('loading').style.display = 'flex';
-      }        
-    </script>
+      function validateForm(event) {
+        const textInput = document.querySelector('textarea[name="SEQUENCE"]').value.trim();
+        const fileInput = document.querySelector('input[type="file"][name="fasta_file"]').files[0];
+      
+        if (!textInput && !fileInput) {
+          alert("Please paste a sequence OR upload a FASTA file before submitting.");
+          event.preventDefault();  // Stop form submission
+          return false;
+        }
+      
+        return true;
+      }
+      </script>
 
   <section class="links">
   <div class="bottom-container">

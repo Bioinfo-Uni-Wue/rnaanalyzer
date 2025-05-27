@@ -1,0 +1,56 @@
+html, body {
+    margin: 0;
+    padding: 0;
+  }
+  
+  
+  body {
+      font-family: Arial, sans-serif;
+      background: #f4f6f8;
+      }
+   
+  header {
+      background-color: #004188;
+      display: flex;
+      align-items: center;
+      padding: 1rem;
+      color: white;
+  }
+  
+  .logo {
+      height: 80px;
+      width: auto;
+      margin-right: 1rem;
+  }
+  
+  .header-text h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.2rem;
+  }
+  
+  .header-text p {
+      font-size: 1rem;
+      opacity: 0.85;
+  }
+  
+  .header-links {
+  margin-left: auto; /* this pushes it to the far right */
+  text-align: right;
+  }
+  
+  .header-links a {
+    margin: 0 10px;
+    color: #ccc;
+    text-decoration: none;
+  }
+  
+  .header-links a:hover {
+    text-decoration: underline;
+  }
+
+  main {
+    width: 80%;
+    font-size: medium;
+    align-items: center;
+  }
+    

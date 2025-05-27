@@ -13,6 +13,8 @@ use JSON;
 use File::Slurp;
 use File::Path qw(make_path);
 use Cwd qw(abs_path);
+use CGI qw(:standard escapeHTML);
+
 
 $debug=0;
 
@@ -72,8 +74,11 @@ my $do_trna     = $params->{trna};
 my $do_IRE      = $params->{IRE};
 my $do_TRANS    = $params->{TRANS};
 my $species     = $params->{species};
-my $origin      = $params->{ORIGIN};
 my $do_mirnatarget  = $params->{mirna_target};
+my $dnarna          = $params->{dnarna};
+my $SEQNAMECHECKED   = $params->{sequence_name};
+my $SEQUENCECHECKED  = $params->{sequence_clean};
+my $SEQUENCELENGTH = $params->{sequence_length};
 
 
 my $html_file = "$TEMPDIR/result.html";
@@ -82,9 +87,31 @@ open my $out, ">", $html_file or die "Can't write result page: $!";
 select $out;  # Redirect STDOUT to file
 
 # Now all your print statements go into result.html
-print "<!DOCTYPE html>\n";
-print "<html><head><meta charset='UTF-8'><title>Job $job Results</title></head><body>";
+# print "<!DOCTYPE html>\n";
+# print "<html><head><meta charset='UTF-8'><title>Job $job Results</title></head><body>";
+print <<'HTML';
+<html><head>
+  <title>Batch Results</title>
+  <link rel="stylesheet" href="/css/results.css">
+</head><body>
+<header>
+    <a href="http://localhost">    <!--- change after putting on server -->
+      <img src="http://localhost/images/logo.png" alt="RNA Analyzer Logo" class="logo" />
+    </a>
+    <div class="header-text">
+      <h1>RNA Analyzer 2.0</h1>
+      <p>Webserver for RNA Sequence Overview</p>
+    </div>
+    <div class="header-links">
+      <a href="http://localhost/about.html" target="_blank">About</a> |
+      <a href="http://localhost/contact.html" target="_blank">Contact</a> |
+      <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
+    </div>
+  </header>
 
+<main>
+<h2>Results</h2>
+HTML
 # ... print your actual results here ...
 
 
@@ -92,115 +119,29 @@ print "<html><head><meta charset='UTF-8'><title>Job $job Results</title></head><
 &startproggi;
 
 sub startproggi {
-    &readandcheckinput;
+	#For the picture creation do not remove
+	open (SEQPIC,">$TEMPDIR/$job.seq"); #don't know if this works!!	
+	print SEQPIC ">$job\n$SEQUENCECHECKED\n"; #shall create a fasta-format sequence file !!!
+	close SEQPIC;
+
+
     ####### Initializing some variables for the colored output ########
     @exons=();@transsplicing=();@ire=();@smsite=();@aurichregion=();
     @stemggpairs=();@polyasignal=();@utr=();@cds=();
-    print $cgi->h2("Here are the results for JOB ID: $job with sequence name: $SEQNAMECHECKED");
+    print $cgi->h2("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
 
     &mainrun;
 
     # running analysis
     &analysis;
 
-    # Optionally handle opposite strand analysis
-    if ($DOOPPOSITE == 1) {
-        &oppositestrand;
-        print $cgi->h3("Now searching the OPPOSITE strand") if ($passsequence == 1 && $passconsensus == 1);
-        &mainrun;
-        &oppositestrand;
-    }
-
     &drawcoloredsequence;
 }
 
-sub readandcheckinput {
-    # Set default pass flags
-    $passsequence  = 1;
-    $passconsensus = 1;
-    
-    # Helper subroutine for checkbox values
-    sub check_checkbox {
-        my ($value, $true_str) = @_;
-        return ($value && $value =~ /^$true_str/) ? 1 : 0;
-    }
-    
-    $DOIRE  = ($params->{IRE} // '') eq 'ON' ? 1 : 0;
-    $DOTRANS = ($params->{TRANS} // '') eq 'ON' ? 1 : 0;
-    
-    # Adjust consensus flag
-    $passconsensus = 0 if ($DOIRE == 0 && $DOTRANS == 0);
-    print $cgi->p("\nPASSconsensus: $passconsensus\n") if ($debug);
-    
-    # Process OPPOSITE checkbox
-    $OPPOSITE = $cgi->param("OPPOSITE");
-    print $cgi->p("\nOPPOSITE: $OPPOSITE\n") if ($debug);
-    $DOOPPOSITE = check_checkbox($OPPOSITE, "YES");
-    
-    # Process sequence name
-    $SEQNAME = $cgi->param("SEQNAME");
-    $SEQNAME =~ /^([ a-zA-Z0-9><;+\-]+)/;
-    $SEQNAMECHECKED = $1;
-
-    # Use logical OR (||) consistently for multiple conditions
-    $SEQNAMECHECKED = "Your sequence"
-      if ($SEQNAMECHECKED eq "" || $SEQNAMECHECKED eq "ON" || $SEQNAMECHECKED eq "OFF");
-    print $cgi->p("\nSEQNAME: $SEQNAMECHECKED\n") if ($debug);
-    
-    # Check if the input is in FASTA format: extract header and remove it from the sequence
-    if ($SEQUENCE =~ s/^(>([^\n]+)\n)//) {
-        $removefastatag = $1;
-        $SEQNAMECHECKED = $2;   # update sequence name from FASTA header if applicable
-    }
-    
-    # Remove all non-alphabetic characters and convert to lowercase
-    $SEQUENCE =~ s/[^a-zA-Z]+//g;
-    $SEQUENCE = lc($SEQUENCE);
-    
-    # Read in the ORIGIN field and set RNA flag accordingly
-    $ORIGIN = $cgi->param("ORIGIN");
-    $ORIGINchecked = ($ORIGIN eq 'ON') ? 1 : 0;
-    
-    # Determine if the sequence is DNA or RNA using tr///
-    my $ucount = ($SEQUENCE =~ tr/u//);
-    my $tcount  = ($SEQUENCE =~ tr/t//);
-    if ($ucount > $tcount) {
-        $dnarna = 'RNA';
-    } else {
-        $dnarna = 'DNA';
-    }
-    $dnarna = 'unknown' if ($ucount > 20 && $tcount > 20);
-    $dnarna = 'RNA' if ($ORIGINchecked == 1);
-
-	# print "<b>this is $dnarna</b>";
-    
-    # Standardize sequence: replace non-[acgun] with 'n', convert t to u
-    $SEQUENCE =~ s/[^agctu]/n/g;
-    $SEQUENCE =~ s/t/u/g;
-    
-    # Ensure a cleaned sequence is captured (this also clears taint issues)
-    $SEQUENCE =~ /([acgun]+)/;
-    $SEQUENCECHECKED = $1;
-    
-    $passsequence = 0 if ($SEQUENCECHECKED eq '');
-    $SEQUENCELENGTH = length($SEQUENCECHECKED);
-    print "<br><b><big>ATTENTION: The length of your sequence is 0, please check your input for errors</b></big><br>" 
-      if ($SEQUENCELENGTH == 0);
-    print $cgi->p("\nSEQUENCE: $SEQUENCECHECKED\n") if ($debug);
-    print $cgi->p("\nPASSsequence: $passsequence\n") if ($debug);
-
-    #prints out the length and origin of the pasted sequence!	
-	print "<pre>\n";
-	$dnarna='unknown' if ($dnarna eq '');
-	#For the picture creation	
-	open (SEQPIC,">$TEMPDIR/$job.seq"); #don't know if this works!!	
-	print SEQPIC ">$job\n$SEQUENCECHECKED\n"; #shall create a fasta-format sequence file !!!
-	close SEQPIC;
-}
 
 sub mainrun {
 	print "<pre>";
-	if  ($passsequence==1 && $passconsensus==1) {
+	
 		if ($do_TRANS){
 			&TRANS;
 		}
@@ -208,10 +149,7 @@ sub mainrun {
 		if ($do_IRE){
 			&IRE;
 		}
-	}
-	else {
-		&errors;
-	}
+	
 }
 
 sub TRANS{
@@ -302,23 +240,18 @@ sub IRE{
 			    print "<b>Iron-resp Ele.:</b> none";
 			}
 }
-sub errors {
-	print $cgi->p("\nSorry, either you did not enter a valid sequence or I could not recognize it!\n") if ($passsequence==0 && $errorsyetprintout==0);
-	print $cgi->p("\nSorry, you did not choose a consensus pattern!\n") if ($passconsensus==0 && $errorsyetprintout==0);
-	print $cgi->p("\nPlease go back and correct it!\n") if ($errorsyetprintout==0);;
-	$errorsyetprintout=1;
-}
 
 
-sub oppositestrand {
-	$SEQUENCECHECKED=reverse ($SEQUENCECHECKED);
-	$SEQUENCECHECKED=uc($SEQUENCECHECKED);
-	$SEQUENCECHECKED=~s/C/g/g;
-	$SEQUENCECHECKED=~s/G/c/g;
-	$SEQUENCECHECKED=~s/A/u/g;
-	$SEQUENCECHECKED=~s/U/a/g;
-	$SEQUENCECHECKED=lc($SEQUENCECHECKED);
-}
+
+# sub oppositestrand {
+# 	$SEQUENCECHECKED=reverse ($SEQUENCECHECKED);
+# 	$SEQUENCECHECKED=uc($SEQUENCECHECKED);
+# 	$SEQUENCECHECKED=~s/C/g/g;
+# 	$SEQUENCECHECKED=~s/G/c/g;
+# 	$SEQUENCECHECKED=~s/A/u/g;
+# 	$SEQUENCECHECKED=~s/U/a/g;
+# 	$SEQUENCECHECKED=lc($SEQUENCECHECKED);
+# }
 
 ##################################################
 
@@ -342,9 +275,8 @@ sub analysis {
 	}
 	else {
 		print "<br><b>Length:</b>        $SEQUENCELENGTH";
-		print "     *some information is only available up to $MAXFOLDINGLEN nt</font>\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
+		print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
 		print "<br><b>Origin:</b>        $dnarna<br>";
-	#print $cgi->p("Remember: Your sequence will only be folded up to $MAXFOLDINGLEN nts !!");
 	
 	}
 	
@@ -1067,7 +999,7 @@ sub createfolding {
 		
 		
 		print "<br><b>Length:</b>        $SEQUENCELENGTH";
-	        print "     *some information is only available up to $MAXFOLDINGLEN nt</font>\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
+	        print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
 	        print "<br><b>Origin:</b>        $dnarna<br>";
 }
 
@@ -1255,7 +1187,7 @@ sub drawcoloredstructure {
     }
 
 
-    print '<font face="monospace">';
+    # print '<font face="monospace">';
 
     ########### ATTENTION !!!!! ####################
     ### Old problem the index of array starts at 0 !!! #####
@@ -1768,76 +1700,72 @@ sub microRNA {
 ## slow, takes over 2 minutes to scan
 ## implemented INTARna for this purpose and then removing overlaping regions so we can identify regions
 sub miRNAtarget {
-    my $mitar_input = "$TEMPDIR/$job.seq";
-    my $intarna_out = "$TEMPDIR/$job.intarna.csv";
+    my $mitar_input = "$TEMPDIR/$job.seq";  # Target sequence FASTA (input)
+    my $miranda_out = "$TEMPDIR/$job.miranda.tsv";  # Parsed output from wrapper
+    my $mirna_db = "$MIRBASE/mature.fa";
+    my $raw_out = "$TEMPDIR/$job.miranda.out";
 
-    # IntaRNA command
-    my $RUN_intarna = "$INTARNA/IntaRNA -q $MIRBASE/mature.fa -t $mitar_input " .
-                      "--threads 4 " . # adjust cores accordingly! but 4 is nice to be minimum
-                      "--seedMaxUP 1 --intLenMax 25 --outMaxE -20 " .
-                      "--outPerRegion 1 --outBestSeedOnly 1 --outOverlap N --outNumber 3 " .  
-                      "--outMode C --outCsvCols id1,start1,end1,id2,start2,end2,E " .
-                      "--out $intarna_out";
+    # Run the wrapper
+    my $cmd = "python3 $MIRANDA/miranda_wrapper.py --parsed_out $miranda_out --miranda_bin $MIRANDA/miranda --tmpdir $TEMPDIR $mirna_db $mitar_input $raw_out";
 
-    my $exit_code = system($RUN_intarna);
-
+    my $exit_code = system($cmd);
     if ($exit_code != 0) {
-        print "IntaRNA execution failed with exit code: $exit_code\n";
+        print "miRanda wrapper execution failed with exit code: $exit_code\n";
         return ();
     }
 
-    # Read and parse results
-    open(my $fh, "<", $intarna_out) or die "Can't open $intarna_out: $!";
-    my $header = <$fh>;  # Skip CSV header
+    # Read and parse output TSV
+    open(my $fh, "<", $miranda_out) or die "Can't open $miranda_out: $!";
+    my $header = <$fh>;  # skip header
 
     my @lines = <$fh>;
     chomp @lines;
     close($fh);
 
-    # Sort and filter overlapping query regions
+    # Sort and filter overlapping query regions by energy (lower = better)
     my @sorted = sort {
-        (split /;/, $a)[1] <=> (split /;/, $b)[1] ||
-        (split /;/, $a)[2] <=> (split /;/, $b)[2] ||
-        (split /;/, $a)[6] <=> (split /;/, $b)[6]
+        (split /\t/, $a)[4] <=> (split /\t/, $b)[4] ||  # Query_Start
+        (split /\t/, $a)[5] <=> (split /\t/, $b)[5] ||  # Query_End
+        (split /\t/, $a)[3] <=> (split /\t/, $b)[3]     # Energy
     } @lines;
 
     my @filtered;
     my @current_group;
 
     foreach my $line (@sorted) {
-        my ($id1, $start1, $end1, $id2, $start2, $end2, $energy) = split /;/, $line;
+        my ($query, $mirna, $score, $energy, $start, $end) = (split /\t/, $line)[0,1,2,3,4,5];
 
         if (!@current_group) {
             push @current_group, $line;
             next;
         }
 
-        my ($prev_start, $prev_end) = (split /;/, $current_group[-1])[1,2];
+        my ($prev_start, $prev_end) = (split /\t/, $current_group[-1])[4,5];
 
-        if ($start1 <= $prev_end) {
+        if ($start <= $prev_end) {
             push @current_group, $line;
         } else {
-            my $best = (sort { (split /;/, $a)[6] <=> (split /;/, $b)[6] } @current_group)[0];
+            my $best = (sort { (split /\t/, $a)[3] <=> (split /\t/, $b)[3] } @current_group)[0];
             push @filtered, $best;
             @current_group = ($line);
         }
     }
 
     if (@current_group) {
-        my $best = (sort { (split /;/, $a)[6] <=> (split /;/, $b)[6] } @current_group)[0];
+        my $best = (sort { (split /\t/, $a)[3] <=> (split /\t/, $b)[3] } @current_group)[0];
         push @filtered, $best;
     }
 
-    # Output formatted table
-    print "<b>MicroRNA target prediction:</b><br>\n";
+    # Output HTML table
+    print "<b>miRanda target prediction:</b><br>\n";
     printf "%-18s %-6s %-6s %-10s %-10s\n", "miRNA", "From", "To", "Energy", "Query";
     print "-" x 60 . "\n";
 
     my @regions;
     foreach my $line (@filtered) {
-        my ($id1, $start1, $end1, $id2, $start2, $end2, $energy) = split /;/, $line;
-        printf "%-18s %-6s %-6s %-10.2f %-10s\n", $id2, $start1, $end1, $energy, $id1;
-        push @regions, [$start1, $end1];
+        my ($query, $mirna, $score, $energy, $start, $end) = split /\t/, $line;
+        printf "%-18s %-6s %-6s %-10.2f %-10s\n", $mirna, $start, $end, $energy, $query;
+        push @regions, [$start, $end];
     }
 
     return @regions;
@@ -2218,5 +2146,5 @@ print "<br>*Pr.A1.bin.site = Protein A1 binding site<br>";
 
 write_file("$TEMPDIR/result.txt", "done\n");
 
-print "</body></html>";
+print "</main></body></html>";
 close $out;

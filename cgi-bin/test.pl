@@ -5,7 +5,7 @@ use File::Slurp;
 use Cwd qw(abs_path);
 
 # Set paths
-my $rnafold_bin = '../bin/ViennaRNA-2.6.4/src/bin/RNAfold';  # ✅ update this path
+my $rnafold_bin = '../bin/ViennaRNA-2.6.4/src/bin/RNAfold'; 
 my $input_file  = './test.seq';
 my $output_file = './test.foldout';
 
