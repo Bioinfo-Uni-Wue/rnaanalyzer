@@ -68,6 +68,10 @@ elsif (defined $upload_fh) {
     @fasta_blocks = read_uploaded_fasta($upload_fh);
 }
 
+if (scalar(@fasta_blocks) > 5) {
+    print "<p style='color:orange;'>Error: Not more than 5 sequences are accepted at a given time.</p>";
+    exit;
+}
 
 sub read_uploaded_fasta {
     my ($fh) = @_;
@@ -146,7 +150,7 @@ unless ($is_refresh) {
 sub sanitize_sequence {
     my ($fasta_block) = @_;
     $fasta_block =~ s/\r//g;  # Remove carriage returns from windoes or older systems 
-    if (length($fasta_block) > 10000) {
+    if (length($fasta_block) > 20_000) {
       die "Input too long.";
     }
 
