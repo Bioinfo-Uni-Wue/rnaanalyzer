@@ -13,9 +13,19 @@ use JSON;
 use CGI qw(:standard escapeHTML);
 
 
-my $q = CGI->new;
-$| = 1;
+$CGI::POST_MAX = 1 * 1024 * 1024;  # 1 MB
 
+my $q;
+
+eval {
+    $q = CGI->new;
+};
+if ($@ || !$q) {
+    print CGI::header(), "<p style='color:red;'>Upload failed: file size exceeds 2 MB limit.</p>";
+    exit;
+}
+
+$| = 1;  # Autoflush stdout
 
 print $q->header();
 
@@ -92,6 +102,12 @@ sub read_uploaded_fasta {
 sub read_pasted_fasta {
     my ($text) = @_;
     $text =~ s/\r//g;
+
+    # Add dummy header if missing
+    unless ($text =~ /^>/m) {
+        $text = ">Your sequence\n$text";
+    }
+
     my @blocks = split(/^>/m, $text);
     shift @blocks if $blocks[0] !~ /\S/;
 
@@ -106,6 +122,7 @@ unless ($is_refresh) {
     foreach my $block (@fasta_blocks) {
         my $sanitized = sanitize_sequence($block);
 
+
         unless ($sanitized->{valid}) {
             next;  # Skip invalid entries
         }
@@ -116,7 +133,7 @@ unless ($is_refresh) {
         my $job_dir = "../tmp/jobs/job_$job_id";
         mkdir $job_dir;
 
-        write_file("$job_dir/input.txt", ">$sanitized->{name}\n$sanitized->{cleaned_seq}\n");
+        # write_file("$job_dir/input.txt", ">$sanitized->{name}\n$sanitized->{cleaned_seq}\n");
 
         my %params = (
             job_id          => $job_id,
@@ -149,14 +166,12 @@ unless ($is_refresh) {
 
 sub sanitize_sequence {
     my ($fasta_block) = @_;
-    $fasta_block =~ s/\r//g;  # Remove carriage returns from windoes or older systems 
+    $fasta_block =~ s/\r//g;  # Remove carriage returns from windows or older systems 
     if (length($fasta_block) > 20_000) {
       die "Input too long.";
     }
 
     # Extract header and sequence
-    my ($header, $seq_body);
-
     my ($header, $seq_body);
 
     # Clean up any extra whitespace
@@ -177,22 +192,29 @@ sub sanitize_sequence {
     $header =~ s/\.\.//g;                    # prevent "../" path tricks
     $header = substr($header, 0, 20);       # truncate excessively long names
 
-    # Clean sequence body
-    $seq_body =~ s/[^a-zA-Z]//g;             # remove all non-letters
-    $seq_body = lc($seq_body);
-    $seq_body =~ s/[^acgtu]/n/g;
-    $seq_body =~ s/t/u/g;
+    # Clean input sequence
+    $seq_body = lc($seq_body);                   # Lowercase everything
+    $seq_body =~ s/[^a-z]//g;                    # Remove non-letters for this analysis
 
+    # Count base characters before sanitizing
+    my $letter_count = length($seq_body);
+    my $valid_base_count = ($seq_body =~ tr/atgcu//);
+
+    my $valid = 0;
+    if ($letter_count >= 10) {
+        my $valid_percent = $valid_base_count / $letter_count;
+        $valid = 1 if $valid_percent >= 0.9;
+    }
+
+    # Only continue if it might be valid
+    # Clean and standardize sequence: replace invalids with 'n', convert t to u
+    $seq_body =~ s/[^acgtu]/n/g;
+    $seq_body =~ tr/t/u/;
+
+    # Final cleaned sequence
     my ($cleaned_seq) = ($seq_body =~ /([acgun]+)/);
     $cleaned_seq ||= '';
     my $length = length($cleaned_seq);
-    my $valid = 0;
-
-    if ($length >= 10) {
-      my $valid_bases = ($cleaned_seq =~ tr/acgu//);
-      my $percent_valid = $valid_bases / $length;
-      $valid = 1 if $percent_valid >= 0.95;
-    }
 
     # Determine RNA or DNA
     my $ucount = ($cleaned_seq =~ tr/u//);
@@ -210,7 +232,7 @@ sub sanitize_sequence {
         cleaned_seq => $cleaned_seq,
         type        => $type,
         length      => length($cleaned_seq),
-        valid       => $cleaned_seq ne '' ? 1 : 0,
+        valid       => $valid,
     };
 }
 
@@ -293,8 +315,6 @@ unless ($all_done) {
   </script>
 JS
 }
-
-
 
 
 

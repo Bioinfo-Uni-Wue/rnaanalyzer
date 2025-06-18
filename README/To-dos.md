@@ -30,7 +30,7 @@ Also implementated
 
 6. Validates biological content
     Requires cleaned sequence to be at least 10 bases long.
-    Requires at least 95% of characters to be valid (a, c, g, t, u).
+    Requires at least 90% of characters to be valid (a, c, g, t, u).
 
 7.  Blocks invalid sequences
     Skips job creation if a sequence fails the validity check.
@@ -48,6 +48,23 @@ Also implementated
     Uses escapeHTML() when displaying user inputs like sequence names to prevent XSS and broken UI.
 
 12. Limit number of sequences to be 5
+13. Added 1 mb uplaod limit for fasta file (given ou curent implementation, bigger input is not required)
+
+# added new routine for UTR prediction
+
+this can predict UTR not only from augustus but also from CPC2 if there is coding transcript.
+also done now
+
+# adding rbs-finder
+    check https://github.com/deprekate/rbs-finder/blob/master/rbs_finder.pl
+    if it can be added to above additionof UTR prediction, would be nice
+
+# get a nucleotide composition overview
+
+# check if kraken 2 can be added for transcript claddification 
+
+
+# Making a liscense folder and also a link to every liscene we use
 
 # converting to python
 

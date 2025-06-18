@@ -37,7 +37,7 @@
       </section>
 
       <section>
-        OR Upload FASTA file:  <input type="file" name="fasta_file"><br>
+        OR Upload FASTA file:  <input type="file" name="fasta_file"><br><span style="font-weight: lighter; font-size: small;">Size limit: 1 mb</span>
       </section>
 
       <section>
@@ -45,7 +45,7 @@
         <p><b>Motif Scans:</b></p>
         <label><input type="checkbox" name="IRE" value="ON" checked />
         <a href="IREinfo.html" target="_blank">IRE</a></label>
-        <label><input type="checkbox" name="trna scan" value="ON" checked />
+        <label><input type="checkbox" name="trna" value="ON" checked />
         tRNA scan</a></label>
         <label><input type="checkbox" name="mirna" value="ON" checked />
         miRNA scan</a></label>
@@ -68,6 +68,8 @@
           <option value="E_coli_K12">E. coli</option>
           <option value="arabidopsis">A. thaliana</option>
           <option value="saccharomyces">S. cerevisiae</option>
+          <option value="fly">D. melanogaster</option>
+          <option value="zebrafish">D. rerio</option>
         </select>
       </div>
       
@@ -75,7 +77,7 @@
 
       <label><input type="checkbox" name="mirna_target" value="ON" unchecked />
         miRNA Target scan
-        <span style="font-weight: normal; font-size: smaller;">can take long based on input sequence length</span>
+        <span style="font-weight: normal; font-size: small;">can take long based on input sequence length</span>
       </label>
       
 
@@ -110,18 +112,27 @@
 
     <br>
     <p><a href="examples.html" target="_blank">Examples to test</a></p>
+
     <script>
       function validateForm(event) {
         const textInput = document.querySelector('textarea[name="SEQUENCE"]').value.trim();
         const fileInput = document.querySelector('input[type="file"][name="fasta_file"]').files[0];
       
+        // Require either a pasted sequence or a file
         if (!textInput && !fileInput) {
           alert("Please paste a sequence OR upload a FASTA file before submitting.");
-          event.preventDefault();  // Stop form submission
+          event.preventDefault();
           return false;
         }
       
-        return true;
+        // If a file is selected, check its size
+        if (fileInput && fileInput.size > 1 * 1024 * 1024) {
+          alert("File is too large. Please upload a file smaller than 1 MB.");
+          event.preventDefault();
+          return false;
+        }
+      
+        return true; // All checks passed
       }
       </script>
 

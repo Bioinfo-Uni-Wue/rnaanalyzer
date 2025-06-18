@@ -14,6 +14,7 @@ use File::Slurp;
 use File::Path qw(make_path);
 use Cwd qw(abs_path);
 use CGI qw(:standard escapeHTML);
+use Bio::Seq;
 
 
 $debug=0;
@@ -29,13 +30,14 @@ $MIRBASE=abs_path('../databases/mirbase'); #MirBASE database
 $MIRANDA=abs_path('../bin/miranda/bin'); #miRanda 
 $INTARNA=abs_path('../bin/IntaRNA/bin'); #path to INTARNA
 $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus 
+$RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
+$MAXFORNALENGTH=1500;
 $maxcoloredseqlen=10000;
 
 # Create a new CGI object
 my $cgi = CGI->new;
-
 
 
 $job_id = $ARGV[0] // $cgi->param("job_id");  # passed from batch script
@@ -57,11 +59,6 @@ close $log;
 
 # print $cgi->header('text/plain');
 # print "Backend is alive. Job ID: $job_id\n";
-
-$SEQUENCESTART = read_file("$TEMPDIR/input.txt");
-$SEQUENCESTART =~ /(.*)/s;
-$SEQUENCESTARTCHECKED = $1;
-$SEQUENCE = $SEQUENCESTARTCHECKED;
 
 my $params_json = read_file("$TEMPDIR/params.json");
 my $params = decode_json($params_json);
@@ -121,8 +118,14 @@ HTML
 sub startproggi {
 	#For the picture creation do not remove
 	open (SEQPIC,">$TEMPDIR/$job.seq"); #don't know if this works!!	
-	print SEQPIC ">$job\n$SEQUENCECHECKED\n"; #shall create a fasta-format sequence file !!!
+	print SEQPIC ">$SEQNAMECHECKED\n$SEQUENCECHECKED\n"; #shall create a fasta-format sequence file !!!
 	close SEQPIC;
+
+    # creating dna sequence file for dna dependent programs 
+    (my $dna_sequence = $SEQUENCECHECKED) =~ tr/uU/tT/;
+    open(my $fh, '>', "$TEMPDIR/$job.dna") or die "Cannot write input DNA file: $!";
+    print $fh ">$job\n$dna_sequence\n";
+    close($fh);
 
 
     ####### Initializing some variables for the colored output ########
@@ -130,26 +133,102 @@ sub startproggi {
     @stemggpairs=();@polyasignal=();@utr=();@cds=();
     print $cgi->h2("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
 
-    &mainrun;
-
     # running analysis
     &analysis;
-
-    &drawcoloredsequence;
 }
 
 
-sub mainrun {
-	print "<pre>";
-	
-		if ($do_TRANS){
-			&TRANS;
-		}
+
+##calls all the new subrotines
+sub analysis {
+    chdir $TEMPDIR;
+
+    print "<pre>";
+    &TRANS if $do_TRANS;
 		
-		if ($do_IRE){
-			&IRE;
-		}
-	
+	&IRE if $do_IRE;
+
+    if (length $SEQUENCECHECKED <= $maxcoloredseqlen) {
+        &createfolding;
+        &checkstems;
+    } else {
+        print "<br><b>Length:</b>        $SEQUENCELENGTH";
+        print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH > $MAXFOLDINGLEN);
+        print "<br><b>Origin:</b>        $dnarna<br>";
+    }
+
+    &ARE;
+    &createfoldingpicture;
+
+    print "<br><b>Catalytic RNA:</b><br>";
+    &smsite;
+
+    &tRNA if $do_trna;
+    &RNAMOTIF if $do_rnamotif;
+    &microRNA if $do_mirna;
+
+    # --- Capture transcript models ---
+    my %transcripts;
+    if ($do_augustus) {
+        %transcripts = %{ AUGUSTUS() };   # Returns hashref
+    } else {
+        %transcripts = %{ CPC2() };       # Also returns hashref
+        $cpc = "TRUE"; 
+    }
+
+    foreach my $tid (keys %transcripts) {
+        my $model = $transcripts{$tid};
+
+        my ($utr5_ref, $utr3_ref, $utrprintout_ref, $utr_coords_ref) = predict_utrs(
+            seq        => $SEQUENCECHECKED,
+            cds_start  => $model->{cds_start},
+            cds_end    => $model->{cds_end},
+            strand     => $model->{strand},
+            tss        => $model->{tss},
+            tts        => $model->{tts},
+            source     => $model->{source},
+        );
+
+        if (!@$utr3_ref) {
+        print "<i>No 3' UTR predicted. Trying polyA inference...</i><br>";
+        my ($polyautr_ref, $signals_ref, $tails_ref) = refineUTRwithPolyA(
+            $SEQUENCECHECKED,
+            $model->{cds_end},
+            $model->{strand},
+            length($SEQUENCECHECKED)
+        );
+        }
+
+        # Optionally store results back into the model
+        $model->{utr5} = $utr5_ref;
+        $model->{utr3} = $utr3_ref;
+        $model->{utr_coords} = $utr_coords_ref;
+    }
+
+    normalize_transcript_features(
+        \%transcripts,
+        \@exons,
+        \@utr,
+        \@polyasignal,
+        \@mirnatarget,
+        \@structured_regions
+    );
+
+    miRNAtarget(\%transcripts) if $do_mirnatarget;
+
+    # Optional: enable if scan_rbs supports multi-transcript
+    # scan_rbs(\%transcripts);
+
+    &csfce;
+    &protA1bisite;
+
+    if (length $SEQUENCECHECKED <= $MAXFOLDINGLEN) {
+        &stemggpairs;
+    }
+
+    &drawcoloredsequence;
+
+    print "</pre>";
 }
 
 sub TRANS{
@@ -241,93 +320,6 @@ sub IRE{
 			}
 }
 
-
-
-# sub oppositestrand {
-# 	$SEQUENCECHECKED=reverse ($SEQUENCECHECKED);
-# 	$SEQUENCECHECKED=uc($SEQUENCECHECKED);
-# 	$SEQUENCECHECKED=~s/C/g/g;
-# 	$SEQUENCECHECKED=~s/G/c/g;
-# 	$SEQUENCECHECKED=~s/A/u/g;
-# 	$SEQUENCECHECKED=~s/U/a/g;
-# 	$SEQUENCECHECKED=lc($SEQUENCECHECKED);
-# }
-
-##################################################
-
-##calls all the new subrotines
-sub analysis {
-  
-	chdir $TEMPDIR;	
-
-	#Create a picture!!!!
-	if (length $SEQUENCECHECKED<=$maxcoloredseqlen) { #we should not fold sequences larger than this !!!
-		
-		
-		##############################
-		&createfolding;
-		##############################
-		
-		##############################
-		&checkstems; #this has to be run soon after &createpicture (?? has it ??)
-		##############################
-		
-	}
-	else {
-		print "<br><b>Length:</b>        $SEQUENCELENGTH";
-		print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
-		print "<br><b>Origin:</b>        $dnarna<br>";
-	
-	}
-	
-	&ARE; #search the ARE
-
-    &createfoldingpicture;
-
-	print "<br><b>Catalytic RNA:</b><br>";
-
-	&smsite;
-
-	if (do_trna){
-	&tRNA; #search for tRNA
-    }
-
-	if ($do_rnamotif){
-	&RNAMOTIF; #motif search		
-	}
-	 
-	if ($do_mirna){
-	&microRNA; #microrna search suing miRbase
-	}
-
-    if ($do_mirnatarget){
-	&miRNAtarget; #microRNA target but scan takes too long
-    }
-    
-    if ($do_augustus){
-	&AUGUSTUS; #gene prediction replacment for genscan
-	}
-	else{
-		&CPC2; #coding potential
-	}
-	
-
-	&csfce; #Subroutine containing the long search program for those sequences
-	#WRONG POSITION!!!!!!!! MUST BE OUTSIDE THE 500 nt barrier!!!!
-	
-	########################################################
-	# Looking for the protein A1 binding site C9E
-	&protA1bisite;
-	if (length $SEQUENCECHECKED<=$MAXFOLDINGLEN) { 
-		&stemggpairs;
-	        
-	}
-   print"</pre>";
-
-}
-
-
-
 sub csfce {
 	my $count1=0; #We will mark $count1 as my so that we won't have any problems later
 	#$seq='llllllllllllllllluugculllauuuacuglcculllaugcguuccucgucclllllllllllllllll';
@@ -413,8 +405,6 @@ sub csfce {
 
 }
 
-
-
 sub stemggpairs {
     my @sequ=split('',$SEQUENCECHECKED);
     my $str=join ('',@structure);
@@ -461,6 +451,1105 @@ sub stemggpairs {
     $str='';
 }
 
+sub protA1bisite  {
+
+	#finding the protein A1 binding motif
+	#allowing 5 mismatches but no insertions/deltions
+	#
+	my $line='cuggauuauucaacugaaugccucacucagagaaugaa';
+	my @protA1bisi=split('',$line);
+	#my $se='nnnnnnnnnnnncuggauuauucaacugaaugccucacucagagaaugaannnnnnnnnnnnnnncuggauuauucaacugaaugccucnacucagagaaugaannnnnnnnnnnnnnnnnnnnnnnnnnn';
+	my @sequence=split('',$SEQUENCECHECKED);
+	my $prota1startingline=0;
+	#allow 5 mismatches out of 38!
+	PROA1: for (my $wh=0;$wh<=@sequence-38;$wh++){
+	        my $pa1mismatches=0;
+	        for (my$c=0;$c<=37;$c++) {
+	                $pa1mismatches++ if ($sequence[$wh+$c] ne $protA1bisi[$c]);
+	                next PROA1 if ($pa1mismatches>5);
+	        }
+	        if ($pa1mismatches<=5) {#this is a hit
+                	print "<br><b>Pr.A1 bin.site:</b>start  -  mismatch  - seq<br>" if ($prota1startingline==0);
+			$prota1startingline=1;
+			my $pa1seq=substr($SEQUENCECHECKED,$wh,38);;			
+			printf ("               %-5d        %-2d       %s<br>",$wh,$pa1mismatches,$pa1seq);
+			
+        	}
+	}
+	print "<br><br><b>Pr.A1 bin.site:</b>none<br>" if ($prota1startingline==0);
+}
+
+sub ARE {
+    $arepresent=0;
+    $are_pos=1;
+    #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
+
+    while ($SEQUENCECHECKED=~/([ag]uuu[ag](uuu[ag])+)/g) {
+        $are_len=length($1);
+        $are_pos=pos($SEQUENCECHECKED)-$are_len;
+        if ($are_len >=9){
+	    printf ("<b>ARE</b>:          %-6d - %6d   possi. match:   %s<br>",
+		    $are_pos,$are_pos+$are_len-1,
+		    $1);
+	    $arepresent=1;
+            $mismatchinare=0;
+            @aretemp=split('',$1);
+            for ($arecount=0;$arecount<@aretemp;$arecount++){
+                $mismatchinare++ if ($aretemp[$arecount] eq 'g');
+            }
+	    if ($mismatchinare) {
+		printf ("<b>ARE</b>:          %-6d - %6d   mismatch:  %2d<br>",
+			$are_pos,($are_pos+$are_len-1),$mismatchinare);
+	    }
+	    @aurichregion=(@aurichregion,$are_pos+1,$are_pos+$are_len);
+        }
+    }
+
+    if ($arepresent==0) {
+        print "<b>ARE:</b>           None       *(AU-rich region of at least 30 nt)<br>";
+    }
+}
+
+
+sub tRNA {
+	#Looking for tRNAs using tRNAscan-SE
+
+	$answertrnascan=`$TRNASCANFOLDER/tRNAscan-SE -Q -y -f $TEMPDIR/$job.trnascanout $TEMPDIR/$job.seq`;
+	open (TRNA,"$TEMPDIR/$job.trnascanout");
+	$line=<TRNA>;
+	if ($line=~/Length/){
+		print "<b>tRNA<sup>2</sup>:</b><br>";
+		print "$line<br>";
+		while ($line=<TRNA>){
+			print "$line<br>";
+		}
+	}
+	else {
+		print "<b>tRNAscan Results:</b>         none<br>";
+	}
+}
+
+sub smsite {
+	$smlength=-1;
+	$smpos=-1;
+        $leadlineprinted=0; #the first line not yet printed
+	while ($SEQUENCECHECKED=~/([ag][ag](u+([agc]?)u+)[ag][ag])/g){
+		$smlength=length $1;
+		$smpos=pos($SEQUENCECHECKED)-$smlength+1;
+		
+		if (length $3 == 1 && length $2 >=4) {
+			#print "Potential snRNP binding motif, similar to a sm-site, at position $smpos with the sequence $1 <br>";
+			print "<b>snRNP-motifs:</b>  start      sequence                quality<br>" if ($leadlineprinted==0);
+			$leadlineprinted=1;
+			printf (" snRNP-motif:  %-6d     %-20s          +<br>",$smpos,$1);
+			@smsite=(@smsite,$smpos,$smpos+((length $1)-1));
+		}
+		if (length $3 == 0 && length $2>=4) {
+			print "<b>snRNP-motifs:</b>  start      sequence                quality<br>" if ($leadlineprinted==0);
+			$leadlineprinted=1;
+			printf (" Put. sm-site: %-6d     %-20s          ++<br>",$smpos,$1);
+			@smsite=(@smsite,$smpos,$smpos+((length $1)-1));
+		}
+	}
+	print "<b>snRNP-motifs:</b>  none<br>" if ($leadlineprinted==0);
+	
+	##### OUTPUT if Seq is RNA has no cds but smsite --> structured perhaps catalytic RNA !
+
+	if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1 && @smsite>0){
+		print "<br>As I could not detect a coding sequence on this RNA, but there are 1 or more sn-RNP motifs (sm-sites),<br>it might be possible that this is a catalytic RNA!!<br>";
+	}
+}
+
+sub createfolding {
+    # comment out by liang
+    # new ViennaRNA does not have the old FOLD program but rather incorporated in the same program RNAfold AA
+		my $infile = "$TEMPDIR/$job.seq";
+        my $outfile = "$TEMPDIR/$job.foldout";
+
+        die "Infile not found: $infile" unless -e $infile;
+        die "RNAfold binary not found: $VIENNARNAFOLDDIR/RNAfold" unless -x "$VIENNARNAFOLDDIR/RNAfold";
+        my $cmd = "cat $infile | $VIENNARNAFOLDDIR/RNAfold > $outfile 2>&1";
+        system("$cmd") == 0 or die "RNAfold failed";
+        # write_file("$TEMPDIR/debug_command.sh", "#!/bin/bash\n$cmd\n");
+        # chmod 0755, "$TEMPDIR/debug_command.sh";
+        open(my $fh, '<', $outfile) or die "Can't open output";
+        <$fh>;  # skip FASTA header
+        my $seq = <$fh>;
+        my $struct_line = <$fh>;
+
+        $struct_line =~ /([().]+)\s+\(([-\d.]+)\)/;
+        @structure = split('', $1);
+        $structure = $1;
+        $energy = $2;
+		
+		
+		print "<br><b>Length:</b>        $SEQUENCELENGTH";
+	        print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
+	        print "<br><b>Origin:</b>        $dnarna<br>";
+}
+
+sub createfoldingpicture {
+    my $seq_file       = "$TEMPDIR/$job.seq";
+    my $foldout_file   = "$TEMPDIR/$job.foldout";
+
+	if ($SEQUENCELENGTH <= $MAXFOLDINGLEN && $SEQUENCELENGTH > $MAXFORNALENGTH) {
+        my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
+        my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
+        my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
+
+        # Make sure RNAplot output is ready
+        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
+
+        # Read SVG file content
+        open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
+        my $svg_content = do { local $/; <$svgfh> };
+        close($svgfh);
+
+        # Add ID to <svg> tag if not present
+        $svg_content =~ s/<svg /<svg id="rna_ss" width="650" height="650" /;
+
+        # Output
+        print "<h3>RNA Structure Visualization:</h3>\n";
+        print "$svg_content\n";
+        print "<p style='font-size: 0.9em; color: gray;'> Drag to pan, scroll to zoom</p>\n";
+        print "<b>Download As: </b>\n";
+        print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
+        print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
+
+        # Add svg-pan-zoom script
+        print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
+        print "<script>\n";
+        print "  svgPanZoom('#rna_ss', {\n";
+        print "    zoomEnabled: true,\n";
+        print "    controlIconsEnabled: true,\n";
+        print "    fit: true,\n";
+        print "    center: true\n";
+        print "  });\n";
+        print "</script>\n";
+    }
+
+
+
+    elsif ($SEQUENCELENGTH <= $MAXFORNALENGTH) {
+        # Read sequence and structure from RNAfold output
+        open(my $fh, '<', $foldout_file) or die "Cannot open foldout file: $!";
+        my $header = <$fh>;  # Skip header line (e.g. >job123)
+        my $sequence = <$fh>;
+        chomp($sequence);
+        my $structure_line = <$fh>;
+        chomp($structure_line);
+        $structure_line =~ /^([().]+)\s+/;
+        my $structure = $1;
+        close($fh);
+
+        # Print HTML content
+        print "<h3>RNA Structure Visualization:</h3>\n";
+        
+        print "<div style='width: 650px;'>\n";
+        print "  <div id='rna_ss' style='width: 650px; height: 650px;'></div>\n";
+        print "  <p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
+        print "</div>\n";
+
+        # Include required scripts
+        print "<link rel='stylesheet' href='/css/fornac.css'>\n";
+        print "<script src='/js/d3.v3.min.js'></script>\n";
+        print "<script src='/js/fornac.js'></script>\n";
+
+        # Inject JavaScript block to visualize RNA
+        print "<script>\n";
+        print "  window.onload = function () {\n";
+        print "    var container = new fornac.FornaContainer(\"#rna_ss\", { animation: false, applyForce: false, labelInterval: 0, allowPanningAndZooming: true, structurePadding: 0, drawBackground: false});\n";
+        print "    var options = {\n";
+        print "      structure: '$structure',\n";
+        print "      sequence: '$sequence'\n";
+        print "    };\n";
+        print "    container.addRNA(options.structure, options);\n";
+        print "  };\n";
+        print "</script>";
+
+    } else {
+        print "<br><b>Maximum folding limit reached</b><br>";
+    }
+}
+
+sub checkstems {
+		#evaluate the structure
+		$fldklauf=0; #Klammern auf pro stem
+		$fldstemsauf=0;
+		$fldklzu=0;
+		$fldstemszu=0;
+
+		for ($i=0;$i<=@structure-1;$i++) {
+		    $fldklauf++  if ($structure[$i] eq '(');
+		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
+		    $fldklauf=0 if ($structure[$i] eq ')');
+		    
+		    $fldklzu++  if ($structure[$i] eq ')');
+		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
+		    $fldklzu=0 if ($structure[$i] eq '(') 
+		} 
+		#Now a correction for Stemzu!
+		$fldstemszu++ if ($fldklzu>=5);
+		print "<b>Energy:</b>        $energy kcal/mol<br>";
+		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
+		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
+		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
+		if ($fldstemsauf != 0 && $fldstemszu != 0) {
+			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
+				print "<br>The sequence seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
+				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
+			}
+		}
+		#An message if it is highly structured that it could be an rRNA
+		if (($fldstemauf+$fldstemzu)/2>=10) {
+			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
+		}
+		#Okay, that's it for the stem detection!
+}
+
+sub checkstemsonly {
+		#evaluate the structure
+		my $inseq=$_[0];
+		my $inwhattodo=$_[1];   # --> 0 means is structure, evaluate, 1--> sequence, please fold first!
+		my $struct;
+		my @structure;
+		my $energy;
+		if ($inwhattodo==1 && length $inseq<=$MAXFOLDINGLENUTR){
+			@struct=`echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
+			if ($? != 0) { ##added by AA, error handling
+    			return ("RNAfold failed", 0);
+			}
+			$struct[1]=~/([().]+) \(([+-. 0-9]+)\)/;
+			@structure=split('',$1);
+			$energy=$2;
+			#print "DEBUGMARK1: $struct[1]";
+		}
+		if ($inwhattodo==1 && length $inseq>$MAXFOLDINGLENUTR){
+			return ("Too long for detection",1); #the 1 shows that we did not produce a result (not negative due to negative energy)
+		}
+		if ($inwhattodo==0){
+			@structure=split ('',$inseq);
+			$energy=0;
+		}
+		
+
+		#print "Debug: Here is thew struct: @structure END";	
+		my $fldklauf=0; #Klammern auf pro stem
+		my $fldstemsauf=0;
+		my $fldklzu=0;
+		my $fldstemszu=0;
+
+		for (my $i=0;$i<=@structure-1;$i++) {
+		    $fldklauf++  if ($structure[$i] eq '(');
+		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
+		    $fldklauf=0 if ($structure[$i] eq ')');
+		    
+		    $fldklzu++  if ($structure[$i] eq ')');
+		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
+		    $fldklzu=0 if ($structure[$i] eq '(') 
+		} 
+		#Now a correction for Stemzu!
+		$fldstemszu++ if ($fldklzu>=5);
+
+		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf==$fldstemszu);
+		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf<$fldstemszu);
+		return ($fldstemszu,$fldstemsauf,$energy) if ($fldstemsauf>$fldstemszu);
+
+		print "ERROR ERROR!!!!  This line should N O T be reached!!!";
+
+		##alright we shall undo this change and return after the lines below AA
+
+		#######ATTENTION THESES LINES BELOW ARE NOT PRINTED!!!! BECAUSE WE RETURN ABOVE !!!!!!#####
+		###########################################################################################
+		###########################################################################################
+
+
+		print "<b>Energy:</b>        $energy kcal/mol<br>";
+		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
+		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
+		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
+		if ($fldstemsauf != 0 && $fldstemszu != 0) {
+			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
+				print "<br>The structure seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
+				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
+			}
+		}
+		#An message if it is highly structured that it could be an rRNA
+		if (($fldstemauf+$fldstemzu)/2>=10) {
+			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
+		}
+		#Okay, that's it for the stem detection!
+
+}
+
+sub predprotein {
+	$predprotforAnDom=0;
+    
+	print "<br><b>Pred. Protein<sup>1</sup>:</b>";
+    if (defined $cpc){
+        print "Protein is predicted from CPC2 output.";
+    }
+	if (@predprot>1){
+		print "<br>";	
+		for ($count1=1;$count1<=@predprot;$count1++) {
+			print $predprot[$count1-1];
+			print "<br>" if ($count1%120==0);
+		}
+	print "<br>";
+	}
+	else {
+		print " none";
+	}
+}
+
+# microrna search should be full length and should show potential micrornas with a warning. 
+sub RNAMOTIF {
+    my $tblout_file = "$TEMPDIR/$job.tblout";  # Table format output
+	my $output_file = "$TEMPDIR/$job.out";     # Full verbose output
+
+	# Run cmscan, saving outputs to files and suppressing screen output
+	my $cmd = "$CMSCAN/cmscan -E 0.001 --tblout $tblout_file -o $output_file $RFAM $TEMPDIR/$job.seq > /dev/null 2>&1";
+	system($cmd);
+
+	my $format = "%-12s %-12s %-6s %-6s %-8s %-10s %-20s\n";
+
+	my $found = 0;
+
+	print "<pre>\n";
+	print "<b>RNA motif search:</b><br>\n";
+
+	# Read and parse the tabular output (--tblout)
+	open my $fh_tbl, '<', $tblout_file or die "Cannot open RNAmotif scan file: $!";
+	while (my $line = <$fh_tbl>) {
+		next if $line =~ /^#/;  # Skip comments
+		chomp $line;
+		my @columns = split(/\s+/, $line, 18);
+		next unless @columns >= 16;
+
+		my ($match, $family, $from, $to, $score, $e_value, $description) = ($columns[0], $columns[1], $columns[7], $columns[8], $columns[14], $columns[15], $columns[17]);
+
+		my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
+
+		push @results, sprintf($format, $match, $family_link, $from, $to, $score, $e_value, $description);
+		$found = 1;
+	}
+	
+	close $fh_tbl;
+
+	
+	if ($found) {
+		# Print header only if results exist
+		printf $format, "Match", "Family", "From", "To", "Score", "E-Value", "Description";
+		print "-" x 80, "\n";  # Simple separator
+
+		# Print stored results
+		print @results;
+	} else {
+		print "No motif recognized\n";
+    }
+	print "</pre>\n";
+}
+
+sub CPC2 {
+
+	my $cpc_input = "$TEMPDIR/$job.dna";
+	my $cpc_output = "$TEMPDIR/$job.cpc2";
+
+	my $RUN_CPC="python3 $CPC/CPC2.py --ORF -r -i $cpc_input -o $cpc_output";
+	my $exit_code = system($RUN_CPC);
+	if ($exit_code != 0) {
+    	print "CPC2 execution failed with exit code: $exit_code\n";
+	}
+
+	print "<b>Checking coding potential:</b>\n";
+
+	open(my $fh_cpc2, "<", "$cpc_output.txt") or die "Cannot open CPC2 result $cpc_output: $!";
+	my @results;
+	my $found = 0;
+
+	my $format = "%-10s %-18s %-15s %-10s %-10s %-10s %-15s %-10s %-10s\n";
+
+    my ($orf_start, $peptide_length, $label);
+
+	# Read file line by line
+	while (my $line = <$fh_cpc2>) {
+		next if $line =~ /^#/;  # Skip comment/header lines
+		chomp $line;
+
+		my @columns = split(/\t/, $line);  # Split by tab
+		next unless @columns >= 9;  # Ensure enough columns exist
+
+        $peptide_length = int($columns[2]);
+        $orf_start      = int($columns[6]);
+        $label          = $columns[9];
+        $strand         = $columns[7];
+		# Extract relevant fields
+        my ($id, $transcript_length, $peptide_length, $fickett_score, $pI, $orf_integrity, $orf_start, $strand, $coding_probability, $label) = @columns[0..9];
+
+		# Format numeric values with 2 decimal places
+		$fickett_score = sprintf("%.2f", $fickett_score);
+		$pI = sprintf("%.2f", $pI);
+		$coding_probability = sprintf("%.6f", $coding_probability);  # Keep precision for probability
+
+		# Store formatted row
+		push @results, sprintf($format, $id, $transcript_length, $peptide_length, $fickett_score, $pI, $orf_integrity, $orf_start, $coding_probability, $label);
+
+        $found = 1;
+    }
+    close $fh_cpc2;
+
+    if ($found) {
+        printf $format, "ID", "Transcript Length", "Peptide Length", "Fickett", "pI", "ORF", "ORF Start", "Coding Prob.", "Label";
+        print "-" x 110, "\n";
+        print @results;
+    } else {
+        print "No result in CPC2 output\n";
+    }
+    
+    if (defined $label && $label eq 'coding' && $orf_start > 0 && $peptide_length > 0) {
+
+    my $orf_end = $orf_start + ($peptide_length * 3) - 1;
+
+    # Extract forward-oriented sequence regardless of strand
+    my $cds_nt = substr($SEQUENCECHECKED, $orf_start - 1, $peptide_length * 3);
+
+    # Reverse complement if necessary
+    if ($strand eq '-') {
+        
+        $cds_nt =~ tr/ACGTacgt/TGCAtgca/;
+        $cds_nt = reverse($cds_nt);
+    }
+
+    # Translate
+    my $cds_obj = Bio::Seq->new(-seq => $cds_nt, -alphabet => 'dna');
+    my $aa_obj  = $cds_obj->translate(-stop_symbol => '');
+    my $protein_seq = $aa_obj->seq;
+
+    $protein_seq =~ s/\s//g;
+    @predprot = split('', $protein_seq);
+
+    $transcripts{"t1"} = {
+        cds_start => $orf_start,
+        cds_end   => $orf_end,
+        strand    => $strand,
+        source    => 'cpc2',
+        protein   => $protein_seq,
+    };
+    } else {
+        print "<i>Transcript predicted to be noncoding. Running structural region scan instead.</i><br>";
+        &scan_structured_regions;
+    }
+    return \%transcripts;
+}
+
+sub microRNA {
+
+		my $mirbase_output = "$TEMPDIR/$job.mirtbl";
+		my $mirbase_out    = "$TEMPDIR/$job.mir";
+
+		my $mirna_search = "$HMMER/nhmmer --rna --watson -Z 3.73 --tblout $mirbase_output -o $mirbase_out $TEMPDIR/$job.seq $MIRBASE/hairpin.fa";
+
+		system($mirna_search);
+
+		my $format = "%-18s %-6s %-6s %-10s %-8s %-15s %-40s\n";
+
+		my @results;
+
+		open my $fh_tbl, '<', $mirbase_output or die "Cannot open miRNA result: $!";
+		while (my $line = <$fh_tbl>) {
+			next if $line =~ /^#/;
+			chomp $line;
+			my @columns = split(/\s+/, $line);
+			next unless @columns >= 17;
+			my $desc_full = join(" ", @columns[15..$#columns]);
+
+			my ($match, $from, $to, $e_value, $score) =
+    			($columns[0], $columns[7], $columns[8], $columns[12], $columns[13]);
+
+			# Extract accession and description
+			my ($accession, $desc_text) = $desc_full =~ /(MI\w+\d+)\s+(.*)/;
+			unless ($accession) {
+				$accession = '-';
+				$desc_text = $desc_full;
+			}
+
+			push @results, {
+				match       => $match,
+				from        => $from,
+				to          => $to,
+				score       => $score + 0,    # force numeric
+				e_value     => $e_value + 0,  # force numeric
+				accession   => $accession,
+				description => $desc_text
+			};
+		}
+		close $fh_tbl;
+
+		my $total = scalar @results;
+
+		if ($total) {
+			print "<b>miRNA search:</b><br>\n";
+			printf $format, "Match", "From", "To", "E-Value", "Score", "Accession", "Description";
+			print "-" x 120, "\n";
+
+			# Split into human vs others (e.g., match starts with hsa- or description contains Homo sapiens)
+			my (@human_hits, @other_hits);
+			foreach my $hit (@results) {
+				if ($hit->{match} =~ /^hsa-/i || $hit->{description} =~ /Homo sapiens/i) {
+					push @human_hits, $hit;
+				} else {
+					push @other_hits, $hit;
+				}
+			}
+
+			# Sort both groups by E-value ascending
+			@human_hits = sort { $a->{e_value} <=> $b->{e_value} } @human_hits;
+			@other_hits = sort { $a->{e_value} <=> $b->{e_value} } @other_hits;
+
+			my @top_hits = (@human_hits, @other_hits);
+			@top_hits = @top_hits[0..2] if @top_hits > 3;
+
+			foreach my $hit (@top_hits) {
+				my $link = "<a href=\"https://www.mirbase.org/hairpin/$hit->{accession}\" target=\"_blank\">$hit->{accession}</a>";
+				printf $format, $hit->{match}, $hit->{from}, $hit->{to}, $hit->{e_value}, $hit->{score}, $link, $hit->{description};
+			}
+
+			print "<br><b>Total microRNA hits found:</b> $total<br>\n";
+			print "Due to the number of hits, the sequence likely contains microRNA(s)<br>\n";
+		} else {
+			print "No regions matching a mircroRNA was found.<br></br>\n";
+		}
+
+		print "<br></br>";
+
+
+}
+
+# microRNA scan using miRanda
+# slow, takes over 2 minutes to scan
+
+# trying to implement only 3' UTR scan so it less intesive but still biologically relevant with fallback.
+sub miRNAtarget {
+    my ($transcripts_ref) = @_;
+    my $mirna_db     = "$MIRBASE/mature.fa";
+    my $raw_out      = "$TEMPDIR/$job.miranda.out";
+    my $miranda_out  = "$TEMPDIR/$job.miranda.tsv";
+    my $utr_fasta    = "$TEMPDIR/$job.utr3.fa";
+
+    my $seq = $SEQUENCECHECKED;
+    $seq =~ tr/uU/tT/;
+
+    # 1. Create UTR3 FASTA file (or fallback)
+    my $found_valid = 0;
+    open my $fa_out, '>', $utr_fasta or die "Cannot write $utr_fasta: $!";
+
+    if (%$transcripts_ref) {
+        foreach my $tid (keys %$transcripts_ref) {
+            next unless $transcripts_ref->{$tid}{utr3} && @{ $transcripts_ref->{$tid}{utr3} };  # Ensure utr3 exists and has elements
+
+            my @coords = @{ $transcripts_ref->{$tid}{utr3} };
+            for (my $i = 0; $i < @coords; $i += 2) {
+                my ($start, $end) = @coords[$i, $i+1];
+                next unless defined $start && defined $end && $end >= $start;
+
+                next if $start < 1 || $end > length($seq) || $end < $start;
+                my $utr_seq = substr($seq, $start - 1, $end - $start + 1);
+                next unless $utr_seq =~ /[ACGT]/i;
+
+                $found_valid++;
+                print $fa_out ">$tid|utr3_${start}_${end}\n$utr_seq\n";
+            }
+        }
+    }
+
+
+    print "<i>Extracted $found_valid valid 3' UTR regions for target prediction.</i><br>";
+
+    # Fallback if no valid UTRs were written
+    if (!$found_valid) {
+        print "<i>No valid 3' UTRs found. Scanning full sequence instead.</i><br>";
+        print $fa_out ">full_sequence\n$seq\n";
+    }
+
+    close $fa_out;
+
+    # 2. Run miRanda wrapper
+    my $cmd = "python3 $MIRANDA/miranda_wrapper.py --parsed_out $miranda_out --miranda_bin $MIRANDA/miranda --tmpdir $TEMPDIR $mirna_db $utr_fasta $raw_out";
+    my $exit_code = system($cmd);
+    if ($exit_code != 0) {
+        print "miRanda wrapper execution failed with exit code: $exit_code\n";
+        return ();
+    }
+
+    # 3. Parse miRanda TSV output
+    open(my $fh, "<", $miranda_out) or die "Can't open $miranda_out: $!";
+    my $header = <$fh>;  # Skip header
+    my @lines = <$fh>;
+    chomp @lines;
+    close($fh);
+
+    # 4. Filter overlapping hits
+    my @sorted = sort {
+        (split /\t/, $a)[4] <=> (split /\t/, $b)[4] ||
+        (split /\t/, $a)[5] <=> (split /\t/, $b)[5] ||
+        (split /\t/, $a)[3] <=> (split /\t/, $b)[3]
+    } @lines;
+
+    my @filtered;
+    my @current_group;
+
+    foreach my $line (@sorted) {
+        my ($query, $mirna, $score, $energy, $start, $end) = (split /\t/, $line)[0,1,2,3,4,5];
+
+        if (!@current_group) {
+            push @current_group, $line;
+            next;
+        }
+
+        my ($prev_start, $prev_end) = (split /\t/, $current_group[-1])[4,5];
+
+        if ($start <= $prev_end) {
+            push @current_group, $line;
+        } else {
+            my $best = (sort { (split /\t/, $a)[3] <=> (split /\t/, $b)[3] } @current_group)[0];
+            push @filtered, $best;
+            @current_group = ($line);
+        }
+    }
+
+    if (@current_group) {
+        my $best = (sort { (split /\t/, $a)[3] <=> (split /\t/, $b)[3] } @current_group)[0];
+        push @filtered, $best;
+    }
+
+    # 5. Display output
+    print "<b>miRanda target prediction (3′ UTR only):</b><br>\n";
+    printf "%-18s %-6s %-6s %-10s %-10s\n", "miRNA", "From", "To", "Energy", "Query";
+    print "-" x 60 . "\n";
+
+    my @regions;
+    foreach my $line (@filtered) {
+        my ($query, $mirna, $score, $energy, $start, $end) = split /\t/, $line;
+        printf "%-18s %-6s %-6s %-10.2f %-10s\n", $mirna, $start, $end, $energy, $query;
+        push @regions, [$start, $end];
+    }
+
+    return @regions;
+}
+
+########################
+# augustus replacing the old genscan; need to check the whole sub for errors
+# Flag inferred UTRs as “low confidence” when:
+# ORF is very short
+# ORF start is <15 nt from sequence start (no room for 5′ UTR)
+# Sequence ends shortly after ORF (truncated transcript)
+# Provide scoring or confidence per UTR:
+# E.g., "Predicted 5′ UTR: 37 bp (contains weak Shine-Dalgarno motif, ΔG = -3.2 kcal/mol)"
+# Refactored AUGUSTUS + UTR + PolyA logic to handle multiple transcripts
+
+sub AUGUSTUS {
+    my ($species) = @_;
+    $species ||= "human";
+    my $utr_flag = ($species =~ /^(human|fly|zebrafish)$/i) ? "--UTR=on" : "";
+
+    my $output_gff = "$TEMPDIR/$job.augustus";
+    my $input_dna  = "$TEMPDIR/$job.dna";
+
+    my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on $utr_flag --species=$species $input_dna > $output_gff 2>&1";
+    system($augustus_cmd) == 0 or die "AUGUSTUS run failed: $!";
+
+    open(my $GFF, '<', $output_gff) or die "Can't open AUGUSTUS output: $!";
+
+    my %transcripts;
+    my $current_tid;
+    my @protein_lines;
+    my $capturing_protein = 0;
+
+    while (my $line = <$GFF>) {
+        chomp $line;
+
+        if ($line =~ /^# protein sequence = \[(.*)$/) {
+            $capturing_protein = 1;
+            push @protein_lines, $1;
+            next;
+        }
+        if ($capturing_protein) {
+            $line =~ s/^#\s?//;
+            if ($line =~ /^(.*)\]$/) {
+                push @protein_lines, $1;
+                $capturing_protein = 0;
+                $transcripts{$current_tid}{protein} = join('', @protein_lines);
+                @protein_lines = ();
+                next;
+            }
+            push @protein_lines, $line;
+            next;
+        }
+
+        next if $line =~ /^#/;
+        my @fields = split("\t", $line);
+        next unless @fields >= 9;
+
+        my ($type, $start, $end, $strand, $attr) = @fields[2,3,4,6,8];
+        my ($tid) = $attr =~ /transcript_id \"(.*?)\"/;
+        $current_tid = $tid if defined $tid;
+        next unless defined $tid;
+
+        $transcripts{$tid}{strand} = $strand if $type eq 'gene';
+        $transcripts{$tid}{tss} = $start if $type eq 'tss';
+        $transcripts{$tid}{tts} = $end   if $type eq 'tts';
+        if ($type eq 'CDS') {
+            push @{ $transcripts{$tid}{cds} }, [$start, $end];
+            $transcripts{$tid}{cds_start} //= $start;
+            $transcripts{$tid}{cds_end} = $end;
+        }
+        if ($type eq 'exon') {
+            push @{ $transcripts{$tid}{exons} }, [$start, $end];
+        }
+        $transcripts{$tid}{source} = 'augustus';
+    }
+    close $GFF;
+
+    my $i = 1;
+    foreach my $tid (sort keys %transcripts) {
+        my $model = $transcripts{$tid};
+        
+        my ($gene_id) = $tid =~ /^(g\d+)\./;
+        print "<b>Transcript $i</b> (ID: $tid";
+        print ", gene: $gene_id" if $gene_id;
+        print ")<br>";
+        $i++;
+
+        foreach my $exon (@{ $model->{exons} }) {
+            my ($start, $end) = @$exon;
+            my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
+            foreach my $seg (@segments) {
+                my ($seg_start, $seg_end, $type) = @$seg;
+                printf("Exon: %-6d - %6d     %s<br>", $seg_start, $seg_end, $type);
+            }
+        }
+
+        $model->{protein} =~ s/\s//g if exists $model->{protein};
+
+        print "<br>";
+    }
+
+    @predprot = ();              
+    foreach my $tid (sort keys %transcripts) {
+        if (my $protein_seq = $transcripts{$tid}{protein}) {
+            $protein_seq =~ s/\s//g;
+            my @residues = split('', $protein_seq);
+            push @predprot, @residues;
+            $predprotforAnDom .= $protein_seq;
+        }
+    }
+    print "Parsed type=$type, tid=$tid, start=$start, end=$end<br>" if defined $tid;
+    return \%transcripts;
+    
+}
+
+sub split_exon_by_cds {
+    my ($exon_start, $exon_end, @cds_ranges) = @_;
+    my @segments;
+    my $cursor = $exon_start;
+
+    foreach my $cds (@cds_ranges) {
+        my ($cds_start, $cds_end) = @$cds;
+        next if $cds_end < $exon_start || $cds_start > $exon_end;
+
+        if ($cds_start > $cursor) {
+            push @segments, [$cursor, $cds_start - 1, 'noncoding'];
+        }
+
+        my $coding_start = ($cds_start > $cursor) ? $cds_start : $cursor;
+        my $coding_end = ($cds_end < $exon_end) ? $cds_end : $exon_end;
+        push @segments, [$coding_start, $coding_end, 'coding'];
+        $cursor = $coding_end + 1;
+    }
+
+    push @segments, [$cursor, $exon_end, 'noncoding'] if $cursor <= $exon_end;
+    return @segments;
+}
+
+sub predict_utrs {
+    my (%args) = @_;
+
+    my $seq        = $args{seq};
+    my $cds_start  = $args{cds_start};
+    my $cds_end    = $args{cds_end};
+    my $strand     = $args{strand} || '+';
+    my $source     = $args{source} || 'unknown';
+    my $tss_pos    = $args{tss};
+    my $tts_pos    = $args{tts};
+
+    $seq =~ tr/uU/tT/;
+    my $seq_length = length($seq);
+
+    my @new5primeutr = ();
+    my @new3primeutr = ();
+    my @utrprintout  = ();
+    my @utr          = ();
+
+    print "<i>UTR prediction source: $source</i><br>";
+
+    if ($source eq 'augustus' && (defined $tss_pos || defined $tts_pos)) {
+        print "<i>Using AUGUSTUS-predicted TSS/TTS boundaries.</i><br>";
+
+        if (defined $tss_pos && $tss_pos < $cds_start) {
+            push @new5primeutr, $tss_pos, $cds_start - 1 if $tss_pos < $cds_start;
+            push @utrprintout, 5, $tss_pos, $cds_start - 1;
+        }
+        if (defined $tts_pos && $cds_end < $tts_pos) {
+            push @new3primeutr, $cds_end + 1, $tts_pos if $cds_end + 1 <= $tts_pos;
+            push @utrprintout, 3, $cds_end + 1, $tts_pos;
+        }
+    } else {
+        print "<i>Inferring UTRs from CDS boundaries...</i><br>";
+
+        if ($strand eq '+') {
+            if ($cds_start > 1) {
+                my $utr_start = 1;
+                my $utr_end   = $cds_start - 1;
+                push @new5primeutr, $utr_start, $utr_end if $utr_start <= $utr_end;
+            }
+
+            if ($cds_end < $seq_length) {
+                my $utr_start = $cds_end + 1;
+                my $utr_end   = $seq_length;
+                push @new3primeutr, $utr_start, $utr_end if $utr_start <= $utr_end;
+            }
+        } else {
+            if ($cds_end < $seq_length) {
+                my $utr_start = $cds_end + 1;
+                my $utr_end   = $seq_length;
+                push @new5primeutr, $utr_start, $utr_end if $utr_start <= $utr_end;
+            }
+
+            if ($cds_start > 1) {
+                my $utr_start = 1;
+                my $utr_end   = $cds_start - 1;
+                push @new3primeutr, $utr_start, $utr_end if $utr_start <= $utr_end;
+            }
+        }
+
+        @utrprintout = (
+            5, @new5primeutr,
+            3, @new3primeutr
+        );
+    }
+
+    @utr = sort { $a <=> $b } (@new5primeutr, @new3primeutr);
+
+    print "<b>UTR:</b>           start  -   end   -  stems - energy<br>";
+    for (my $i = 0; $i < @utrprintout; $i += 3) {
+        my ($type, $start, $end) = @utrprintout[$i, $i+1, $i+2];
+
+        next if $end < $start || $start < 1 || $end > $seq_length;
+
+        my $utr_seq = substr($seq, $start - 1, $end - $start + 1);
+        next unless length($utr_seq) > 0;
+
+        my @returnout = checkstemsonly($utr_seq, 1);
+
+        printf(" %d'            %-6d - %6d", $type, $start, $end);
+        print "       $returnout[0]-$returnout[1]" if $returnout[0] != $returnout[1];
+        print "       $returnout[0]" if $returnout[0] == $returnout[1];
+        print "     $returnout[2]<br>" if $returnout[2] != 1;
+
+        if ($type == 5) {
+            print "         SD motif<br>" if $utr_seq =~ /AGGAGG/i;
+            print "         Kozak motif<br>" if $utr_seq =~ /gcc[AG]ccATGG/i;
+        }
+
+        if ($type == 3) {
+            foreach my $motif (qw(AATAAA ATTAAA TATAAA AAGAAA AGTAAA AATATA)) {
+                if ($utr_seq =~ /$motif/i) {
+                    my $pos = $-[0] + $start;
+                    print "         PolyA signal $motif at $pos<br>";
+                    last;
+                }
+            }
+            if ($utr_seq =~ /A{10,}/i) {
+                my $tail_pos = $-[0] + $start;
+                print "         PolyA tail near $tail_pos<br>";
+            }
+        }
+    }
+
+    print "<i>No valid UTRs inferred.</i><br>" unless @utr;
+
+    return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr);
+}
+
+sub refineUTRwithPolyA {
+    my ($sequence, $cds_end, $strand, $seq_length) = @_;
+    $sequence =~ tr/uU/tT/;
+
+    my @new3primeutr = ();
+    my @polyasignal  = ();
+    my @polyatail    = ();
+    my @utrprintout  = ();
+    my @utr          = ();
+
+    my @motifs = qw(AATAAA ATTAAA TATAAA AAGAAA AATATA AGTAAA);
+    my $window_start = $cds_end + 1;
+    my $window_end   = $seq_length;
+    my $utr_seq      = substr($sequence, $window_start - 1, $window_end - $window_start + 1);
+
+    my ($signal_pos, $signal_motif, $tail_pos) = (-1, '', -1);
+
+    foreach my $motif (@motifs) {
+        if ($utr_seq =~ /$motif/i) {
+            $signal_pos = $-[0] + $window_start;
+            $signal_motif = $motif;
+            push @polyasignal, $signal_pos;
+            print "PolyA signal ($motif) detected at $signal_pos<br>";
+            last;
+        }
+    }
+
+    if ($sequence =~ /A{10,}/g) {
+        my $tail_candidate = pos($sequence);
+        if ($tail_candidate >= $cds_end && $tail_candidate - $cds_end < 200) {
+            $tail_pos = $tail_candidate;
+            push @polyatail, $tail_pos;
+            print "PolyA tail detected near $tail_pos<br>";
+        }
+    }
+
+    if ($signal_pos > 0 || $tail_pos > 0) {
+        my $utr_start = $cds_end + 1;
+        my $utr_end   = $tail_pos > 0 ? $tail_pos : ($signal_pos + 20);
+
+        push @new3primeutr, $utr_start, $utr_end;
+        push @utrprintout, 3, $utr_start, $utr_end;
+        push @utr, $utr_start, $utr_end;
+
+        print "Inferred 3' UTR based on polyA: $utr_start - $utr_end<br>";
+    } else {
+        print "No strong polyA signal/tail detected in 3' region.<br>";
+    }
+
+    return (\@new3primeutr, \@polyasignal, \@polyatail);
+}
+
+sub scan_rbs {
+    my ($transcripts_ref) = @_;
+    my $seq_file = "$TEMPDIR/$job.dna.fa";
+    my $coords_file = "$TEMPDIR/$job.rbs.coords";
+    my $output_file = "$TEMPDIR/$job.rbs.out";
+
+    # 1. Write CDS coordinates for all transcripts
+    open my $coord_fh, '>', $coords_file or die "Can't write RBS coords: $!";
+    foreach my $tid (sort keys %$transcripts_ref) {
+        my $model = $transcripts_ref->{$tid};
+        next unless defined $model->{cds_start} and defined $model->{cds_end};
+        print $coord_fh "$tid\t$model->{cds_start}\t$model->{cds_end}\n";
+    }
+    close $coord_fh;
+    my $utr5_len = 0;
+    if (ref $utr5_ref eq 'ARRAY' && @$utr5_ref == 2) {
+        $utr5_len = abs($utr5_ref->[1] - $utr5_ref->[0]) + 1;
+        $utr5_len = 20 if $utr5_len < 20;  # fallback
+    }
+
+    # 2. Run the RBS finder
+    my $cmd = "perl $RBSFINDER/rbs_finder.pl $seq_file $coords_file $output_file $utr5_len AGGAGG";
+    system($cmd) == 0 or die "RBS finder failed: $?";
+
+    # 3. Parse summary output minimally
+    open my $rbs_out, '<', $output_file or die "Can't open RBS output: $!";
+    my ($with_rbs, $without_rbs, $total);
+
+    while (my $line = <$rbs_out>) {
+        if ($line =~ /have RBS.*?= (\d+)/) {
+            $with_rbs += $1;
+        }
+        if ($line =~ /have no RBS= (\d+)/) {
+            $without_rbs = $1;
+        }
+        if ($line =~ /Total.*?= (\d+)/) {
+            $total = $1;
+        }
+    }
+    close $rbs_out;
+
+    # 4. Display minimal summary
+    print "<b>RBS Scan:</b> ";
+    if ($with_rbs) {
+        my $percent = sprintf("%.1f", 100 * $with_rbs / $total);
+        print "$with_rbs of $total transcript(s) have a Shine-Dalgarno motif ($percent%)<br>";
+    } else {
+        print "No Shine-Dalgarno motifs detected in 5′ UTR regions.<br>";
+    }
+}
+
+sub scan_structured_regions {
+    my $count = 0;
+    my $len = length $SEQUENCECHECKED;
+    my $printout = 0;
+    my @high_struct_regions;
+
+    while ($count <= $len) {
+        my $query_len = ($count + 150 < $len) ? 150 : $len - $count;
+        my $query = substr($SEQUENCECHECKED, $count, $query_len);
+        my @answer = &checkstemsonly($query, 1);  # (stem_start, stem_end, energy)
+
+        if ($answer[0] >= 3 && $answer[1] >= 3) {
+            push @high_struct_regions, [
+                $count + 1, $count + $query_len,
+                ($answer[0] == $answer[1]) ? "$answer[0]" : "$answer[0]-$answer[1]", $answer[2]
+            ];
+            $printout = 1;
+        }
+
+        last if $count + 150 >= $len;
+        $count += 150;
+    }
+
+    if ($printout) {
+        print "<br>";
+        print "<b>Structured regions detected:</b><br>";
+        printf "%-12s %-6s %-6s %-10s %-10s<br>", "Region", "From", "To", "Stems", "Energy";
+        print "-" x 60 . "<br>";
+        foreach my $r (@high_struct_regions) {
+            printf "%-12s %-6d %-6d %-10s %-10s<br>", 
+                "Region", $r->[0], $r->[1], $r->[2], $r->[3];
+        }
+        print "<br>** Highly structured regions found. Consider tRNA, rRNA, or ncRNA elements.<br>";
+    } else {
+        print "<i>No regions with significant RNA structure detected.</i><br>";
+    }
+}
+
+sub normalize_transcript_features {
+    my ($transcripts_ref, $exons_ref, $utr_ref, $polyasignal_ref, $mirnatarget_ref, $structured_ref) = @_;
+
+    @$exons_ref = ();
+    @$utr_ref = ();
+    @$polyasignal_ref = ();
+    @$mirnatarget_ref = ();
+    @$structured_ref = ();
+
+    foreach my $tid (keys %$transcripts_ref) {
+        my $model = $transcripts_ref->{$tid};
+
+        if (defined $model->{cds_start} && defined $model->{cds_end}) {
+            push @$exons_ref, $model->{cds_start}, $model->{cds_end};
+        }
+
+        push @$utr_ref, @{ $model->{utr5} } if ref $model->{utr5} eq 'ARRAY';
+        push @$utr_ref, @{ $model->{utr3} } if ref $model->{utr3} eq 'ARRAY';
+
+        push @$polyasignal_ref, @{ $model->{polyAcoords} } if ref $model->{polyAcoords} eq 'ARRAY';
+        push @$mirnatarget_ref, @{ $model->{mirnatargets} } if ref $model->{mirnatargets} eq 'ARRAY';
+        push @$structured_ref, @{ $model->{structured_regions} } if ref $model->{structured_regions} eq 'ARRAY';
+    }
+    print "DEBUG 1: UTRs: @utr_ref<br>";
+}
+
+
+
 sub drawcoloredsequence {
 	
 	#Here we will create a colored output of the sequence
@@ -505,9 +1594,9 @@ sub drawcoloredsequence {
 	#$possible_bold_italic[$c]=0;
     }
 
-
-    print '<font face="monospace">';
-
+   print '<font face="monospace">';
+    print "<br>EXONS: @exons<br>";
+    print "UTRs: @utr<br>";
     ########### ATTENTION !!!!! ####################
     ### Old problem the index of array starts at 0 !!! #####
     ### So for the next lines to be correct we will add #####
@@ -865,307 +1954,11 @@ sub drawcoloredsequence {
     #print "<br><br>%change_fontcolor<br><br>";
 }
 
-sub protA1bisite  {
-
-	#finding the protein A1 binding motif
-	#allowing 5 mismatches but no insertions/deltions
-	#
-	my $line='cuggauuauucaacugaaugccucacucagagaaugaa';
-	my @protA1bisi=split('',$line);
-	#my $se='nnnnnnnnnnnncuggauuauucaacugaaugccucacucagagaaugaannnnnnnnnnnnnnncuggauuauucaacugaaugccucnacucagagaaugaannnnnnnnnnnnnnnnnnnnnnnnnnn';
-	my @sequence=split('',$SEQUENCECHECKED);
-	my $prota1startingline=0;
-	#allow 5 mismatches out of 38!
-	PROA1: for (my $wh=0;$wh<=@sequence-38;$wh++){
-	        my $pa1mismatches=0;
-	        for (my$c=0;$c<=37;$c++) {
-	                $pa1mismatches++ if ($sequence[$wh+$c] ne $protA1bisi[$c]);
-	                next PROA1 if ($pa1mismatches>5);
-	        }
-	        if ($pa1mismatches<=5) {#this is a hit
-                	print "<br><b>Pr.A1 bin.site:</b>start  -  mismatch  - seq<br>" if ($prota1startingline==0);
-			$prota1startingline=1;
-			my $pa1seq=substr($SEQUENCECHECKED,$wh,38);;			
-			printf ("               %-5d        %-2d       %s<br>",$wh,$pa1mismatches,$pa1seq);
-			
-        	}
-	}
-	print "<br><br><b>Pr.A1 bin.site:</b>none<br>" if ($prota1startingline==0);
-}
-
-sub ARE {
-    $arepresent=0;
-    $are_pos=1;
-    #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
-
-    while ($SEQUENCECHECKED=~/([ag]uuu[ag](uuu[ag])+)/g) {
-        $are_len=length($1);
-        $are_pos=pos($SEQUENCECHECKED)-$are_len;
-        if ($are_len >=9){
-	    printf ("<b>ARE</b>:          %-6d - %6d   possi. match:   %s<br>",
-		    $are_pos,$are_pos+$are_len-1,
-		    $1);
-	    $arepresent=1;
-            $mismatchinare=0;
-            @aretemp=split('',$1);
-            for ($arecount=0;$arecount<@aretemp;$arecount++){
-                $mismatchinare++ if ($aretemp[$arecount] eq 'g');
-            }
-	    if ($mismatchinare) {
-		printf ("<b>ARE</b>:          %-6d - %6d   mismatch:  %2d<br>",
-			$are_pos,($are_pos+$are_len-1),$mismatchinare);
-	    }
-	    @aurichregion=(@aurichregion,$are_pos+1,$are_pos+$are_len);
-        }
-    }
-
-    if ($arepresent==0) {
-        print "<b>ARE:</b>           None       *(AU-rich region of at least 30 nt)<br>";
-    }
-}
-
-
-sub tRNA {
-	#Looking for tRNAs using tRNAscan-SE
-
-	$answertrnascan=`$TRNASCANFOLDER/tRNAscan-SE -Q -y -f $TEMPDIR/$job.trnascanout $TEMPDIR/$job.seq`;
-	open (TRNA,"$TEMPDIR/$job.trnascanout");
-	$line=<TRNA>;
-	if ($line=~/Length/){
-		print "<b>tRNA<sup>2</sup>:</b><br>";
-		print "$line<br>";
-		while ($line=<TRNA>){
-			print "$line<br>";
-		}
-	}
-	else {
-		print "<b>tRNAscan Results:</b>         none<br>";
-	}
-}
-
-sub smsite {
-	$smlength=-1;
-	$smpos=-1;
-        $leadlineprinted=0; #the first line not yet printed
-	while ($SEQUENCECHECKED=~/([ag][ag](u+([agc]?)u+)[ag][ag])/g){
-		$smlength=length $1;
-		$smpos=pos($SEQUENCECHECKED)-$smlength+1;
-		
-		if (length $3 == 1 && length $2 >=4) {
-			#print "Potential snRNP binding motif, similar to a sm-site, at position $smpos with the sequence $1 <br>";
-			print "<b>snRNP-motifs:</b>  start      sequence                quality<br>" if ($leadlineprinted==0);
-			$leadlineprinted=1;
-			printf (" snRNP-motif:  %-6d     %-20s          +<br>",$smpos,$1);
-			@smsite=(@smsite,$smpos,$smpos+((length $1)-1));
-		}
-		if (length $3 == 0 && length $2>=4) {
-			print "<b>snRNP-motifs:</b>  start      sequence                quality<br>" if ($leadlineprinted==0);
-			$leadlineprinted=1;
-			printf (" Put. sm-site: %-6d     %-20s          ++<br>",$smpos,$1);
-			@smsite=(@smsite,$smpos,$smpos+((length $1)-1));
-		}
-	}
-	print "<b>snRNP-motifs:</b>  none<br>" if ($leadlineprinted==0);
-	
-	##### OUTPUT if Seq is RNA has no cds but smsite --> structured perhaps catalytic RNA !
-
-	if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1 && @smsite>0){
-		print "<br>As I could not detect a coding sequence on this RNA, but there are 1 or more sn-RNP motifs (sm-sites),<br>it might be possible that this is a catalytic RNA!!<br>";
-	}
-}
-
-
-sub createfolding {
-    # comment out by liang
-    # new ViennaRNA does not have the old FOLD program but rather incorporated in the same program RNAfold AA
-		my $infile = "$TEMPDIR/$job.seq";
-        my $outfile = "$TEMPDIR/$job.foldout";
-
-        die "Infile not found: $infile" unless -e $infile;
-        die "RNAfold binary not found: $VIENNARNAFOLDDIR/RNAfold" unless -x "$VIENNARNAFOLDDIR/RNAfold";
-        my $cmd = "cat $infile | $VIENNARNAFOLDDIR/RNAfold > $outfile 2>&1";
-        system("$cmd") == 0 or die "RNAfold failed";
-        # write_file("$TEMPDIR/debug_command.sh", "#!/bin/bash\n$cmd\n");
-        # chmod 0755, "$TEMPDIR/debug_command.sh";
-        open(my $fh, '<', $outfile) or die "Can't open output";
-        <$fh>;  # skip FASTA header
-        my $seq = <$fh>;
-        my $struct_line = <$fh>;
-
-        $struct_line =~ /([().]+)\s+\(([-\d.]+)\)/;
-        @structure = split('', $1);
-        $structure = $1;
-        $energy = $2;
-		
-		
-		print "<br><b>Length:</b>        $SEQUENCELENGTH";
-	        print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
-	        print "<br><b>Origin:</b>        $dnarna<br>";
-}
-
-
-sub createfoldingpicture{
-     # Run RNAfold with input and output specified
-		my $seq_file = "$TEMPDIR/$job.seq";
-    	my $svg_file = "$TEMPDIR/${job}_ss.svg";
-		my $ps_file = "$TEMPDIR/${job}_ss.ps";
-        my $svg_url = "/tmp/jobs/job_$job/${job}_ss.svg";
-        my $ps_url = "/tmp/jobs/job_$job/${job}_ss.ps";
-
-	if ($SEQUENCELENGTH <= $MAXFOLDINGLEN) {
-		
-
-		system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full"); #clicable image so it opens in new tab
-			
-		##need to print the image it somewhere else## AA##
-		#print "<img src='$svg_path' width='800' height='650' alt='RNA Structure'>";
-		print "<br><b>Folding:</br></b>";
-		print "<br><img src= '$svg_url' width='650' height='650' alt='RNA Structure'</br>";
-		print "\n<b>Download As: </b>";
-		print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
-		print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
-	}
-	else {
-		print "<br></br>";
-		print "<b>Maximum folding limit reached</br>";
-	}
-}
-
-sub checkstems {
-		#evaluate the structure
-		$fldklauf=0; #Klammern auf pro stem
-		$fldstemsauf=0;
-		$fldklzu=0;
-		$fldstemszu=0;
-
-		for ($i=0;$i<=@structure-1;$i++) {
-		    $fldklauf++  if ($structure[$i] eq '(');
-		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
-		    $fldklauf=0 if ($structure[$i] eq ')');
-		    
-		    $fldklzu++  if ($structure[$i] eq ')');
-		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
-		    $fldklzu=0 if ($structure[$i] eq '(') 
-		} 
-		#Now a correction for Stemzu!
-		$fldstemszu++ if ($fldklzu>=5);
-		print "<b>Energy:</b>        $energy kcal/mol<br>";
-		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
-		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
-		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
-		if ($fldstemsauf != 0 && $fldstemszu != 0) {
-			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
-				print "<br>The sequence seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
-				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
-			}
-		}
-		#An message if it is highly structured that it could be an rRNA
-		if (($fldstemauf+$fldstemzu)/2>=10) {
-			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
-		}
-		#Okay, that's it for the stem detection!
-}
-
-sub checkstemsonly {
-		#evaluate the structure
-		my $inseq=$_[0];
-		my $inwhattodo=$_[1];   # --> 0 means is structure, evaluate, 1--> sequence, please fold first!
-		my $struct;
-		my @structure;
-		my $energy;
-		if ($inwhattodo==1 && length $inseq<=$MAXFOLDINGLENUTR){
-			@struct=`echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
-			if ($? != 0) { ##added by AA, error handling
-    			return ("RNAfold failed", 0);
-			}
-			$struct[1]=~/([().]+) \(([+-. 0-9]+)\)/;
-			@structure=split('',$1);
-			$energy=$2;
-			#print "DEBUGMARK1: $struct[1]";
-		}
-		if ($inwhattodo==1 && length $inseq>$MAXFOLDINGLENUTR){
-			return ("Too long for detection",1); #the 1 shows that we did not produce a result (not negative due to negative energy)
-		}
-		if ($inwhattodo==0){
-			@structure=split ('',$inseq);
-			$energy=0;
-		}
-		
-
-		#print "Debug: Here is thew struct: @structure END";	
-		my $fldklauf=0; #Klammern auf pro stem
-		my $fldstemsauf=0;
-		my $fldklzu=0;
-		my $fldstemszu=0;
-
-		for (my $i=0;$i<=@structure-1;$i++) {
-		    $fldklauf++  if ($structure[$i] eq '(');
-		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
-		    $fldklauf=0 if ($structure[$i] eq ')');
-		    
-		    $fldklzu++  if ($structure[$i] eq ')');
-		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
-		    $fldklzu=0 if ($structure[$i] eq '(') 
-		} 
-		#Now a correction for Stemzu!
-		$fldstemszu++ if ($fldklzu>=5);
-
-		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf==$fldstemszu);
-		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf<$fldstemszu);
-		return ($fldstemszu,$fldstemsauf,$energy) if ($fldstemsauf>$fldstemszu);
-
-		print "ERROR ERROR!!!!  This line should N O T be reached!!!";
-
-		##alright we shall undo this change and return after the lines below AA
-
-		#######ATTENTION THESES LINES BELOW ARE NOT PRINTED!!!! BECAUSE WE RETURN ABOVE !!!!!!#####
-		###########################################################################################
-		###########################################################################################
-
-
-		print "<b>Energy:</b>        $energy kcal/mol<br>";
-		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
-		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
-		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
-		if ($fldstemsauf != 0 && $fldstemszu != 0) {
-			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
-				print "<br>The structure seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
-				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
-			}
-		}
-		#An message if it is highly structured that it could be an rRNA
-		if (($fldstemauf+$fldstemzu)/2>=10) {
-			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
-		}
-		#Okay, that's it for the stem detection!
-
-}
-
-sub predprotein {
-	$predprotforAnDom=0;
-	print "<br><b>Pred. Protein<sup>1</sup>:</b>";
-	if (@predprot>1){
-		print "<br>";	
-		for ($count1=1;$count1<=@predprot;$count1++) {
-			print $predprot[$count1-1];
-			print "<br>" if ($count1%120==0);
-		}
-	print "<br>";
-	$predprotforAnDom=join('',@predprot);
- #	&runAnDom;
-	}
-	else {
-		print " none";
-	}
-}
-
-##### AA in this subroutine I need to remove all the dependency from older genscan file
-##### .genscan file can be replaced by .augugtus ( basically DNA sequence)
-#okay, now creating the colored RNAStructure for rev2
 sub drawcoloredstructure {
 		
 	#my @seq=split ('',$SEQUENCECHECKED);
 	my @seq=@structure;
+    normalize_transcript_features(); 
 
 	#print ("<br>ire contains: @ire <br>");
     my %change_underline=();      #the changes will be written into these hashes first!
@@ -1510,639 +2303,7 @@ sub drawcoloredstructure {
     print "<br>Output not possible:<br>@nooutputpossible<br>" if (@nooutputpossible>0);
 }
 
-# microrna search should be full length and should show potential micrornas with a warning. 
-sub RNAMOTIF {
-    my $tblout_file = "$TEMPDIR/$job.tblout";  # Table format output
-	my $output_file = "$TEMPDIR/$job.out";     # Full verbose output
-
-	# Run cmscan, saving outputs to files and suppressing screen output
-	my $cmd = "$CMSCAN/cmscan -E 0.001 --tblout $tblout_file -o $output_file $RFAM $TEMPDIR/$job.seq > /dev/null 2>&1";
-	system($cmd);
-
-	my $format = "%-12s %-12s %-6s %-6s %-8s %-10s %-20s\n";
-
-	my $found = 0;
-
-	print "<pre>\n";
-	print "<b>RNA motif search:</b><br>\n";
-
-	# Read and parse the tabular output (--tblout)
-	open my $fh_tbl, '<', $tblout_file or die "Cannot open RNAmotif scan file: $!";
-	while (my $line = <$fh_tbl>) {
-		next if $line =~ /^#/;  # Skip comments
-		chomp $line;
-		my @columns = split(/\s+/, $line, 18);
-		next unless @columns >= 16;
-
-		my ($match, $family, $from, $to, $score, $e_value, $description) = ($columns[0], $columns[1], $columns[7], $columns[8], $columns[14], $columns[15], $columns[17]);
-
-		my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
-
-		push @results, sprintf($format, $match, $family_link, $from, $to, $score, $e_value, $description);
-		$found = 1;
-	}
-	
-	close $fh_tbl;
-
-	
-	if ($found) {
-		# Print header only if results exist
-		printf $format, "Match", "Family", "From", "To", "Score", "E-Value", "Description";
-		print "-" x 80, "\n";  # Simple separator
-
-		# Print stored results
-		print @results;
-	} else {
-		print "No motif recognized\n";
-    }
-	print "</pre>\n";
-}
-
-sub CPC2 {
-
-	my $cpc_input = "$TEMPDIR/$job.seq";
-	my $cpc_output = "$TEMPDIR/$job.cpc2";
-
-	my $RUN_CPC="python3 $CPC/CPC2.py -i $cpc_input -o $cpc_output";
-	my $exit_code = system($RUN_CPC);
-	if ($exit_code != 0) {
-    	print "CPC2 execution failed with exit code: $exit_code\n";
-	}
-
-	print "<b>Checking coding potential:</b>\n";
-
-	open(my $fh_cpc2, "<", "$cpc_output.txt") or die "Cannot open CPC2 result $cpc_output: $!";
-	my @results;
-	my $found = 0;
-
-	my $format = "%-10s %-18s %-15s %-10s %-10s %-10s %-15s %-10s\n";
-
-	# Read file line by line
-	while (my $line = <$fh_cpc2>) {
-		next if $line =~ /^#/;  # Skip comment/header lines
-		chomp $line;
-
-		my @columns = split(/\t/, $line);  # Split by tab
-		next unless @columns >= 7;  # Ensure enough columns exist
-
-		# Extract relevant fields
-		my ($id, $transcript_length, $peptide_length, $fickett_score, $pI, $orf_integrity, $coding_probability, $label) = 
-			($columns[0], $columns[1], $columns[2], $columns[3], $columns[4], $columns[5], $columns[6], $columns[7]);
-
-		# Format numeric values with 2 decimal places
-		$fickett_score = sprintf("%.2f", $fickett_score);
-		$pI = sprintf("%.2f", $pI);
-		$coding_probability = sprintf("%.6f", $coding_probability);  # Keep precision for probability
-
-		# Store formatted row
-		push @results, sprintf($format, $id, $transcript_length, $peptide_length, $fickett_score, $pI, $orf_integrity, $coding_probability, $label);
-
-		$found = 1;
-	}
-	close $fh_cpc2;
-
-	# Print results in table format
-	if ($found) {
-		printf $format, "ID", "Transcript Length", "Peptide Length", "Fickett", "pI", "ORF", "Coding Prob.", "Label";
-		print "-" x 100, "\n";  # Separator
-		print @results;
-	} else {
-		print "No result in CPC2 output\n";
-	}
-
-
-}
-
-sub microRNA {
-
-		my $mirbase_output = "$TEMPDIR/$job.mirtbl";
-		my $mirbase_out    = "$TEMPDIR/$job.mir";
-
-		my $mirna_search = "$HMMER/nhmmer --rna --watson -Z 3.73 --tblout $mirbase_output -o $mirbase_out $TEMPDIR/$job.seq $MIRBASE/hairpin.fa";
-
-		system($mirna_search);
-
-		my $format = "%-18s %-6s %-6s %-10s %-8s %-15s %-40s\n";
-
-		my @results;
-
-		open my $fh_tbl, '<', $mirbase_output or die "Cannot open miRNA result: $!";
-		while (my $line = <$fh_tbl>) {
-			next if $line =~ /^#/;
-			chomp $line;
-			my @columns = split(/\s+/, $line);
-			next unless @columns >= 17;
-			my $desc_full = join(" ", @columns[15..$#columns]);
-
-			my ($match, $from, $to, $e_value, $score) =
-    			($columns[0], $columns[7], $columns[8], $columns[12], $columns[13]);
-
-			# Extract accession and description
-			my ($accession, $desc_text) = $desc_full =~ /(MI\w+\d+)\s+(.*)/;
-			unless ($accession) {
-				$accession = '-';
-				$desc_text = $desc_full;
-			}
-
-			push @results, {
-				match       => $match,
-				from        => $from,
-				to          => $to,
-				score       => $score + 0,    # force numeric
-				e_value     => $e_value + 0,  # force numeric
-				accession   => $accession,
-				description => $desc_text
-			};
-		}
-		close $fh_tbl;
-
-		my $total = scalar @results;
-
-		if ($total) {
-			print "<b>miRNA search:</b><br>\n";
-			printf $format, "Match", "From", "To", "E-Value", "Score", "Accession", "Description";
-			print "-" x 120, "\n";
-
-			# Split into human vs others (e.g., match starts with hsa- or description contains Homo sapiens)
-			my (@human_hits, @other_hits);
-			foreach my $hit (@results) {
-				if ($hit->{match} =~ /^hsa-/i || $hit->{description} =~ /Homo sapiens/i) {
-					push @human_hits, $hit;
-				} else {
-					push @other_hits, $hit;
-				}
-			}
-
-			# Sort both groups by E-value ascending
-			@human_hits = sort { $a->{e_value} <=> $b->{e_value} } @human_hits;
-			@other_hits = sort { $a->{e_value} <=> $b->{e_value} } @other_hits;
-
-			my @top_hits = (@human_hits, @other_hits);
-			@top_hits = @top_hits[0..2] if @top_hits > 3;
-
-			foreach my $hit (@top_hits) {
-				my $link = "<a href=\"https://www.mirbase.org/hairpin/$hit->{accession}\" target=\"_blank\">$hit->{accession}</a>";
-				printf $format, $hit->{match}, $hit->{from}, $hit->{to}, $hit->{e_value}, $hit->{score}, $link, $hit->{description};
-			}
-
-			print "<br><b>Total microRNA hits found:</b> $total<br>\n";
-			print "Due to the number of hits, the sequence likely contains microRNA(s)<br>\n";
-		} else {
-			print "No regions matching a mircroRNA was found.<br></br>\n";
-		}
-
-		print "<br></br>";
-
-
-}
-
-## micRNA scan using miRanda
-## slow, takes over 2 minutes to scan
-## implemented INTARna for this purpose and then removing overlaping regions so we can identify regions
-sub miRNAtarget {
-    my $mitar_input = "$TEMPDIR/$job.seq";  # Target sequence FASTA (input)
-    my $miranda_out = "$TEMPDIR/$job.miranda.tsv";  # Parsed output from wrapper
-    my $mirna_db = "$MIRBASE/mature.fa";
-    my $raw_out = "$TEMPDIR/$job.miranda.out";
-
-    # Run the wrapper
-    my $cmd = "python3 $MIRANDA/miranda_wrapper.py --parsed_out $miranda_out --miranda_bin $MIRANDA/miranda --tmpdir $TEMPDIR $mirna_db $mitar_input $raw_out";
-
-    my $exit_code = system($cmd);
-    if ($exit_code != 0) {
-        print "miRanda wrapper execution failed with exit code: $exit_code\n";
-        return ();
-    }
-
-    # Read and parse output TSV
-    open(my $fh, "<", $miranda_out) or die "Can't open $miranda_out: $!";
-    my $header = <$fh>;  # skip header
-
-    my @lines = <$fh>;
-    chomp @lines;
-    close($fh);
-
-    # Sort and filter overlapping query regions by energy (lower = better)
-    my @sorted = sort {
-        (split /\t/, $a)[4] <=> (split /\t/, $b)[4] ||  # Query_Start
-        (split /\t/, $a)[5] <=> (split /\t/, $b)[5] ||  # Query_End
-        (split /\t/, $a)[3] <=> (split /\t/, $b)[3]     # Energy
-    } @lines;
-
-    my @filtered;
-    my @current_group;
-
-    foreach my $line (@sorted) {
-        my ($query, $mirna, $score, $energy, $start, $end) = (split /\t/, $line)[0,1,2,3,4,5];
-
-        if (!@current_group) {
-            push @current_group, $line;
-            next;
-        }
-
-        my ($prev_start, $prev_end) = (split /\t/, $current_group[-1])[4,5];
-
-        if ($start <= $prev_end) {
-            push @current_group, $line;
-        } else {
-            my $best = (sort { (split /\t/, $a)[3] <=> (split /\t/, $b)[3] } @current_group)[0];
-            push @filtered, $best;
-            @current_group = ($line);
-        }
-    }
-
-    if (@current_group) {
-        my $best = (sort { (split /\t/, $a)[3] <=> (split /\t/, $b)[3] } @current_group)[0];
-        push @filtered, $best;
-    }
-
-    # Output HTML table
-    print "<b>miRanda target prediction:</b><br>\n";
-    printf "%-18s %-6s %-6s %-10s %-10s\n", "miRNA", "From", "To", "Energy", "Query";
-    print "-" x 60 . "\n";
-
-    my @regions;
-    foreach my $line (@filtered) {
-        my ($query, $mirna, $score, $energy, $start, $end) = split /\t/, $line;
-        printf "%-18s %-6s %-6s %-10.2f %-10s\n", $mirna, $start, $end, $energy, $query;
-        push @regions, [$start, $end];
-    }
-
-    return @regions;
-}
-
-
-
-
-
-########################
-##augustus replacing the old genscan; need to check the whole sub for errors
-sub AUGUSTUS {
-    (my $dna_sequence = $SEQUENCECHECKED) =~ tr/uU/tT/;
-    my ($species) = @_;
-    $species ||= "human";
-    my %utr_supported_species = map { $_ => 1 } qw(human);  # what is this doing?
-
-    my $output_gff = "$TEMPDIR/$job.augustus";
-    my $input_dna = "$TEMPDIR/$job.dna.fa";
-
-    @predprot = ();
-    @exons = ();
-    my $found_exon = 0;
-    my @exon_lines = ();
-    my $protein_seq = '';
-    my $capturing_protein = 0;
-    my @protein_lines = ();
-
-    my ($tss_pos, $tts_pos, $cds_start, $cds_end, $strand);
-    my @cds_ranges = ();
-    my @exon_ranges = ();
-
-    # Write input sequence
-    open(my $fh, '>', $input_dna) or die "Cannot write the input file for augustus: $!";
-    print $fh ">$job\n$dna_sequence\n";
-    close($fh);
-
-    my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on --UTR=on --species=$species $input_dna > $output_gff 2>&1";
-    system($augustus_cmd) == 0 or die "Failed to run AUGUSTUS: $!";
-
-    # Parse Augustus output
-    open(my $GFF, '<', $output_gff) or die "Can't open AUGUSTUS result: $!";
-    while (my $line = <$GFF>) {
-        chomp $line;
-
-        if ($line =~ /^# protein sequence = \[(.*)$/) {
-            $capturing_protein = 1;
-            push @protein_lines, $1;
-            next;
-        }
-
-        if ($capturing_protein) {
-            $line =~ s/^#\s?//;
-            if ($line =~ /^(.*)\]$/) {
-                push @protein_lines, $1;
-                $capturing_protein = 0;
-                next;
-            }
-            push @protein_lines, $line;
-            next;
-        }
-
-        next if $line =~ /^#/;
-        my @fields = split("\t", $line);
-        next unless @fields >= 9;
-
-        my ($seqid, $source, $type, $start, $end, $score, $this_strand, $phase, $attributes) = @fields;
-
-        $strand = $this_strand if defined $this_strand and $type eq "gene";
-
-        if ($type eq "tss") {
-            $tss_pos = $start;
-        } elsif ($type eq "tts") {
-            $tts_pos = $end;
-        } elsif ($type eq "CDS") {
-            push @cds_ranges, [$start, $end];
-            $cds_start = $start unless defined $cds_start;
-            $cds_end = $end;
-        } elsif ($type eq "exon") {
-            push @exon_ranges, [$start, $end];
-            $found_exon = 1;
-        }
-    }
-    close $GFF;
-
-    my @cds = map { @$_ } @cds_ranges;
-    
-    # Function to split exon regions
-    sub split_exon_by_cds {
-        my ($exon_start, $exon_end, @cds_ranges) = @_;
-        my @segments;
-        my $cursor = $exon_start;
-
-        foreach my $cds (@cds_ranges) {
-            my ($cds_start, $cds_end) = @$cds;
-            next if $cds_end < $exon_start || $cds_start > $exon_end;
-
-            if ($cds_start > $cursor) {
-                push @segments, [$cursor, $cds_start - 1, 'noncoding'];
-            }
-
-            my $coding_start = ($cds_start > $cursor) ? $cds_start : $cursor;
-            my $coding_end = ($cds_end < $exon_end) ? $cds_end : $exon_end;
-            push @segments, [$coding_start, $coding_end, 'coding'];
-            $cursor = $coding_end + 1;
-        }
-
-        if ($cursor <= $exon_end) {
-            push @segments, [$cursor, $exon_end, 'noncoding'];
-        }
-
-        return @segments;
-    }
-
-    # Final exon processing
-    if ($found_exon) {
-        print "<b>Exons<sup>1</sup>:</b>        start  -   end       type<br>";
-        foreach my $exon (@exon_ranges) {
-            my ($start, $end) = @$exon;
-            my @segments = split_exon_by_cds($start, $end, @cds_ranges);
-            foreach my $seg (@segments) {
-                my ($seg_start, $seg_end, $type) = @$seg;
-                push @exons, ($seg_start, $seg_end);
-                push @exon_lines, sprintf("<br> Exon:         %-6d - %6d     %s<br>", $seg_start, $seg_end, $type);
-            }
-        }
-        print "$_<br>" for @exon_lines;
-
-        $protein_seq = join('', @protein_lines);
-        $protein_seq =~ s/\s//g;
-        @predprot = split('', $protein_seq);
-
-        infer_and_print_UTRs($tss_pos, $tts_pos, $cds_start, $cds_end, $strand, length($dna_sequence));
-
-        if (@new3primeutr) {
-            print "<br><i>Checking predicted 3' UTR for polyA signals...</i><br>";
-            for (my $i = 0; $i <= $#new3primeutr; $i += 2) {
-                my $utr_start = $new3primeutr[$i];
-                my $utr_end   = $new3primeutr[$i + 1];
-                scanPolyAinPredictedUTR($SEQUENCECHECKED, $utr_start, $utr_end);
-            }
-        } else {
-            print "<i>No 3' UTR predicted by AUGUSTUS. Attempting to infer from polyA signal...</i><br>";
-            refineUTRwithPolyA($SEQUENCECHECKED, $cds_end, $strand, length($SEQUENCECHECKED));
-        }
-    } else {
-        print "<b>Exons<sup>1</sup>:</b>        none<br>";
-        &scan_structured_regions();  # fallback RNA scan
-    }
-
-    print "<br>";
-    return (@exons, @predprot, @cds);  # Return both exon coords and predicted protein
-}
-
-
-sub infer_and_print_UTRs {
-    my ($tss_pos, $tts_pos, $cds_start, $cds_end, $strand, $seq_length) = @_;
-
-    our @new5primeutr = ();
-    our @new3primeutr = ();
-    our @utrprintout  = ();
-    our @utr          = ();
-
-    # UTR prediction from augustus found!
-    if (defined $tss_pos || defined $tts_pos) {
-        print "<i>UTR site(s) detected from AUGUSTUS output.</i><br>";
-
-        if (defined $tss_pos && defined $cds_start && $tss_pos < $cds_start) {
-            push @new5primeutr, $tss_pos, $cds_start - 1;
-            push @utrprintout, 5, $tss_pos, $cds_start - 1;
-            # print " Predicted 5' UTR: $tss_pos - " . ($cds_start - 1) . "<br>";
-        } else {
-            # print " No 5' UTR predicted (CDS starts at or before TSS)<br>";
-        }
-
-        if (defined $tts_pos && defined $cds_end && $cds_end < $tts_pos) {
-            push @new3primeutr, $cds_end + 1, $tts_pos;
-            push @utrprintout, 3, $cds_end + 1, $tts_pos;
-            # print " Predicted 3' UTR: " . ($cds_end + 1) . " - $tts_pos<br>";
-        } else {
-            # print " No 3' UTR predicted (CDS ends at or after TTS)<br>";
-        }
-
-	# no UTR prediction from augustus
-
-    } else {
-        print "<i>No UTR sites detected. Inferring UTRs from CDS and strand...</i><br>";
-        if ($strand eq '+') {
-            if (defined $cds_start && $cds_start > 1) {
-                push @new5primeutr, 1, $cds_start - 1;
-                push @utrprintout, 5, 1, $cds_start - 1;
-                print " Inferred 5' UTR: 1 - " . ($cds_start - 1) . "<br>";
-            }
-            if (defined $cds_end && $cds_end < $seq_length) {
-                push @new3primeutr, $cds_end + 1, $seq_length;
-                push @utrprintout, 3, $cds_end + 1, $seq_length;
-                print " Inferred 3' UTR: " . ($cds_end + 1) . " - $seq_length<br>";
-            }
-        } elsif ($strand eq '-') {
-            if (defined $cds_end && $cds_end < $seq_length) {
-                push @new5primeutr, $cds_end + 1, $seq_length;
-                push @utrprintout, 5, $cds_end + 1, $seq_length;
-                print " Inferred 5' UTR: $seq_length - " . ($cds_end + 1) . "<br>";
-            }
-            if (defined $cds_start && $cds_start > 1) {
-                push @new3primeutr, 1, $cds_start - 1;
-                push @utrprintout, 3, 1, $cds_start - 1;
-                print " Inferred 3' UTR: 1 - " . ($cds_start - 1) . "<br>";
-            }
-        }
-    }
-
-    @utr = (@utr, @new5primeutr, @new3primeutr);
-    @utr = sort { $a <=> $b } @utr;
-
-    ### Optional: stability folding like calcUTR ###
-    print "<b>UTR:</b>           start  -   end   -  stems - energy<br>";
-    foreach my $i (0 .. $#utrprintout / 3) {
-        my $type  = $utrprintout[$i*3];
-        my $start = $utrprintout[$i*3+1];
-        my $end   = $utrprintout[$i*3+2];
-
-        printf (" %d'            %-6d - %6d", $type, $start, $end);
-
-        my $utr_seq = substr($SEQUENCECHECKED, $start, $end - $start + 1);
-        my @returnout = &checkstemsonly($utr_seq, 1);
-        print "       $returnout[0]" if ($returnout[0] == $returnout[1]);
-        print "       $returnout[0]-$returnout[1]" if ($returnout[0] != $returnout[1]);
-        print "     $returnout[2]<br>" if ($returnout[2] != 1);
-    }
-
-    # Return same structure as calcUTR expected
-    return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr);
-}
-
-sub scanPolyAinPredictedUTR {
-    my ($sequence, $utr_start, $utr_end) = @_;
-
-    # Ensure DNA format
-    $sequence =~ tr/uU/tT/;
-
-    # Extract UTR sequence
-    my $utr_seq = substr($sequence, $utr_start - 1, $utr_end - $utr_start + 1);
-
-    my @motifs = qw(AATAAA ATTAAA TATAAA AAGAAA AATATA AGTAAA);
-    my $signal_found = 0;
-    my $tail_found = 0;
-
-    # Scan for polyA signal motifs
-    foreach my $motif (@motifs) {
-        if ($utr_seq =~ /$motif/i) {
-            my $rel_pos = $-[0];  # relative to UTR
-            my $abs_pos = $utr_start + $rel_pos;
-            print "PolyA signal $motif detected at position $abs_pos<br>";
-            $signal_found = 1;
-            last;
-        }
-    }
-
-    # Scan for polyA tail
-    if ($utr_seq =~ /A{10,}/i) {
-        my $tail_pos = $-[0] + $utr_start;
-        print "PolyA tail detected near position $tail_pos<br>";
-        $tail_found = 1;
-    }
-
-    unless ($signal_found || $tail_found) {
-        print "No polyA signal or tail detected in 3' UTR ($utr_start - $utr_end)<br>";
-    }
-}
-
-
-sub refineUTRwithPolyA {
-    
-	my ($sequence, $cds_end, $strand, $seq_length) = @_;
-	$sequence =~ tr/uU/tT/;
-
-    our @new3primeutr = ();
-    our @utrprintout  = ();
-    our @utr          = ();
-    our @polyasignal  = ();
-    our @polyatail    = ();
-
-    my @motifs = qw(AATAAA ATTAAA TATAAA AAGAAA AATATA AGTAAA);
-    my $window_start = $cds_end + 1;
-    my $window_end = $seq_length;
-    my $utr_seq = substr($sequence, $window_start - 1, $window_end - $window_start + 1);
-
-    my $signal_pos = -1;
-    my $signal_motif = "";
-    my $tail_pos = -1;
-
-    # Scan for signal in last ~200bp
-    foreach my $motif (@motifs) {
-        if ($utr_seq =~ /$motif/i) {
-            $signal_pos = $-[0] + $window_start;
-            $signal_motif = $motif;
-            push @polyasignal, $signal_pos;
-            print "PolyA signal ($motif) detected at $signal_pos<br>";
-            last;
-        }
-    }
-
-    # Scan for A-rich tail
-    if ($sequence =~ /A{10,}/g) {
-        my $tail_candidate = pos($sequence);
-        if ($tail_candidate >= $cds_end && $tail_candidate - $cds_end < 200) {
-            $tail_pos = $tail_candidate;
-            push @polyatail, $tail_pos;
-            print "PolyA tail detected near $tail_pos<br>";
-        }
-    }
-
-    # If either was found, define 3' UTR
-    if ($signal_pos > 0 || $tail_pos > 0) {
-        my $utr_start = $cds_end + 1;
-        my $utr_end = $tail_pos > 0 ? $tail_pos : ($signal_pos + 20);  # buffer
-
-        push @new3primeutr, $utr_start, $utr_end;
-        push @utrprintout, 3, $utr_start, $utr_end;
-        push @utr, $utr_start, $utr_end;
-
-        print "Inferred 3' UTR based on polyA: $utr_start - $utr_end<br>";
-    } else {
-        print "No strong polyA signal/tail detected in 3' region.<br>";
-    }
-
-    return (\@new3primeutr, \@polyasignal, \@polyatail);
-}
-
-sub scan_structured_regions {
-    my $count = 0;
-    my $len = length $SEQUENCECHECKED;
-    my $printout = 0;
-    my $last = 0;
-
-    print "<b>Region:        From     To    Stems   Energy Remark</b><br>";
-
-    while ($count <= $len) {
-        my ($query, @answer);
-        if ($count + 150 < $len) {
-            $query = substr($SEQUENCECHECKED, $count, 150);
-            printf("<br> Pos:       %6d - %6d", $count, $count + 150);
-        } else {
-            $query = substr($SEQUENCECHECKED, $count, $len - $count);
-            printf("<br> Pos:       %6d - %6d", $count, $len);
-            $last = 1;
-        }
-
-        @answer = &checkstemsonly($query, 1);
-        print "      $answer[0]" if $answer[0] == $answer[1];
-        print "    $answer[0]-$answer[1]" if $answer[0] != $answer[1];
-        print "    $answer[2]";
-
-        if ($answer[0] >= 3 && $answer[1] >= 3) {
-            print "   **<br>";
-            $printout = 1;
-        } else {
-            print "<br>";
-        }
-
-        last if $last;
-        $count += 100;
-    }
-
-    if ($printout) {
-        print "** Three or more stem loops in this region! This is a highly structured region. <br>Please check whether tRNA, rRNA or another highly structured RNA is encoded here!<br>";
-    } else {
-        print "<br>";
-    }
-}
-
-
-
 print "<br>*Pr.A1.bin.site = Protein A1 binding site<br>";
-
-
 
 write_file("$TEMPDIR/result.txt", "done\n");
 

@@ -261,7 +261,7 @@ def calculate_potential(fasta,strand,output_orf,outfile):
 	ftmp_svm = open(outfile + ".tmp.1","w")
 	ftmp_result = open(outfile,"w")
 	if output_orf == 1:
-		my_header = ["#ID","transcript_length","peptide_length","Fickett_score","pI","ORF_integrity","ORF_Start","coding_probability","label"]
+		my_header = ["#ID","transcript_length","peptide_length","Fickett_score","pI","ORF_integrity","ORF_Start","strand","coding_probability","label"]
 	else:
 		my_header = ["#ID","transcript_length","peptide_length","Fickett_score","pI","ORF_integrity","coding_probability","label"]
 	ftmp_result.write("\t".join(map(str,my_header))+"\n")
@@ -289,7 +289,7 @@ def calculate_potential(fasta,strand,output_orf,outfile):
 			orf_fullness = -1
 			isoelectric_point = 0.0
 		if output_orf == 1:
-			output_line = [seqid,len(seqRNA),pep_len,fickett_score,isoelectric_point,orf_fullness,start_pos]
+			output_line = [seqid,len(seqRNA),pep_len,fickett_score,isoelectric_point,orf_fullness,start_pos,orf_strand]
 		else:
 			output_line = [seqid,len(seqRNA),pep_len,fickett_score,isoelectric_point,orf_fullness]
 		ftmp_result.write("\t".join(map(str,output_line))+"\n")

@@ -329,13 +329,14 @@ make # takes a bit of time needs patience
 make install # installs the correct libraries in right location. last time it was not so right!
 ```
 
-# installing InstaRNA
+# Installing HMMER3 
 
 ```
-https://github.com/BackofenLab/IntaRNA.git
-
-./configure --prefix=/path/to/IntaRNA --with-vrna=/path/to/ViennaRNA-2.7.0 --disable-pkg-config
-
+wget http://eddylab.org/software/hmmer/hmmer.tar.gz
+tar zxf hmmer.tar.gz
+cd hmmer-3.4
+./configure --prefix /your/install/path   # replace /your/install/path with what you want, obv 
 make
-make install
+make check                                # optional: run automated tests
+make install                              # optional: install HMMER programs, man pages
 ```
