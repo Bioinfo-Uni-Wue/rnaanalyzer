@@ -31,7 +31,7 @@ print $q->header();
 
 print <<'HTML';
 <html><head>
-  <title>Batch Results</title>
+  <title>RNAanalyzer</title>
   <link rel="stylesheet" href="/css/batchresults.css">
 </head><body>
 <header>
@@ -39,7 +39,7 @@ print <<'HTML';
       <img src="../images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
-      <h1>RNA Analyzer 2.0</h1>
+      <h1>RNA Analyzer 2025</h1>
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
@@ -187,7 +187,7 @@ sub sanitize_sequence {
         $seq_body = $fasta_block;
     }
 
-    # SECURITY: sanitize header to remove any shell-injection risk or path traversal
+    # sanitize header to remove any shell-injection risk or path traversal
     $header =~ s/[^ a-zA-Z0-9><;+\-_.]/_/g;   # allow only safe characters
     $header =~ s/\.\.//g;                    # prevent "../" path tricks
     $header = substr($header, 0, 20);       # truncate excessively long names

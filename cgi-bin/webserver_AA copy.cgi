@@ -33,7 +33,7 @@ $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
-$MAXFORNALENGTH=5000;
+$MAXFORNALENGTH=1500;
 $maxcoloredseqlen=10000;
 
 # Create a new CGI object
@@ -64,18 +64,19 @@ my $params_json = read_file("$TEMPDIR/params.json");
 my $params = decode_json($params_json);
 
 # Now extract them like form params:
-my $do_rnamotif         = $params->{RNAmotif};
-my $do_augustus         = $params->{run_coding};
-my $do_mirna            = $params->{mirna};
-my $do_trna             = $params->{trna};
-my $do_IRE              = $params->{IRE};
-my $do_TRANS            = $params->{TRANS};
-my $species             = $params->{species};
-my $do_mirnatarget      = $params->{mirna_target};
-my $dnarna              = $params->{dnarna};
-my $SEQNAMECHECKED      = $params->{sequence_name};
-my $SEQUENCECHECKED     = $params->{sequence_clean};
-my $SEQUENCELENGTH      = $params->{sequence_length};
+my $do_rnamotif = $params->{RNAmotif};
+my $do_augustus = $params->{run_coding};
+my $do_mirna    = $params->{mirna};
+my $do_trna     = $params->{trna};
+my $do_IRE      = $params->{IRE};
+my $do_TRANS    = $params->{TRANS};
+my $species     = $params->{species};
+my $do_mirnatarget  = $params->{mirna_target};
+my $dnarna          = $params->{dnarna};
+my $SEQNAMECHECKED   = $params->{sequence_name};
+my $SEQUENCECHECKED  = $params->{sequence_clean};
+my $SEQUENCELENGTH = $params->{sequence_length};
+
 
 my $html_file = "$TEMPDIR/result.html";
 
@@ -95,7 +96,7 @@ print <<'HTML';
       <img src="http://localhost/images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
-      <h1>RNA Analyzer 2025</h1>
+      <h1>RNA Analyzer 2.0</h1>
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
@@ -111,7 +112,6 @@ HTML
 # ... print your actual results here ...
 
 
-    
 # Start processing with the single sequence input.
 &startproggi;
 
@@ -130,10 +130,7 @@ sub startproggi {
 
     ####### Initializing some variables for the colored output ########
     @exons=();@transsplicing=();@ire=();@smsite=();@aurichregion=();
-    @stemggpairs=();@polyasignal=();@utr=();@cds=();
-    our @rna_motif;
-
-    
+    @stemggpairs=();@polyasignal=();@utr=();@cds=();@rna_motif=();
     print $cgi->h2("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
 
     # running analysis
@@ -161,7 +158,7 @@ sub analysis {
     }
 
     &ARE;
-    
+    &createfoldingpicture;
 
     print "<br><b>Catalytic RNA:</b><br>";
     &smsite;
@@ -224,10 +221,6 @@ sub analysis {
 
     &csfce;
     &protA1bisite;
-
-    &createfoldingpicture;
-
-    &location_table;
 
     if (length $SEQUENCECHECKED <= $MAXFOLDINGLEN) {
         &stemggpairs;
@@ -595,6 +588,89 @@ sub createfolding {
 	        print "<br><b>Origin:</b>        $dnarna<br>";
 }
 
+sub createfoldingpicture {
+    my $seq_file       = "$TEMPDIR/$job.seq";
+    my $foldout_file   = "$TEMPDIR/$job.foldout";
+
+	if ($SEQUENCELENGTH <= $MAXFOLDINGLEN && $SEQUENCELENGTH > $MAXFORNALENGTH) {
+        my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
+        my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
+        my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
+
+        # Make sure RNAplot output is ready
+        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
+
+        # Read SVG file content
+        open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
+        my $svg_content = do { local $/; <$svgfh> };
+        close($svgfh);
+
+        # Add ID to <svg> tag if not present
+        $svg_content =~ s/<svg /<svg id="rna_ss" width="650" height="650" /;
+
+        # Output
+        print "<h3>RNA Structure Visualization:</h3>\n";
+        print "$svg_content\n";
+        print "<p style='font-size: 0.9em; color: gray;'> Drag to pan, scroll to zoom</p>\n";
+        print "<b>Download As: </b>\n";
+        print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
+        print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
+
+        # Add svg-pan-zoom script
+        print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
+        print "<script>\n";
+        print "  svgPanZoom('#rna_ss', {\n";
+        print "    zoomEnabled: true,\n";
+        print "    controlIconsEnabled: true,\n";
+        print "    fit: true,\n";
+        print "    center: true\n";
+        print "  });\n";
+        print "</script>\n";
+    }
+
+
+
+    elsif ($SEQUENCELENGTH <= $MAXFORNALENGTH) {
+        # Read sequence and structure from RNAfold output
+        open(my $fh, '<', $foldout_file) or die "Cannot open foldout file: $!";
+        my $header = <$fh>;  # Skip header line (e.g. >job123)
+        my $sequence = <$fh>;
+        chomp($sequence);
+        my $structure_line = <$fh>;
+        chomp($structure_line);
+        $structure_line =~ /^([().]+)\s+/;
+        my $structure = $1;
+        close($fh);
+
+        # Print HTML content
+        print "<h3>RNA Structure Visualization:</h3>\n";
+        
+        print "<div style='width: 650px;'>\n";
+        print "  <div id='rna_ss' style='width: 650px; height: 650px;'></div>\n";
+        print "  <p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
+        print "</div>\n";
+
+        # Include required scripts
+        print "<link rel='stylesheet' href='/css/fornac.css'>\n";
+        print "<script src='/js/d3.v3.min.js'></script>\n";
+        print "<script src='/js/fornac.js'></script>\n";
+
+        # Inject JavaScript block to visualize RNA
+        print "<script>\n";
+        print "  window.onload = function () {\n";
+        print "    var container = new fornac.FornaContainer(\"#rna_ss\", { animation: false, applyForce: false, labelInterval: 0, allowPanningAndZooming: true, structurePadding: 0, drawBackground: false});\n";
+        print "    var options = {\n";
+        print "      structure: '$structure',\n";
+        print "      sequence: '$sequence'\n";
+        print "    };\n";
+        print "    container.addRNA(options.structure, options);\n";
+        print "  };\n";
+        print "</script>";
+
+    } else {
+        print "<br><b>Maximum folding limit reached</b><br>";
+    }
+}
 
 sub checkstems {
 		#evaluate the structure
@@ -738,14 +814,7 @@ sub RNAMOTIF {
 	my $format = "%-12s %-12s %-12s %-6s %-8s %-10s %-20s\n";
 
 	my $found = 0;
-    @rna_motif =();
-    my @results;
-    my $found = 0;
-    my $i = 0;
-
-    print "<link rel='stylesheet' href='/css/fornac.css'>\n";
-    print "<script src='/js/d3.v3.min.js'></script>\n";
-    print "<script src='/js/fornac.js'></script>\n";
+    my @rna_motif;
 
 	print "<pre>\n";
 	print "<b>RNA motif search:</b><br>\n";
@@ -762,65 +831,10 @@ sub RNAMOTIF {
 
         push @rna_motif, $from, $to;
 
-        ### Extract motif subsequence from full $seq
-        my $start = $from - 1;
-        my $length = $to - $from + 1;
-        my $motif_seq = substr($SEQUENCECHECKED, $start, $length);
-
-        # print ("Motif Seq: $motif_seq\n");
-
-        ### Fold subsequence using RNAfold
-        my $cmd = qq{echo "$motif_seq" | $VIENNARNAFOLDDIR/RNAfold --noPS 2>/dev/null};
-        my $foldout = `$cmd`;  # run it!
-        my @fold_lines = split("\n", $foldout);
-
-        my $dot_bracket = '';
-        $dot_bracket = $1 if $fold_lines[1] && $fold_lines[1] =~ /([().]+)\s+\([^)]+\)/;
-
-        # print "Structure: $dot_bracket\n";
-
-        # now save the results 
 		my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
 
-		my $row = sprintf($format, $match, "$family_link     ", $from, $to, $score, $e_value, $description);
-        # adding forna visual
-       
-        my $div_id = "rna_ss_$i";
-        my $forna_html = "";
-
-        $forna_html .= "<button onclick=\"toggleStructure$i()\">View Structure</button>\n";
-        $forna_html .= "<div id='$div_id' style='width: 650px; height: 650px; display: none; margin-top: 10px;'></div>\n";
-        $forna_html .= "<script>\n";
-        $forna_html .= "  function toggleStructure$i() {\n";
-        $forna_html .= "    var el = document.getElementById('$div_id');\n";
-        $forna_html .= "    if (el.style.display === 'none') {\n";
-        $forna_html .= "      el.style.display = 'block';\n";
-        $forna_html .= "      var container = new fornac.FornaContainer('#$div_id', {\n";
-        $forna_html .= "        animation: false,\n";
-        $forna_html .= "        applyForce: false,\n";
-        $forna_html .= "        labelInterval: 0,\n";
-        $forna_html .= "        allowPanningAndZooming: true,\n";
-        $forna_html .= "        structurePadding: 0,\n";
-        $forna_html .= "        drawBackground: false\n";
-        $forna_html .= "      });\n";
-        $forna_html .= "      var options = {\n";
-        $forna_html .= "        structure: '$dot_bracket',\n";
-        $forna_html .= "        sequence: '$motif_seq'\n";
-        $forna_html .= "      };\n";
-        $forna_html .= "      container.addRNA(options.structure, options);\n";
-        $forna_html .= "    } else {\n";
-        $forna_html .= "      el.innerHTML = '';\n";
-        $forna_html .= "      el.style.display = 'none';\n";
-        $forna_html .= "    }\n";
-        $forna_html .= "  }\n";
-        $forna_html .= "</script>\n";
-
-        push @results, $row . $forna_html;
-
+		push @results, sprintf($format, $match, "$family_link     ", $from, $to, $score, $e_value, $description);
 		$found = 1;
-        $i++;
-
-        print "DEBUG: MOTIF: @rna_motif";
 	}
 	
 	close $fh_tbl;
@@ -1536,179 +1550,6 @@ sub normalize_transcript_features {
 }
 
 
-sub createfoldingpicture {
-    my $seq_file       = "$TEMPDIR/$job.seq";
-    my $foldout_file   = "$TEMPDIR/$job.foldout";
-
-	# if ($SEQUENCELENGTH <= $MAXFOLDINGLEN && $SEQUENCELENGTH > $MAXFORNALENGTH) {
-    #     my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
-    #     my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
-    #     my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
-
-    #     # Make sure RNAplot output is ready
-    #     system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
-
-    #     # Read SVG file content
-    #     open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
-    #     my $svg_content = do { local $/; <$svgfh> };
-    #     close($svgfh);
-
-    #     # Add ID to <svg> tag if not present
-    #     $svg_content =~ s/<svg /<svg id="rna_ss" width="650" height="650" /;
-
-    #     # Output
-    #     print "<h3>RNA Structure Visualization:</h3>\n";
-    #     print "$svg_content\n";
-    #     print "<p style='font-size: 0.9em; color: gray;'> Drag to pan, scroll to zoom</p>\n";
-    #     print "<b>Download As: </b>\n";
-    #     print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
-    #     print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
-
-    #     # Add svg-pan-zoom script
-    #     print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
-    #     print "<script>\n";
-    #     print "  svgPanZoom('#rna_ss', {\n";
-    #     print "    zoomEnabled: true,\n";
-    #     print "    controlIconsEnabled: true,\n";
-    #     print "    fit: true,\n";
-    #     print "    center: true\n";
-    #     print "  });\n";
-    #     print "</script>\n";
-    # }
-
-
-
-    if ($SEQUENCELENGTH <= $MAXFOLDINGLEN) {
-        
-        my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
-        my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
-        my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
-
-        # Make sure RNAplot output is ready
-        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
-
-        # Read sequence and structure from RNAfold output
-        open(my $fh, '<', $foldout_file) or die "Cannot open foldout file: $!";
-        my $header = <$fh>;  # Skip header line (e.g. >job123)
-        my $sequence = <$fh>;
-        chomp($sequence);
-        my $structure_line = <$fh>;
-        chomp($structure_line);
-        $structure_line =~ /^([().]+)\s+/;
-        my $structure = $1;
-        close($fh);
-
-        # Print HTML content
-        print "<h3>RNA Structure Visualization:</h3>";
-        
-        print "<div style='width: 700px;'>\n";
-        print "  <div id='rna_ss' style='width: 700px; height: 700px;'></div>\n";
-        print "  <p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
-        print "<b>Download Folding As: </b>\n";
-        print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
-        print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
-        print "</div>";
-
-        # Include required scripts
-        print "<link rel='stylesheet' href='/css/fornac.css'>\n";
-        print "<script src='/js/d3.v3.min.js'></script>\n";
-        print "<script src='/js/fornac.js'></script>";
-
-        my $color_text = "";
-
-        # Process RNA motifs (red)
-        
-        for (my $j = 0; $j < @utr; $j += 2) {
-            my ($from, $to) = @utr[$j, $j + 1];
-            for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:lightblue ";
-            }
-        }
-
-        # Process exons (green)
-        for (my $j = 0; $j < @exons; $j += 2) {
-            my ($from, $to) = @exons[$j, $j + 1];
-            for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:lightgreen ";
-            }
-        }
-        
-        # process motif
-        for (my $j = 0; $j < @rna_motif; $j += 2) {
-            my ($from, $to) = @rna_motif[$j, $j + 1];
-            for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:red ";
-            }
-        }
-
-        $color_text =~ s/\s+$//;  # Trim trailing space
-
-        # Inject JavaScript block to visualize RNA
-        print "<script>\n";
-        print "  window.onload = function () {\n";
-        print "    var container = new fornac.FornaContainer(\"#rna_ss\", { animation: false, labelInterval: 50, allowPanningAndZooming: true, drawBackground: false});\n";
-        print "    var options = {\n";
-        print "      structure: '$structure',\n";
-        print "      sequence: '$sequence'\n";
-        print "    };\n";
-        print "    container.addRNA(options.structure, options);\n";
-
-        print "    var colorText = \"$color_text\";\n";
-        print "    container.addCustomColorsText(colorText);\n";
-        print "  };";
-        print "</script>";
-
-    } else {
-        print "<br><b>Maximum folding limit reached</b><br>";
-    }
-}
-
-sub location_table {
-
-    sub format_flat_ranges {
-        my @data = @_;
-        my @formatted;
-        for (my $i = 0; $i < @data; $i += 2) {
-            last if $i + 1 > $#data;
-            push @formatted, "$data[$i] to $data[$i+1]";
-        }
-        return join(" ", @formatted);
-    }
-
-    # Begin styling and table
-    print "<style>
-        table, th, td {
-            border: 1px solid black;
-            border-collapse: collapse;
-            padding: 8px;
-        }
-        th {
-            background-color: #f2f2f2;
-            text-align: left;
-        }
-    </style>";
-
-    print "<h2>Locations of the Detected Structures:</h2>\n";
-    print "<table>\n";
-
-    # Only print each row if the array is not empty
-    if (@rna_motif) {
-        my $motif_str = format_flat_ranges(@rna_motif);
-        print "<tr><th>RNA Motifs</th><td>$motif_str</td></tr>\n";
-    }
-
-    if (@exons) {
-        my $exons_str = format_flat_ranges(@exons);
-        print "<tr><th>Exons</th><td>$exons_str</td></tr>\n";
-    }
-
-    if (@utr) {
-        my $utr_str = format_flat_ranges(@utr);
-        print "<tr><th>UTRs</th><td>$utr_str</td></tr>\n";
-    }
-
-    print "</table>\n";
-}
 
 sub drawcoloredsequence {
 	
@@ -1755,8 +1596,8 @@ sub drawcoloredsequence {
     }
 
    print '<font face="monospace">';
-    # print "<br>DEBUG: EXONS: @exons<br>";
-    # print "DEBUG: UTRs: @utr<br>";
+    print "<br>EXONS: @exons<br>";
+    print "UTRs: @utr<br>";
     ########### ATTENTION !!!!! ####################
     ### Old problem the index of array starts at 0 !!! #####
     ### So for the next lines to be correct we will add #####

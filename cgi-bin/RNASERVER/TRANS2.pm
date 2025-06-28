@@ -2,7 +2,7 @@ package RNASERVER::TRANS2;
 
 use Cwd qw(abs_path);
 use strict;
-use lib '/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/perl';
+use lib '/home/ama55id/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl';
 use RNA;
 use RNASERVER::COMMON;
 

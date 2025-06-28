@@ -319,7 +319,7 @@ sudo cpan install File::Slurp  #for creating and storing correct job folder
 
 # updating ViennaRNA to 2.7.0
 ```
-wegt https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_7_x/ViennaRNA-2.7.0.tar.gz
+wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_7_x/ViennaRNA-2.7.0.tar.gz
 tar -xzf ViennaRNA-2.7.0.tar.gz
 cd ViennaRNA-2.7.0
 
