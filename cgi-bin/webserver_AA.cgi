@@ -28,7 +28,6 @@ $CPC=abs_path('../bin/cpc2/CPC2_standalone-1.0.1/bin'); #Coding potential calcul
 $HMMER=abs_path('../bin/hmmer-3.4/bin'); #hmmer location 
 $MIRBASE=abs_path('../databases/mirbase'); #MirBASE database
 $MIRANDA=abs_path('../bin/miranda/bin'); #miRanda 
-# $INTARNA=abs_path('../bin/IntaRNA/bin'); #path to INTARNA
 $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus 
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
 $MAXFOLDINGLEN=5000;
@@ -596,39 +595,129 @@ sub createfolding {
 }
 
 
-sub checkstems {
-		#evaluate the structure
-		$fldklauf=0; #Klammern auf pro stem
-		$fldstemsauf=0;
-		$fldklzu=0;
-		$fldstemszu=0;
+# sub checkstems {
+# 		#evaluate the structure
+# 		$fldklauf=0; #Klammern auf pro stem
+# 		$fldstemsauf=0;
+# 		$fldklzu=0;
+# 		$fldstemszu=0;
 
-		for ($i=0;$i<=@structure-1;$i++) {
-		    $fldklauf++  if ($structure[$i] eq '(');
-		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
-		    $fldklauf=0 if ($structure[$i] eq ')');
+# 		for ($i=0;$i<=@structure-1;$i++) {
+# 		    $fldklauf++  if ($structure[$i] eq '(');
+# 		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
+# 		    $fldklauf=0 if ($structure[$i] eq ')');
 		    
-		    $fldklzu++  if ($structure[$i] eq ')');
-		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
-		    $fldklzu=0 if ($structure[$i] eq '('); 
-		} 
-		#Now a correction for Stemzu!
-		$fldstemszu++ if ($fldklzu>=5);
-		print "<b>Energy:</b>        $energy kcal/mol<br>";
-		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
-		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
-		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
-		if ($fldstemsauf != 0 && $fldstemszu != 0) {
-			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
-				print "<br>The sequence seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
-				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
-			}
-		}
-		#An message if it is highly structured that it could be an rRNA
-		if (($fldstemauf+$fldstemzu)/2>=10) {
-			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
-		}
-		#Okay, that's it for the stem detection!
+# 		    $fldklzu++  if ($structure[$i] eq ')');
+# 		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
+# 		    $fldklzu=0 if ($structure[$i] eq '('); 
+# 		} 
+# 		#Now a correction for Stemzu!
+# 		$fldstemszu++ if ($fldklzu>=5);
+# 		print "<b>Energy:</b>        $energy kcal/mol<br>";
+# 		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
+# 		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
+# 		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
+# 		if ($fldstemsauf != 0 && $fldstemszu != 0) {
+# 			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
+# 				print "<br>The sequence seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
+# 				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
+# 			}
+# 		}
+# 		#An message if it is highly structured that it could be an rRNA
+# 		if (($fldstemauf+$fldstemzu)/2>=10) {
+# 			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
+# 		}
+# 		#Okay, that's it for the stem detection!
+# }
+
+sub checkstems {
+    # newer version of checkstens as previously it was more simpler looking for >5 brackets
+    # counts stems with paiting not just consecutive brackets
+    # also keeps stacks while counting 
+    my @pairing = ();
+    my %visited;
+    my @stack;
+
+    my ($fldstemsauf, $fldstemszu) = (0, 0);
+
+    # Build pairing map
+    for (my $i = 0; $i < @structure; $i++) {
+        if ($structure[$i] eq '(') {
+            push @stack, $i;
+        } elsif ($structure[$i] eq ')') {
+            if (@stack) {
+                my $j = pop @stack;
+                $pairing[$i] = $j;
+                $pairing[$j] = $i;
+            }
+        }
+    }
+
+    # Scanning for full stems with small bulge tolerance
+    for (my $i = 0; $i < @structure; $i++) {
+        next if $visited{$i};
+        next unless defined $pairing[$i];
+        next if $pairing[$i] < $i;  # avoid counting the same pair twice
+
+        my $left = $i;
+        my $right = $pairing[$i];
+        my $count = 1;
+
+        # Store all positions involved to mark as visited later
+        my @positions = ($left, $right);
+
+        # keeping 1-nt bulges
+        my ($l, $r) = ($left, $right);
+        while (1) {
+            my $found = 0;
+            foreach my $gap_left (0, 1) {
+                foreach my $gap_right (0, 1) {
+                    my $nl = $l + 1 + $gap_left;
+                    my $nr = $r - 1 - $gap_right;
+                    next if $nl >= $nr;
+                    if (defined $pairing[$nl] && $pairing[$nl] == $nr && !$visited{$nl} && !$visited{$nr}) {
+                        $count++;
+                        $l = $nl;
+                        $r = $nr;
+                        push @positions, $nl, $nr;
+                        $found = 1;
+                        last;
+                    }
+                }
+                last if $found;
+            }
+            last unless $found;
+        }
+
+        # 5 or >5 pairing 
+        if ($count >= 5) {
+            $fldstemsauf++;
+            $fldstemszu++;
+            $visited{$_} = 1 for @positions;
+        }
+    }
+
+    # print findings
+    print "<b>Energy:</b> $energy kcal/mol<br>";
+    if ($fldstemsauf == $fldstemszu) {
+        print "<b>Stems:</b> $fldstemsauf Stem-Structure/s<br>";
+    } else {
+        print "<b>Stems:</b> $fldstemsauf-$fldstemszu Stem-Structure/s<br>";
+    }
+
+    my $avg_spacing = (2 * scalar @structure) / ($fldstemsauf + $fldstemszu);
+    my $stem_count = ($fldstemsauf + $fldstemszu) / 2;
+
+    # if many stems are detected
+    if ($avg_spacing < 80 && $stem_count >= 20) {
+        print "<b>Highly structured RNA — could this be an rRNA or similar?</b><br>";
+    }
+
+    # less structure but can be still important 
+    elsif ($avg_spacing < 120 && $stem_count >= 10) {
+        print "The RNA seems structurally interesting, could be a regulatory RNA.<br>";
+        print "You might find it useful to look in the book: <br>RNA Motifs and Regulatory Elements<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>";
+    }
 }
 
 
