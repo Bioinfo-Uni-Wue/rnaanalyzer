@@ -108,7 +108,7 @@ def main():
     parser.add_argument("--min_score", type=float, default=155.0, help="Minimum miRanda alignment score")
     parser.add_argument("--min_overlap_pct", type=float, default=0.8, help="Minimum overlap % to merge hits")
     parser.add_argument("--require_seed_start", action='store_true', default=True,
-                        help="Require miRNA alignment to start at 5′ end (default: True)")
+                        help="Require miRNA alignment to start at 5' end (default: True)")
 
     args = parser.parse_args()
     os.makedirs(args.tmpdir, exist_ok=True)

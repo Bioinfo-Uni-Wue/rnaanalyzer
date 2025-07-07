@@ -839,7 +839,7 @@ sub RNAMOTIF {
 	print "<pre>\n";
 	print "<b>RNA motif search:</b><br>\n";
 
-	# Read and parse the tabular output (--tblout)
+	
 	open my $fh_tbl, '<', $tblout_file or die "Cannot open RNAmotif scan file: $!";
 	while (my $line = <$fh_tbl>) {
 		next if $line =~ /^#/;  # Skip comments
@@ -2205,7 +2205,6 @@ sub drawcoloredsequence {
 
 sub drawcoloredstructure {
 		
-	#my @seq=split ('',$SEQUENCECHECKED);
 	my @seq=@structure;
     normalize_transcript_features(); 
 
