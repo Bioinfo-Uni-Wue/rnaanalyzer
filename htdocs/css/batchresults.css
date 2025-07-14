@@ -106,4 +106,22 @@ text-align: right;
     margin-top: 20px;
     color: orange;
   }
+
+  .timing-line {
+    width: 100%;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .elapsed {
+    float: left;
+    text-align: left;
+    font-weight: bold;
+  }
+
+  .estimated {
+    float: right;
+    text-align: right;
+    font-weight: bold;
+  }
   

@@ -634,12 +634,14 @@ sub checkstems {
     # newer version of checkstens as previously it was more simpler looking for >5 brackets
     # counts stems with paiting not just consecutive brackets
     # also keeps stacks while counting 
+    # limit for stem decttion is reduced to 3 and also allowed bulges = 1nt
+    # removed double counting but need to check 
+
     my @pairing = ();
     my %visited;
     my @stack;
-
-    my ($fldstemsauf, $fldstemszu) = (0, 0);
-
+    my ($stem_count, $hairpin_count) = (0, 0);
+    
     # Build pairing map
     for (my $i = 0; $i < @structure; $i++) {
         if ($structure[$i] eq '(') {
@@ -652,148 +654,285 @@ sub checkstems {
             }
         }
     }
+    
+    # biologically valid stems
+    for (my $i = 0; $i < @structure; $i++) {
+        next if $visited{$i};
+        next unless defined $pairing[$i];
+        next if $pairing[$i] < $i;  # avoid recounting same pair need to check realworld example **
+        
+        my $left = $i;
+        my $right = $pairing[$i];
+        
+        # minimum loop length
+        my $loop_length = $right - $left - 1;
+        next if $loop_length < 3;  # Skip impossible loops
+        
+        my $count = 1;
+        my @positions = ($left, $right);
+        
+        #  bulge tolerance
+        my ($l, $r) = ($left, $right);
+        while (1) {
+            my $found = 0;
+            
+            my $nl = $l + 1;
+            my $nr = $r - 1;
+            
+            if ($nl < $nr && defined $pairing[$nl] && $pairing[$nl] == $nr && 
+                !$visited{$nl} && !$visited{$nr}) {
+                $count++;
+                $l = $nl;
+                $r = $nr;
+                push @positions, $nl, $nr;
+                $found = 1;
+            }
+            # c bulges
+            elsif (!$found) {
+                $nl = $l + 2;
+                $nr = $r - 2;
+                
+                if ($nl < $nr && defined $pairing[$nl] && $pairing[$nl] == $nr && 
+                    !$visited{$nl} && !$visited{$nr}) {
+                    $count++;
+                    $l = $nl;
+                    $r = $nr;
+                    push @positions, $nl, $nr;
+                    $found = 1;
+                }
+            }
+            
+            last unless $found;
+        }
+        
+        # Check minimum stem length > 3
+        if ($count >= 3) {
+            $stem_count++;
+            
+            # terminal hairpin?
+            my $is_hairpin = 1;
+            for (my $k = $left + 1; $k < $right; $k++) {
+                if (defined $pairing[$k] && 
+                    ($pairing[$k] < $left || $pairing[$k] > $right)) {
+                    $is_hairpin = 0;
+                    last;
+                }
+            }
+            
+            $hairpin_count++ if $is_hairpin;
+            $visited{$_} = 1 for @positions;
+        }
+    }
+    
+    print "Energy: $energy kcal/mol\n";
+    print "Stems: $stem_count stem structure(s)\n";
+    print "Hairpins: $hairpin_count hairpin(s)\n";
+    
+    # prediction 
+    my $structure_length = scalar @structure;
+    my $avg_spacing = $structure_length / ($stem_count || 1);
+    
+    if ($stem_count >= 15 && $avg_spacing < 100) {
+        print "Highly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA\n";
+    } elsif ($hairpin_count >= 1 && $stem_count <= 3) {
+        print "Simple structured RNA — possible miRNA, siRNA, or regulatory element\n";
+    } elsif ($stem_count >= 1) {
+        print "Some secondary structure detected — may have biological significance\n";
+    } else {
+        print "Minimal secondary structure";
+    }
+    
+    print "It might be interesting to have a closer look at the structures.<br>";
+	print "You might find it useful to look in the book <br><br>'RNA Motifs and Regulatory Elements'<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>";
 
-    # Scanning for full stems with small bulge tolerance
+    if ($hairpin_count > 0 && $hairpin_count / $stem_count > 0.7) {
+        print "High hairpin content — characteristic of miRNA precursors\n";
+    }
+}
+
+# sub checkstemsonly {
+# 		#evaluate the structure
+# 		my $inseq=$_[0];
+# 		my $inwhattodo=$_[1];   # --> 0 means is structure, evaluate, 1--> sequence, please fold first!
+# 		my $struct;
+# 		my @structure;
+# 		my $energy;
+# 		if ($inwhattodo==1 && length $inseq<=$MAXFOLDINGLENUTR){
+# 			@struct=`echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
+# 			if ($? != 0) { ##added by AA, error handling
+#     			return ("RNAfold failed", 0);
+# 			}
+# 			$struct[1]=~/([().]+) \(([+-. 0-9]+)\)/;
+# 			@structure=split('',$1);
+# 			$energy=$2;
+# 			#print "DEBUGMARK1: $struct[1]";
+# 		}
+# 		if ($inwhattodo==1 && length $inseq>$MAXFOLDINGLENUTR){
+# 			return ("Too long for detection",1); #the 1 shows that we did not produce a result (not negative due to negative energy)
+# 		}
+# 		if ($inwhattodo==0){
+# 			@structure=split ('',$inseq);
+# 			$energy=0;
+# 		}
+		
+
+# 		#print "Debug: Here is thew struct: @structure END";	
+# 		my $fldklauf=0; #Klammern auf pro stem
+# 		my $fldstemsauf=0;
+# 		my $fldklzu=0;
+# 		my $fldstemszu=0;
+
+# 		for (my $i=0;$i<=@structure-1;$i++) {
+# 		    $fldklauf++  if ($structure[$i] eq '(');
+# 		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
+# 		    $fldklauf=0 if ($structure[$i] eq ')');
+		    
+# 		    $fldklzu++  if ($structure[$i] eq ')');
+# 		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
+# 		    $fldklzu=0 if ($structure[$i] eq '(') 
+# 		} 
+# 		#Now a correction for Stemzu!
+# 		$fldstemszu++ if ($fldklzu>=5);
+
+# 		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf==$fldstemszu);
+# 		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf<$fldstemszu);
+# 		return ($fldstemszu,$fldstemsauf,$energy) if ($fldstemsauf>$fldstemszu);
+
+# 		print "ERROR ERROR!!!!  This line should N O T be reached!!!";
+
+# 		##alright we shall undo this change and return after the lines below AA
+
+# 		#######ATTENTION THESES LINES BELOW ARE NOT PRINTED!!!! BECAUSE WE RETURN ABOVE !!!!!!#####
+# 		###########################################################################################
+# 		###########################################################################################
+
+
+# 		print "<b>Energy:</b>        $energy kcal/mol<br>";
+# 		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
+# 		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
+# 		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
+# 		if ($fldstemsauf != 0 && $fldstemszu != 0) {
+# 			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
+# 				print "<br>The structure seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
+# 				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
+# 			}
+# 		}
+# 		#An message if it is highly structured that it could be an rRNA
+# 		if (($fldstemauf+$fldstemzu)/2>=10) {
+# 			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
+# 		}
+# 		#Okay, that's it for the stem detection!
+
+# }
+
+sub checkstemsonly {
+    # revamped checkstemsonly based on the logic of the new checkstems
+    my $inseq = $_[0];
+    my $inwhattodo = $_[1];   # 0 means is structure, evaluate, 1--> sequence, please fold first!
+    my $struct;
+    my @structure;
+    my $energy;
+    
+    # Handle RNA folding or structure input
+    if ($inwhattodo == 1 && length $inseq <= $MAXFOLDINGLENUTR) {
+        @struct = `echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
+        if ($? != 0) { ##added by AA, error handling
+            return ("RNAfold failed", 0);
+        }
+        $struct[1] =~ /([().]+) \(([+-. 0-9]+)\)/;
+        @structure = split('', $1);
+        $energy = $2;
+    }
+    if ($inwhattodo == 1 && length $inseq > $MAXFOLDINGLENUTR) {
+        return ("Too long for detection", 1); 
+    }
+    if ($inwhattodo == 0) {
+        @structure = split ('', $inseq);
+        $energy = 0;
+    }
+
+    my @pairing = ();
+    my %visited;
+    my @stack;
+    my $fldstemsauf = 0;
+    my $fldstemszu = 0;
+    
+    for (my $i = 0; $i < @structure; $i++) {
+        if ($structure[$i] eq '(') {
+            push @stack, $i;
+        } elsif ($structure[$i] eq ')') {
+            if (@stack) {
+                my $j = pop @stack;
+                $pairing[$i] = $j;
+                $pairing[$j] = $i;
+            }
+        }
+    }
+    
+    # Scanning for biologically valid stems
     for (my $i = 0; $i < @structure; $i++) {
         next if $visited{$i};
         next unless defined $pairing[$i];
         next if $pairing[$i] < $i;  # avoid counting the same pair twice
-
+        
         my $left = $i;
         my $right = $pairing[$i];
+        
+        # BIOLOGICAL VALIDATION: Check minimum loop length
+        my $loop_length = $right - $left - 1;
+        next if $loop_length < 3;  # Skip sterically impossible loops
+        
         my $count = 1;
-
-        # Store all positions involved to mark as visited later
         my @positions = ($left, $right);
-
-        # keeping 1-nt bulges
+        
+        # Extend stem with improved bulge tolerance
         my ($l, $r) = ($left, $right);
         while (1) {
             my $found = 0;
-            foreach my $gap_left (0, 1) {
-                foreach my $gap_right (0, 1) {
-                    my $nl = $l + 1 + $gap_left;
-                    my $nr = $r - 1 - $gap_right;
-                    next if $nl >= $nr;
-                    if (defined $pairing[$nl] && $pairing[$nl] == $nr && !$visited{$nl} && !$visited{$nr}) {
-                        $count++;
-                        $l = $nl;
-                        $r = $nr;
-                        push @positions, $nl, $nr;
-                        $found = 1;
-                        last;
-                    }
-                }
-                last if $found;
+            
+            # Try consecutive pairs first
+            my $nl = $l + 1;
+            my $nr = $r - 1;
+            
+            if ($nl < $nr && defined $pairing[$nl] && $pairing[$nl] == $nr && 
+                !$visited{$nl} && !$visited{$nr}) {
+                $count++;
+                $l = $nl;
+                $r = $nr;
+                push @positions, $nl, $nr;
+                $found = 1;
             }
+            # Try 1-nt symmetric bulges
+            elsif (!$found) {
+                $nl = $l + 2;
+                $nr = $r - 2;
+                
+                if ($nl < $nr && defined $pairing[$nl] && $pairing[$nl] == $nr && 
+                    !$visited{$nl} && !$visited{$nr}) {
+                    $count++;
+                    $l = $nl;
+                    $r = $nr;
+                    push @positions, $nl, $nr;
+                    $found = 1;
+                }
+            }
+            
             last unless $found;
         }
-
-        # 5 or >5 pairing 
-        if ($count >= 5) {
+        
+        # Check minimum stem length (reduced from 5 to 3 for biological relevance)
+        if ($count >= 3) {
             $fldstemsauf++;
-            $fldstemszu++;
             $visited{$_} = 1 for @positions;
         }
     }
-
-    # print findings
-    print "<b>Energy:</b> $energy kcal/mol<br>";
-    if ($fldstemsauf == $fldstemszu) {
-        print "<b>Stems:</b> $fldstemsauf Stem-Structure/s<br>";
-    } else {
-        print "<b>Stems:</b> $fldstemsauf-$fldstemszu Stem-Structure/s<br>";
-    }
-
-    my $avg_spacing = (2 * scalar @structure) / ($fldstemsauf + $fldstemszu);
-    my $stem_count = ($fldstemsauf + $fldstemszu) / 2;
-
-    # if many stems are detected
-    if ($avg_spacing < 80 && $stem_count >= 20) {
-        print "<b>Highly structured RNA — could this be an rRNA or similar?</b><br>";
-    }
-
-    # less structure but can be still important 
-    elsif ($avg_spacing < 120 && $stem_count >= 10) {
-        print "The RNA seems structurally interesting, could be a regulatory RNA.<br>";
-        print "You might find it useful to look in the book: <br>RNA Motifs and Regulatory Elements<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>";
-    }
-}
-
-
-sub checkstemsonly {
-		#evaluate the structure
-		my $inseq=$_[0];
-		my $inwhattodo=$_[1];   # --> 0 means is structure, evaluate, 1--> sequence, please fold first!
-		my $struct;
-		my @structure;
-		my $energy;
-		if ($inwhattodo==1 && length $inseq<=$MAXFOLDINGLENUTR){
-			@struct=`echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
-			if ($? != 0) { ##added by AA, error handling
-    			return ("RNAfold failed", 0);
-			}
-			$struct[1]=~/([().]+) \(([+-. 0-9]+)\)/;
-			@structure=split('',$1);
-			$energy=$2;
-			#print "DEBUGMARK1: $struct[1]";
-		}
-		if ($inwhattodo==1 && length $inseq>$MAXFOLDINGLENUTR){
-			return ("Too long for detection",1); #the 1 shows that we did not produce a result (not negative due to negative energy)
-		}
-		if ($inwhattodo==0){
-			@structure=split ('',$inseq);
-			$energy=0;
-		}
-		
-
-		#print "Debug: Here is thew struct: @structure END";	
-		my $fldklauf=0; #Klammern auf pro stem
-		my $fldstemsauf=0;
-		my $fldklzu=0;
-		my $fldstemszu=0;
-
-		for (my $i=0;$i<=@structure-1;$i++) {
-		    $fldklauf++  if ($structure[$i] eq '(');
-		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
-		    $fldklauf=0 if ($structure[$i] eq ')');
-		    
-		    $fldklzu++  if ($structure[$i] eq ')');
-		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
-		    $fldklzu=0 if ($structure[$i] eq '(') 
-		} 
-		#Now a correction for Stemzu!
-		$fldstemszu++ if ($fldklzu>=5);
-
-		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf==$fldstemszu);
-		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf<$fldstemszu);
-		return ($fldstemszu,$fldstemsauf,$energy) if ($fldstemsauf>$fldstemszu);
-
-		print "ERROR ERROR!!!!  This line should N O T be reached!!!";
-
-		##alright we shall undo this change and return after the lines below AA
-
-		#######ATTENTION THESES LINES BELOW ARE NOT PRINTED!!!! BECAUSE WE RETURN ABOVE !!!!!!#####
-		###########################################################################################
-		###########################################################################################
-
-
-		print "<b>Energy:</b>        $energy kcal/mol<br>";
-		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
-		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
-		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
-		if ($fldstemsauf != 0 && $fldstemszu != 0) {
-			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
-				print "<br>The structure seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
-				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
-			}
-		}
-		#An message if it is highly structured that it could be an rRNA
-		if (($fldstemauf+$fldstemzu)/2>=10) {
-			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
-		}
-		#Okay, that's it for the stem detection!
-
+    
+    # Set fldstemszu to same value (maintaining original interface behavior)
+    # Your original code had logic issues with separate auf/zu counting
+    $fldstemszu = $fldstemsauf;
+    
+    # Return results in same format as original
+    return ($fldstemsauf, $fldstemszu, $energy);
 }
 
 sub predprotein {
@@ -1732,20 +1871,35 @@ sub createfoldingpicture {
 
         $color_text =~ s/\s+$//;  # Trim trailing space
 
+        print "<button onclick=\"toggleLayout()\">Toggle Layout</button>\n";
         # Inject JavaScript block to visualize RNA
         print "<script>\n";
+        print "  var container;\n";  # Make container accessible globally\n";
+        print "  function toggleLayout() {\n";
+        print "    var currentLayout = container.options['layout'];\n";
+        print "    var newLayout = currentLayout === 'naview' ? 'force' : 'naview';\n";
+        print "    container.changeLayout(newLayout);\n";
+        print "    container.options['layout'] = newLayout;\n";
+        print "  }\n";
+
         print "  window.onload = function () {\n";
-        print "    var container = new fornac.FornaContainer(\"#rna_ss\", { animation: false, labelInterval: 50, allowPanningAndZooming: true, drawBackground: false});\n";
+        print "    container = new fornac.FornaContainer(\"#rna_ss\", {\n";
+        print "      animation: false,\n";
+        print "      labelInterval: 50,\n";
+        print "      allowPanningAndZooming: true,\n";
+        print "      drawBackground: false,\n";
+        print "      layout: 'naview'\n";
+        print "    });\n";
+
         print "    var options = {\n";
         print "      structure: '$structure',\n";
         print "      sequence: '$sequence'\n";
         print "    };\n";
         print "    container.addRNA(options.structure, options);\n";
-
         print "    var colorText = \"$color_text\";\n";
         print "    container.addCustomColorsText(colorText);\n";
-        print "  };";
-        print "</script>";
+        print "  };\n";
+        print "</script>\n";
 
     } else {
         print "<br><b>Maximum folding limit reached</b><br>";

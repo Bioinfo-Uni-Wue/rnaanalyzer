@@ -65,11 +65,12 @@ my $coding    = $q->param("run_coding") // '';
 my $species   = $q->param("species") // '';
 my $mirna_target    =  $q->param("mirna_target") // '';
 
-# Detect refresh based on hidden job_ids
+
 my @job_ids = $q->multi_param('job_ids');
 my $is_refresh = scalar @job_ids > 0;
 
 my @fasta_blocks;
+our $formatted_time = $q->param('formatted_time') || 0;
 
 if ($input =~ /\S/) {
     @fasta_blocks = read_pasted_fasta($input);
@@ -119,6 +120,8 @@ my $has_valid_input = 0;
 # On first submission, launch jobs
 unless ($is_refresh) {
 
+    my $max_length = 0;
+
     foreach my $block (@fasta_blocks) {
         my $sanitized = sanitize_sequence($block);
 
@@ -156,11 +159,20 @@ unless ($is_refresh) {
         system("perl ./webserver_AA.cgi $job_id > /dev/null 2>&1 &");
 
       push @job_ids, $job_id;
+
+      $max_length = $sanitized->{length} if $sanitized->{length} > $max_length;
   }
     unless ($has_valid_input) {
         print "<p style='color:red;'>Error: No valid RNA/DNA sequence found in your input.</p>";
         exit;
     }
+
+    my $estimate_per_200nt = 5;  # estiamted
+    my $predicted_time = int(($max_length / 100) * $estimate_per_200nt);
+    $predicted_time = $predicted_time / 60.0;  #for minutes
+    $predicted_time = 1 if $predicted_time < 1;
+    $formatted_time = sprintf("%.1f", $predicted_time);
+
 }
 
 
@@ -252,7 +264,11 @@ foreach my $jid (@job_ids) {
 # Table display
 print "<table>";
 my $elapsed = $q->param('elapsed_time') || 0;
-print "<p>Elapsed time: <span id='timer'>$elapsed</span> seconds</p>" unless $all_done;
+print "<div class='timing-info'>\n";
+print "<div class='elapsed'>Elapsed time: <span id='timer'>$elapsed</span> seconds</div>\n" unless $all_done;
+print "<div class='estimated'>Estimated Run Time: $formatted_time minutes</div>\n" unless $all_done;
+print "</div>\n";
+
 
 print "<tr><th>#</th><th>Job ID</th><th>Sequence Name</th><th>Status</th></tr>";
 
@@ -279,7 +295,6 @@ print "</table>";
 # Completion or waiting message
 if ($all_done) {
     print "<p class='done-msg'>All jobs completed.</p>";
-    print "<p>Elapsed time: <span id='timer'>$elapsed</span> seconds</p>";
 } else {
     print "<p class='waiting-msg'> Waiting for jobs to finish...</p>";
 }
@@ -290,6 +305,7 @@ foreach my $jid (@job_ids) {
     print "<input type='hidden' name='job_ids' value='$jid'>\n";
 }
 print "<input type='hidden' id='elapsed_time' name='elapsed_time' value='$elapsed'>\n";
+print "<input type='hidden' name='formatted_time' value='$formatted_time'>\n";
 print "</form>\n";
 
 # Auto-refresh script if still processing
