@@ -167,11 +167,21 @@ unless ($is_refresh) {
         exit;
     }
 
-    my $estimate_per_200nt = 5;  # estiamted
-    my $predicted_time = int(($max_length / 100) * $estimate_per_200nt);
+    my $estimate_per_250nt = 5;  # estiamted
+    my $predicted_time = int(($max_length / 250) * $estimate_per_250nt);
     $predicted_time = $predicted_time / 60.0;  #for minutes
+
+    #mirnatargetscan takes time so adding a min for this 
+    if ($mirna_target) {
+        $predicted_time += 1;
+    }
+
     $predicted_time = 1 if $predicted_time < 1;
-    $formatted_time = sprintf("%.1f", $predicted_time);
+    if ($predicted_time == int($predicted_time)) {
+        $formatted_time = int($predicted_time);
+    } else {
+        $formatted_time = sprintf("%.1f", $predicted_time);
+    }
 
 }
 
@@ -266,8 +276,9 @@ print "<table>";
 my $elapsed = $q->param('elapsed_time') || 0;
 print "<div class='timing-info'>\n";
 print "<div class='elapsed'>Elapsed time: <span id='timer'>$elapsed</span> seconds</div>\n" unless $all_done;
-print "<div class='estimated'>Estimated Run Time: $formatted_time minutes</div>\n" unless $all_done;
+print "<div class='estimated'>Max. Estimated Run Time: > $formatted_time minutes</div>\n" unless $all_done;
 print "</div>\n";
+print "<br>";
 
 
 print "<tr><th>#</th><th>Job ID</th><th>Sequence Name</th><th>Status</th></tr>";

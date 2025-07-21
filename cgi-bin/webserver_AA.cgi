@@ -130,7 +130,10 @@ sub startproggi {
     ####### Initializing some variables for the colored output ########
     @exons=();@transsplicing=();@ire=();@smsite=();@aurichregion=();
     @stemggpairs=();@polyasignal=();@utr=();@cds=();
+    our @polyatail;
     our @rna_motif;
+    our @mirna_loc;
+    our @trna_loc;
 
     
     print $cgi->h2("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
@@ -139,35 +142,41 @@ sub startproggi {
     &analysis;
 }
 
-
-
 ##calls all the new subrotines
 sub analysis {
     chdir $TEMPDIR;
 
     print "<pre>";
-    &TRANS if $do_TRANS;
-		
-	&IRE if $do_IRE;
 
     if (length $SEQUENCECHECKED <= $maxcoloredseqlen) {
         &createfolding;
         &checkstems;
     } else {
-        print "<br><b>Length:</b>        $SEQUENCELENGTH";
+        print "<br><b>Length:</b>\t$SEQUENCELENGTH";
         print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH > $MAXFOLDINGLEN);
-        print "<br><b>Origin:</b>        $dnarna<br>";
     }
 
-    &ARE;
+    &TRANS if $do_TRANS;
+    print "<br>";
+		
+	&IRE if $do_IRE;
+    print "<br>";
     
+    &ARE;
+    print "<br>";
 
     print "<br><b>Catalytic RNA:</b><br>";
     &smsite;
+    print "<br>";
 
     &tRNA if $do_trna;
+    print "<br>";
+    
     &RNAMOTIF if $do_rnamotif;
+    print "<br>";
+    
     &microRNA if $do_mirna;
+    print "<br>";
 
     # --- Capture transcript models ---
     my %transcripts;
@@ -177,11 +186,13 @@ sub analysis {
         %transcripts = %{ CPC2() };       # Also returns hashref
         $cpc = "TRUE"; 
     }
-
+    print "<br>";
     foreach my $tid (keys %transcripts) {
         my $model = $transcripts{$tid};
 
-        my ($utr5_ref, $utr3_ref, $utrprintout_ref, $utr_coords_ref) = predict_utrs(
+        my ($utr5_ref, $utr3_ref, $utrprintout_ref, $utr_coords_ref, $polyasignal_ref, $polyatail_ref) = predict_utrs(
+            
+            
             seq        => $SEQUENCECHECKED,
             cds_start  => $model->{cds_start},
             cds_end    => $model->{cds_end},
@@ -199,40 +210,60 @@ sub analysis {
             $model->{strand},
             length($SEQUENCECHECKED)
         );
+
+        # Instead of storing references, store copies:
+        $model->{polyAcoords}     = [@$polyasignal_ref] if $polyasignal_ref && @$polyasignal_ref;
+        $model->{polyAtailcoords} = [@$polyatail_ref]   if $polyatail_ref   && @$polyatail_ref;
+
+        $model->{utr3} = $polyautr_ref if $polyautr_ref && @$polyautr_ref;
+        $utr3_ref = $polyautr_ref      if $polyautr_ref && @$polyautr_ref;
         }
 
         # Optionally store results back into the model
-        $model->{utr5} = $utr5_ref;
-        $model->{utr3} = $utr3_ref;
-        $model->{utr_coords} = $utr_coords_ref;
+        # Always store UTRs
+        $model->{utr5}         = $utr5_ref;
+        $model->{utr3}         = $utr3_ref;
+        $model->{utr_coords}   = $utr_coords_ref;
+
+        #  store polyA info if found by predict_utrs
+        # Instead of storing references, store copies:
+        $model->{polyAcoords}     = [@$polyasignal_ref] if $polyasignal_ref && @$polyasignal_ref;
+        $model->{polyAtailcoords} = [@$polyatail_ref]   if $polyatail_ref   && @$polyatail_ref;   
     }
+    print "<br>";
 
     normalize_transcript_features(
         \%transcripts,
         \@exons,
         \@utr,
         \@polyasignal,
+        \@polyatail,
         \@mirnatarget,
         \@structured_regions
     );
 
     miRNAtarget(\%transcripts) if $do_mirnatarget;
-
+    print "<br>";
     # Optional: enable if scan_rbs supports multi-transcript
     # scan_rbs(\%transcripts);
 
     &csfce;
+    print "<br>";
+
     &protA1bisite;
+    print "<br>";
 
     &createfoldingpicture;
+    print "<br>";
 
     &location_table;
+    print "<br>";
 
     if (length $SEQUENCECHECKED <= $MAXFOLDINGLEN) {
         &stemggpairs;
     }
 
-    &drawcoloredsequence;
+    # &drawcoloredsequence;
 
     print "</pre>";
 }
@@ -240,7 +271,7 @@ sub analysis {
 sub TRANS{
 	#this checkes the ciona-consensus !		
 			@transcionareturnvalues=RNASERVER::TRANS2::ciona($SEQUENCECHECKED); ## Ist das der CIONA ??? Auf jeden Fall aber SCHISOTSOMA
-			print "<b>Trans-Splicing:</b><br>";
+			print "<b>Trans-Splicing:</b><br><br>";
 			#print "<b> <big>Putative trans-splicing Schistosoma-consensus</b></big> search:";
 			if (@transcionareturnvalues==1) {
 				#print "No hit detected<br>";
@@ -250,14 +281,14 @@ sub TRANS{
 				$hits=pop @transcionareturnvalues;
 				for ($count=0;$count<$hits;$count++){
 					print " Schistosoma: <br>";
-					print "  Position:   $transcionareturnvalues[$count*6+0]<br>";
+					print "  Position:   $transcionareturnvalues[$count*6+0] with 35 bp ustream region<br>";
 					$transcionareturnvalues[$count*6+4]=uc ($transcionareturnvalues[$count*6+4]);
 					$transcionareturnvalues[$count*6+2]=uc ($transcionareturnvalues[$count*6+2]);
 					print "  Stem1:      $transcionareturnvalues[$count*6+4]<br>";
 					print "  Structure:  $transcionareturnvalues[$count*6+5]<br>";
 					print "  Energy:     $transcionareturnvalues[$count*6+3]<br>";
 					print "  Sm-Site:    $transcionareturnvalues[$count*6+2] at pos: $transcionareturnvalues[$count*6+1]<br>";
-					@transsplicing=(@transsplicing,$transcionareturnvalues[$count*6+0]-35,($transcionareturnvalues[$count*6+1]+length $transcionareturnvalues[$count*6+2])-1); #for the formatted output of sequence
+					@transsplicing=(@transsplicing,$transcionareturnvalues[$count*6+0]-35,($transcionareturnvalues[$count*6+1]+length $transcionareturnvalues[$count*6+2])-1); #for the formatted output of sequence # counting 35 bp upstream why?
 				}
 			}
 			#this checkes the c. elegans consensus !!
@@ -270,7 +301,7 @@ sub TRANS{
 				$hits=pop @transcelegansvalues;
 				for ($count=0;$count<$hits;$count++){
 					$transcelegansvalues[$count*10+5]=uc($transcelegansvalues[$count*10+5]);
-					print " C.elegans:<br>  Position:   $transcelegansvalues[$count*10+0]  pointing to ggua of stem1<br>";
+					print " C.elegans:<br>  Position:   $transcelegansvalues[$count*10+0] with 21 bp ustream region ; pointing to ggua of stem1<br>";
 					
 					print "  Stem1:      $transcelegansvalues[$count*10+1]<br>";
 					print "  Structure:  $transcelegansvalues[$count*10+2]<br>";
@@ -284,11 +315,15 @@ sub TRANS{
 					
 					
 					
-					@transsplicing=(@transsplicing,$transcelegansvalues[$count*10+0]-21,($transcelegansvalues[$count*10+9]+(length $transcelegansvalues[$count*10+5])+(length $transcelegansvalues[$count*10+6])));
+					@transsplicing=(@transsplicing,$transcelegansvalues[$count*10+0]-21,($transcelegansvalues[$count*10+9]+(length $transcelegansvalues[$count*10+5])+(length $transcelegansvalues[$count*10+6]))); # counting 21 upsteam but why?
 				}
 			}
-		
+
+    # print "DEBUG: @transsplicing";
+
 }
+
+
 
 sub IRE{
 	#So jetzt machen wir den gleichen Spass wie mit trans
@@ -323,6 +358,7 @@ sub IRE{
 			else{
 				#print "Nothing found<br>";
 			    print "<b>Iron-resp Ele.:</b> none";
+
 			}
 }
 
@@ -518,22 +554,91 @@ sub ARE {
 
 
 sub tRNA {
-	#Looking for tRNAs using tRNAscan-SE
-
-	$answertrnascan=`$TRNASCANFOLDER/tRNAscan-SE -Q -y -f $TEMPDIR/$job.trnascanout $TEMPDIR/$job.seq`;
-	open (TRNA,"$TEMPDIR/$job.trnascanout");
-	$line=<TRNA>;
-	if ($line=~/Length/){
-		print "<b>tRNA<sup>2</sup>:</b><br>";
-		print "$line<br>";
-		while ($line=<TRNA>){
-			print "$line<br>";
-		}
-	}
-	else {
-		print "<b>tRNAscan Results:</b>         none<br>";
-	}
+    # Looking for tRNAs using tRNAscan-SE
+    
+    my $trnascan_output = "$TEMPDIR/$job.trnascanout";
+    # my $trnascan_out    = "$TEMPDIR/$job.trnascanlog";
+    
+    my $trnascan = "$TRNASCANFOLDER/tRNAscan-SE -Q -y -f $trnascan_output $TEMPDIR/$job.seq";
+    
+    system($trnascan);
+    
+    my $format = "%-15s %-12s %-8s %-8s %-12s %-15s %-8s\n";
+    
+    my @results;
+    @trna_loc = ();
+    
+    open my $fh_trna, '<', $trnascan_output or die "Cannot open tRNA result: $!";
+    while (my $line = <$fh_trna>) {
+        chomp $line;
+        next if $line =~ /^$/;  # Skip empty lines
+        
+        # Parse the first line with location and length info
+        if ($line =~ /^(\S+)\s+\((\d+)-(\d+)\)\s+Length:\s+(\d+)\s+bp/) {
+            my ($name, $from, $to, $length) = ($1, $2, $3, $4);
+            
+            push @trna_loc, $from, $to;
+            
+            # Read the next line for Type, Anticodon, and Score
+            my $info_line = <$fh_trna>;
+            chomp $info_line if $info_line;
+            
+            my ($type, $anticodon, $anticodon_pos, $score) = ('', '', '', '');
+            if ($info_line && $info_line =~ /Type:\s+(\S+)\s+Anticodon:\s+(\S+)\s+at\s+(\d+-\d+)\s+.*Score:\s+([\d.]+)/) {
+                ($type, $anticodon, $anticodon_pos, $score) = ($1, $2, $3, $4);
+            }
+            
+            push @results, {
+                name          => $name,
+                from          => $from,
+                to            => $to,
+                length        => $length,
+                type          => $type,
+                anticodon     => $anticodon,
+                anticodon_pos => $anticodon_pos,
+                score         => $score + 0,  # force numeric
+            };
+            
+            # Skip the sequence and structure lines
+            <$fh_trna>;  # Skip separator line
+            <$fh_trna>;  # Skip sequence line
+            <$fh_trna>;  # Skip structure line
+        }
+    }
+    close $fh_trna;
+    
+    my $total = scalar @results;
+    
+    if ($total) {
+        print "<b>tRNA<sup>2</sup>:</b><br>\n";
+        printf $format, "Name", "Position", "Length", "Type", "Anticodon", "Anticodon Pos", "Score";
+        print "-" x 85, "\n";
+        
+        # Sort by score descending (higher scores are better)
+        @results = sort { $b->{score} <=> $a->{score} } @results;
+        
+        foreach my $hit (@results) {
+            my $position = "$hit->{from}-$hit->{to}";
+            printf $format, 
+                $hit->{name}, 
+                $position, 
+                $hit->{length}, 
+                $hit->{type}, 
+                $hit->{anticodon}, 
+                $hit->{anticodon_pos}, 
+                $hit->{score};
+        }
+    }
+    if ($total > 0) {
+        print "<br><b>Total tRNA hits found:</b> $total<br>\n";
+    } else {
+        print "<b>tRNAscan Results:</b>         none<br>";
+    }
+    
+    print "<br>";
+    # print "DEBUG: @trna_loc" if @trna_loc;
 }
+
 
 sub smsite {
 	$smlength=-1;
@@ -589,58 +694,24 @@ sub createfolding {
         $energy = $2;
 		
 		
-		print "<br><b>Length:</b>        $SEQUENCELENGTH";
-	        print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH >$MAXFOLDINGLEN); 
-	        print "<br><b>Origin:</b>        $dnarna<br>";
+		print "<br><b>Length:</b>        $SEQUENCELENGTH"; 
+	        
 }
 
 
-# sub checkstems {
-# 		#evaluate the structure
-# 		$fldklauf=0; #Klammern auf pro stem
-# 		$fldstemsauf=0;
-# 		$fldklzu=0;
-# 		$fldstemszu=0;
-
-# 		for ($i=0;$i<=@structure-1;$i++) {
-# 		    $fldklauf++  if ($structure[$i] eq '(');
-# 		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
-# 		    $fldklauf=0 if ($structure[$i] eq ')');
-		    
-# 		    $fldklzu++  if ($structure[$i] eq ')');
-# 		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
-# 		    $fldklzu=0 if ($structure[$i] eq '('); 
-# 		} 
-# 		#Now a correction for Stemzu!
-# 		$fldstemszu++ if ($fldklzu>=5);
-# 		print "<b>Energy:</b>        $energy kcal/mol<br>";
-# 		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
-# 		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
-# 		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
-# 		if ($fldstemsauf != 0 && $fldstemszu != 0) {
-# 			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
-# 				print "<br>The sequence seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
-# 				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
-# 			}
-# 		}
-# 		#An message if it is highly structured that it could be an rRNA
-# 		if (($fldstemauf+$fldstemzu)/2>=10) {
-# 			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
-# 		}
-# 		#Okay, that's it for the stem detection!
-# }
-
 sub checkstems {
-    # newer version of checkstens as previously it was more simpler looking for >5 brackets
-    # counts stems with paiting not just consecutive brackets
-    # also keeps stacks while counting 
-    # limit for stem decttion is reduced to 3 and also allowed bulges = 1nt
-    # removed double counting but need to check 
 
+    # new version now checks 3 bp pairing 
+    # added checks for hairpins (only terminal?)
+    # also added stacks to not miss or recount the stems and/or hairpins
+    # finally also added bulge incorporation without breaking stem pairs
+    # need external input before final publishing 
+    
     my @pairing = ();
     my %visited;
     my @stack;
-    my ($stem_count, $hairpin_count) = (0, 0);
+    my $stem_count = 0;
+    my $hairpin_count = 0;
     
     # Build pairing map
     for (my $i = 0; $i < @structure; $i++) {
@@ -655,27 +726,30 @@ sub checkstems {
         }
     }
     
-    # biologically valid stems
+    # Find stems
+    my @stems = ();
+    
     for (my $i = 0; $i < @structure; $i++) {
         next if $visited{$i};
         next unless defined $pairing[$i];
-        next if $pairing[$i] < $i;  # avoid recounting same pair need to check realworld example **
+        next if $pairing[$i] < $i;  # Process each pair only once
         
         my $left = $i;
         my $right = $pairing[$i];
         
-        # minimum loop length
+        # Minimum loop length check
         my $loop_length = $right - $left - 1;
-        next if $loop_length < 3;  # Skip impossible loops
+        next if $loop_length < 3;
         
         my $count = 1;
         my @positions = ($left, $right);
         
-        #  bulge tolerance
+        # Extend stem with bulge tolerance
         my ($l, $r) = ($left, $right);
         while (1) {
             my $found = 0;
             
+            # Try consecutive pairing first
             my $nl = $l + 1;
             my $nr = $r - 1;
             
@@ -687,11 +761,11 @@ sub checkstems {
                 push @positions, $nl, $nr;
                 $found = 1;
             }
-            # c bulges
+            # Try with 1-nucleotide bulge
             elsif (!$found) {
+                # Try bulge on left side
                 $nl = $l + 2;
-                $nr = $r - 2;
-                
+                $nr = $r - 1;
                 if ($nl < $nr && defined $pairing[$nl] && $pairing[$nl] == $nr && 
                     !$visited{$nl} && !$visited{$nr}) {
                     $count++;
@@ -700,35 +774,72 @@ sub checkstems {
                     push @positions, $nl, $nr;
                     $found = 1;
                 }
+                # Try bulge on right side
+                elsif (!$found) {
+                    $nl = $l + 1;
+                    $nr = $r - 2;
+                    if ($nl < $nr && defined $pairing[$nl] && $pairing[$nl] == $nr && 
+                        !$visited{$nl} && !$visited{$nr}) {
+                        $count++;
+                        $l = $nl;
+                        $r = $nr;
+                        push @positions, $nl, $nr;
+                        $found = 1;
+                    }
+                }
             }
             
             last unless $found;
         }
         
-        # Check minimum stem length > 3
+        # Check minimum stem length >= 3
         if ($count >= 3) {
             $stem_count++;
             
-            # terminal hairpin?
-            my $is_hairpin = 1;
-            for (my $k = $left + 1; $k < $right; $k++) {
-                if (defined $pairing[$k] && 
-                    ($pairing[$k] < $left || $pairing[$k] > $right)) {
-                    $is_hairpin = 0;
-                    last;
-                }
-            }
+            # Store stem information
+            push @stems, {
+                left => $left,
+                right => $right,
+                length => $count,
+                positions => [@positions]
+            };
             
-            $hairpin_count++ if $is_hairpin;
+            # Mark positions as visited
             $visited{$_} = 1 for @positions;
         }
     }
     
-    print "Energy: $energy kcal/mol\n";
-    print "Stems: $stem_count stem structure(s)\n";
-    print "Hairpins: $hairpin_count hairpin(s)\n";
+    # Better hairpin detection
+    for my $stem (@stems) {
+        my $left = $stem->{left};
+        my $right = $stem->{right};
+        
+        # Check if this stem forms a terminal hairpin
+        my $has_internal_stems = 0;
+        
+        for my $other_stem (@stems) {
+            next if $other_stem == $stem;
+            
+            # Check if other stem is completely inside this stem's loop
+            if ($other_stem->{left} > $left && $other_stem->{right} < $right) {
+                $has_internal_stems = 1;
+                last;
+            }
+        }
+        
+        # Additional check: ensure the loop region is reasonable for a hairpin
+        my $loop_size = $right - $left - 1;
+        if (!$has_internal_stems && $loop_size >= 3 && $loop_size <= 30) {
+            $hairpin_count++;
+        }
+    }
     
-    # prediction 
+    # Output results
+    print "\nEnergy:\t$energy kcal/mol\n";
+    print "Stems:\t$stem_count stem structure(s)\n";
+    print "Hairpins:\t$hairpin_count hairpin(s)\n";
+    
+    # Prediction logic
     my $structure_length = scalar @structure;
     my $avg_spacing = $structure_length / ($stem_count || 1);
     
@@ -739,91 +850,22 @@ sub checkstems {
     } elsif ($stem_count >= 1) {
         print "Some secondary structure detected — may have biological significance\n";
     } else {
-        print "Minimal secondary structure";
+        print "Minimal secondary structure\n";
     }
     
-    print "It might be interesting to have a closer look at the structures.<br>";
-	print "You might find it useful to look in the book <br><br>'RNA Motifs and Regulatory Elements'<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>";
+    print "         ****It might be interesting to have a closer look at the structures.\n";
+    print "         You might find it useful to look in the book\n";
+    print "         'RNA Motifs and Regulatory Elements'\n";
+    print "         Thomas Dandekar (Ed.)\n";
+    print "         ISBN 3-540-41701\n";
 
-    if ($hairpin_count > 0 && $hairpin_count / $stem_count > 0.7) {
+    if ($hairpin_count > 0 && $stem_count > 0 && $hairpin_count / $stem_count > 0.7) {
         print "High hairpin content — characteristic of miRNA precursors\n";
     }
+    
+    return ($stem_count, $hairpin_count);
 }
 
-# sub checkstemsonly {
-# 		#evaluate the structure
-# 		my $inseq=$_[0];
-# 		my $inwhattodo=$_[1];   # --> 0 means is structure, evaluate, 1--> sequence, please fold first!
-# 		my $struct;
-# 		my @structure;
-# 		my $energy;
-# 		if ($inwhattodo==1 && length $inseq<=$MAXFOLDINGLENUTR){
-# 			@struct=`echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
-# 			if ($? != 0) { ##added by AA, error handling
-#     			return ("RNAfold failed", 0);
-# 			}
-# 			$struct[1]=~/([().]+) \(([+-. 0-9]+)\)/;
-# 			@structure=split('',$1);
-# 			$energy=$2;
-# 			#print "DEBUGMARK1: $struct[1]";
-# 		}
-# 		if ($inwhattodo==1 && length $inseq>$MAXFOLDINGLENUTR){
-# 			return ("Too long for detection",1); #the 1 shows that we did not produce a result (not negative due to negative energy)
-# 		}
-# 		if ($inwhattodo==0){
-# 			@structure=split ('',$inseq);
-# 			$energy=0;
-# 		}
-		
-
-# 		#print "Debug: Here is thew struct: @structure END";	
-# 		my $fldklauf=0; #Klammern auf pro stem
-# 		my $fldstemsauf=0;
-# 		my $fldklzu=0;
-# 		my $fldstemszu=0;
-
-# 		for (my $i=0;$i<=@structure-1;$i++) {
-# 		    $fldklauf++  if ($structure[$i] eq '(');
-# 		    $fldstemsauf++ if ($structure[$i] eq ')' && $fldklauf>=5);
-# 		    $fldklauf=0 if ($structure[$i] eq ')');
-		    
-# 		    $fldklzu++  if ($structure[$i] eq ')');
-# 		    $fldstemszu++ if ($structure[$i] eq '(' && $fldklzu>=5);
-# 		    $fldklzu=0 if ($structure[$i] eq '(') 
-# 		} 
-# 		#Now a correction for Stemzu!
-# 		$fldstemszu++ if ($fldklzu>=5);
-
-# 		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf==$fldstemszu);
-# 		return ($fldstemsauf,$fldstemszu,$energy) if ($fldstemsauf<$fldstemszu);
-# 		return ($fldstemszu,$fldstemsauf,$energy) if ($fldstemsauf>$fldstemszu);
-
-# 		print "ERROR ERROR!!!!  This line should N O T be reached!!!";
-
-# 		##alright we shall undo this change and return after the lines below AA
-
-# 		#######ATTENTION THESES LINES BELOW ARE NOT PRINTED!!!! BECAUSE WE RETURN ABOVE !!!!!!#####
-# 		###########################################################################################
-# 		###########################################################################################
-
-
-# 		print "<b>Energy:</b>        $energy kcal/mol<br>";
-# 		print "<b>Stems:</b>         $fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf==$fldstemszu);
-# 		print "<b>Stems:</b>         $fldstemsauf-$fldstemszu Stem-Structure/s<br>" if ($fldstemsauf<$fldstemszu);
-# 		print "<b>Stems:</b>         $fldstemszu-$fldstemsauf Stem-Structure/s<br>" if ($fldstemsauf>$fldstemszu);
-# 		if ($fldstemsauf != 0 && $fldstemszu != 0) {
-# 			if ((2*@structure)/($fldstemsauf+$fldstemszu)<60) { #The last number determines when the structure is interesting! 60 means at least on Stem in each 60 nt!
-# 				print "<br>The structure seems to contain a lot of secondary structure. If the RNA structure search below<br>does not find a result, it might be interesting to have a closer look at the structures.<br>";
-# 				print 'You might find it useful to look in the book <br><br>"RNA Motifs and Regulatory Elements"<br>Thomas Dandekar (Ed.)<br>Published by Springer<br>ISBN 3-540-41701<br>';
-# 			}
-# 		}
-# 		#An message if it is highly structured that it could be an rRNA
-# 		if (($fldstemauf+$fldstemzu)/2>=10) {
-# 			print "<br>          Highly structured RNA, could this be a ribosomal RNA ?<br>";
-# 		}
-# 		#Okay, that's it for the stem detection!
-
-# }
 
 sub checkstemsonly {
     # revamped checkstemsonly based on the logic of the new checkstems
@@ -1047,8 +1089,6 @@ sub RNAMOTIF {
 
 		$found = 1;
         $i++;
-
-        print "DEBUG: MOTIF: @rna_motif";
 	}
 	
 	close $fh_tbl;
@@ -1165,13 +1205,14 @@ sub microRNA {
 		my $mirbase_output = "$TEMPDIR/$job.mirtbl";
 		my $mirbase_out    = "$TEMPDIR/$job.mir";
 
-		my $mirna_search = "$HMMER/nhmmer --rna --watson -Z 3.73 --tblout $mirbase_output -o $mirbase_out $TEMPDIR/$job.seq $MIRBASE/hairpin.fa";
+		my $mirna_search = "$HMMER/nhmmer --rna --watson -Z 3.73 -E 1 --tblout $mirbase_output -o $mirbase_out $TEMPDIR/$job.seq $MIRBASE/hairpin.fa";
 
 		system($mirna_search);
 
 		my $format = "%-18s %-6s %-6s %-10s %-8s %-15s %-40s\n";
 
 		my @results;
+        @mirna_loc = ();
 
 		open my $fh_tbl, '<', $mirbase_output or die "Cannot open miRNA result: $!";
 		while (my $line = <$fh_tbl>) {
@@ -1183,6 +1224,8 @@ sub microRNA {
 
 			my ($match, $from, $to, $e_value, $score) =
     			($columns[0], $columns[7], $columns[8], $columns[12], $columns[13]);
+
+            push @mirna_loc, $from, $to; 
 
 			# Extract accession and description
 			my ($accession, $desc_text) = $desc_full =~ /(MI\w+\d+)\s+(.*)/;
@@ -1238,7 +1281,8 @@ sub microRNA {
 			print "No regions matching a mircroRNA was found.<br></br>\n";
 		}
 
-		print "<br></br>";
+		print "<br>";
+        print "DEBUG: @mirna_loc"
 
 
 }
@@ -1581,19 +1625,25 @@ sub predict_utrs {
                 if ($utr_seq =~ /$motif/i) {
                     my $pos = $-[0] + $start;
                     print "         PolyA signal $motif at $pos<br>";
+                    my $signal_end = $pos + length($motif) - 1;
+                    push @polyasignal, $pos, $signal_end;
                     last;
                 }
             }
             if ($utr_seq =~ /A{10,}/i) {
                 my $tail_pos = $-[0] + $start;
                 print "         PolyA tail near $tail_pos<br>";
+                my $tail_end = $+[0] - 1 + $start;
+                push @polyatail, $tail_pos, $tail_end;
             }
         }
     }
 
     print "<i>No valid UTRs inferred.</i><br>" unless @utr;
 
-    return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr);
+    print "DEBUG: POlYASIGNAL @polyasignal; POLYATAIL @polyatail";
+
+    return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr, \@polyasignal, \@polyatail);
 }
 
 sub refineUTRwithPolyA {
@@ -1617,18 +1667,23 @@ sub refineUTRwithPolyA {
         if ($utr_seq =~ /$motif/i) {
             $signal_pos = $-[0] + $window_start;
             $signal_motif = $motif;
-            push @polyasignal, $signal_pos;
+            my $signal_end = $signal_pos + length($motif) - 1;
+            push @polyasignal, $signal_pos, $signal_end;
             print "PolyA signal ($motif) detected at $signal_pos<br>";
             last;
         }
     }
 
-    if ($sequence =~ /A{10,}/g) {
-        my $tail_candidate = pos($sequence);
-        if ($tail_candidate >= $cds_end && $tail_candidate - $cds_end < 200) {
-            $tail_pos = $tail_candidate;
-            push @polyatail, $tail_pos;
+    while ($sequence =~ /A{10,}/g) {
+        my $match_start = $-[0];
+        my $match_end   = $+[0] - 1;
+
+        if ($match_start >= $cds_end && $match_start - $cds_end < 200) {
+            $tail_pos  = $match_start + 1;
+            my $tail_end = $match_end + 1;
+            push @polyatail, $tail_pos, $tail_end;
             print "PolyA tail detected near $tail_pos<br>";
+            last;
         }
     }
 
@@ -1738,31 +1793,34 @@ sub scan_structured_regions {
 }
 
 sub normalize_transcript_features {
-    my ($transcripts_ref, $exons_ref, $utr_ref, $polyasignal_ref, $mirnatarget_ref, $structured_ref) = @_;
+    my ($transcripts_ref, $exons_ref, $utr_ref, $polyasignal_ref, $polyatail_ref, $mirnatarget_ref, $structured_ref) = @_;
 
-    @$exons_ref = ();
-    @$utr_ref = ();
-    @$polyasignal_ref = ();
-    @$mirnatarget_ref = ();
-    @$structured_ref = ();
+    @$exons_ref         = ();
+    @$utr_ref           = ();
+    @$polyasignal_ref   = ();
+    @$polyatail_ref     = (); 
+    @$mirnatarget_ref   = ();
+    @$structured_ref    = ();
 
     foreach my $tid (keys %$transcripts_ref) {
         my $model = $transcripts_ref->{$tid};
-
         if (defined $model->{cds_start} && defined $model->{cds_end}) {
             push @$exons_ref, $model->{cds_start}, $model->{cds_end};
         }
 
-        push @$utr_ref, @{ $model->{utr5} } if ref $model->{utr5} eq 'ARRAY';
-        push @$utr_ref, @{ $model->{utr3} } if ref $model->{utr3} eq 'ARRAY';
+        push @$utr_ref, @{ $model->{utr5} }               if ref $model->{utr5} eq 'ARRAY';
+        push @$utr_ref, @{ $model->{utr3} }               if ref $model->{utr3} eq 'ARRAY';
+        push @$polyasignal_ref, @{ $model->{polyAcoords} }     if ref $model->{polyAcoords} eq 'ARRAY';
+        push @$polyatail_ref,   @{ $model->{polyAtailcoords} } if ref $model->{polyAtailcoords} eq 'ARRAY';
+        push @$mirnatarget_ref, @{ $model->{mirnatargets} }     if ref $model->{mirnatargets} eq 'ARRAY';
+        push @$structured_ref,  @{ $model->{structured_regions} } if ref $model->{structured_regions} eq 'ARRAY';
 
-        push @$polyasignal_ref, @{ $model->{polyAcoords} } if ref $model->{polyAcoords} eq 'ARRAY';
-        push @$mirnatarget_ref, @{ $model->{mirnatargets} } if ref $model->{mirnatargets} eq 'ARRAY';
-        push @$structured_ref, @{ $model->{structured_regions} } if ref $model->{structured_regions} eq 'ARRAY';
+        
+
     }
-    print "DEBUG 1: UTRs: @utr_ref<br>";
+    # print "DEBUG (normalize): final polyasignal = @$polyasignal_ref\n";
+    # print "DEBUG (normalize): final polyatail   = @$polyatail_ref\n";
 }
-
 
 sub createfoldingpicture {
     my $seq_file       = "$TEMPDIR/$job.seq";
@@ -1828,6 +1886,10 @@ sub createfoldingpicture {
 
         # Print HTML content
         print "<h3>RNA Structure Visualization:</h3>";
+
+        if ($SEQUENCELENGTH >= 2500){
+            print "Structure visualization can take a few seconds to load due to sequence length.";
+        }
         
         print "<div style='width: 700px;'>\n";
         print "  <div id='rna_ss' style='width: 700px; height: 700px;'></div>\n";
@@ -1844,7 +1906,7 @@ sub createfoldingpicture {
 
         my $color_text = "";
 
-        # Process RNA motifs (red)
+        # Process UTR 
         
         for (my $j = 0; $j < @utr; $j += 2) {
             my ($from, $to) = @utr[$j, $j + 1];
@@ -1853,11 +1915,11 @@ sub createfoldingpicture {
             }
         }
 
-        # Process exons (green)
+        # Process exons 
         for (my $j = 0; $j < @exons; $j += 2) {
             my ($from, $to) = @exons[$j, $j + 1];
             for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:lightgreen ";
+                $color_text .= "$i:green ";
             }
         }
         
@@ -1869,18 +1931,77 @@ sub createfoldingpicture {
             }
         }
 
+        # process mirna locations
+        for (my $j = 0; $j < @mirna_loc; $j += 2) {
+            my ($from, $to) = @mirna_loc[$j, $j + 1];
+
+            # Ensure correct order
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:yellow ";
+            }
+        }
+
+        #trna
+        for (my $j = 0; $j < @trna_loc; $j += 2) {
+            my ($from, $to) = @trna_loc[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:orange ";
+            }
+        }
+
+        # smsites
+        for (my $j = 0; $j < @smsite; $j += 2) {
+            my ($from, $to) = @smsite[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:magenta ";
+            }
+        }
+
+        for (my $j = 0; $j < @transsplicing; $j += 2) {
+            my ($from, $to) = @transsplicing[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:cyan ";
+            }
+        }
+
+        for (my $j = 0; $j < @polyasignal; $j += 2) {
+            my ($from, $to) = @polyasignal[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:lime ";
+            }
+        }
+
+        for (my $j = 0; $j < @polyatail; $j += 2) {
+            my ($from, $to) = @polyatail[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:lime ";
+            }
+        }
+
         $color_text =~ s/\s+$//;  # Trim trailing space
 
-        print "<button onclick=\"toggleLayout()\">Toggle Layout</button>\n";
+        print "DEBUG: POlYASIGNAL @polyasignal; POLYATAIL @polyatail";
+        print "DEBUG: $color_text";
         # Inject JavaScript block to visualize RNA
         print "<script>\n";
         print "  var container;\n";  # Make container accessible globally\n";
-        print "  function toggleLayout() {\n";
-        print "    var currentLayout = container.options['layout'];\n";
-        print "    var newLayout = currentLayout === 'naview' ? 'force' : 'naview';\n";
-        print "    container.changeLayout(newLayout);\n";
-        print "    container.options['layout'] = newLayout;\n";
-        print "  }\n";
 
         print "  window.onload = function () {\n";
         print "    container = new fornac.FornaContainer(\"#rna_ss\", {\n";
@@ -1888,7 +2009,7 @@ sub createfoldingpicture {
         print "      labelInterval: 50,\n";
         print "      allowPanningAndZooming: true,\n";
         print "      drawBackground: false,\n";
-        print "      layout: 'naview'\n";
+        print "      layout: 'force'\n";
         print "    });\n";
 
         print "    var options = {\n";
@@ -1899,7 +2020,21 @@ sub createfoldingpicture {
         print "    var colorText = \"$color_text\";\n";
         print "    container.addCustomColorsText(colorText);\n";
         print "  };\n";
-        print "</script>\n";
+        print "</script>";
+
+        # creating legend for visual interpretation 
+        print "<div style='font-size: 0.9em; margin-top: 10px;'>";
+        print "<b>Legend:</b>\n";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: red; margin-left: 10px;'></span> Motifs\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: lightblue; margin-left: 20px;'></span> UTRs\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 20px;'></span> Exons\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: orange; margin-left: 20px;'></span> TRNA\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 20px;'></span> MiRNA\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 20px;'></span> SM-site/snRNP-motif\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 20px;'></span> TRANS-splicing\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 20px;'></span> PolyA Signal/PolyA Tail\t";
+
+        print "</div>\n";
 
     } else {
         print "<br><b>Maximum folding limit reached</b><br>";
@@ -1915,8 +2050,9 @@ sub location_table {
             last if $i + 1 > $#data;
             push @formatted, "$data[$i] to $data[$i+1]";
         }
-        return join(" ", @formatted);
+        return join(", ", @formatted);  # Comma-separated
     }
+
 
     # Begin styling and table
     print "<style>
@@ -1952,760 +2088,6 @@ sub location_table {
 
     print "</table>\n";
 }
-
-sub drawcoloredsequence {
-	
-	#Here we will create a colored output of the sequence
-	#this subroutine requires arrays containing the required information!
-	#e.g. @exons for the exons in the format (exonstart,exonend,exonstart,exonend.........)
-	# further @transsplicing, @ire, @smsite, @aurichregion, @stemggpairs and further more to be added, see below
-
-	#What to do to invent a new color or feature!
-	#1. create an array outside this sub with start and endpoint
-	#2. choose in which category it is put. eg FONTCOLOR, UNDERLINED, BOLD/ITALIC
-	#3. take care that the start and endpoint are marked in the hash!
-	#4. Create an entry below when the nts are counted up, that the feature is writte to the seq-array
-	#5. Mark it in the section for the sequence formatting!
-
-
-	
-        my @seq=split ('',$SEQUENCECHECKED);
-
-	#my @exons=(70,80,90,100,160,170);
-	#my @transsplicing=(35,58,90,120,125,139, 150,210);
-	#	my @ire=(20,25);
-	#my @smsite=(34,55,66,77);
-	#my @aurichregion=(50,60,88,99);
-	#my @stemggpairs=(140,160);
-
-	#print ("<br>ire contains: @ire <br>");
-    my %change_underline=();      #the changes will be written into these hashes first!
-    my %change_fontcolor=();
-    my %change_bold=();
-    my %change_italic=();
-    my @nooutputpossible=();
-
-    my $c=0;
-    #Creating arrays to store, where the layout can't be changed further
-    my @possible_underline=@seq; #initialize them to be as big as the seq
-    my @possible_fontcolor=@seq;
-    #my @possible_bold_italic=@seq;
-    #my @possible_italic_only=@seq;
-    for ($c=0;$c<=@seq-1;$c++) {
-        $possible_underline[$c]=0; #and set them to 0 indicating that this field can be altered
-        $possible_fontcolor[$c]=0;     #a number above 0 codes for a color or bold or underlined
-	#$possible_bold_italic[$c]=0;
-    }
-
-   print '<font face="monospace">';
-    # print "<br>DEBUG: EXONS: @exons<br>";
-    # print "DEBUG: UTRs: @utr<br>";
-    ########### ATTENTION !!!!! ####################
-    ### Old problem the index of array starts at 0 !!! #####
-    ### So for the next lines to be correct we will add #####
-    ### an x to the beginning of the array !!!!!!!!!! #########
-    ### this won't be printed out, but then the ##########
-    ### nomenclature is okay !!!!#####################
-    @seq=('x',@seq);
-    ####
-
-    ###########################################
-    ### Codes for the features in the @possible_ arrays ###
-    ### transsplicing = 2   #########################
-    ### ire = 3                   #########################
-    ### smsite=4               #########################
-    ### aurichregion=5     #########################
-    ### exonboundary=6   #########################
-    ### polyasignal=7
-
-    ###################################################################
-    ############ Underlined##############################################
-    ###################################################################
-    my $mark_in_seq_possible=0;
-    my $d=0;
-    #print "DEBUG: @transsplicing DEGUEND";
-    #Processing the trans-splicing hits
-    for ($c=0;$c<=@transsplicing-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$transsplicing[$c];$d<=$transsplicing[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_underline[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$transsplicing[$c];$d<=$transsplicing[$c+1];$d++) {
-                $possible_underline[$d] = 1;
-            }
-            #Add the lines to the hash
-            $change_underline{$transsplicing[$c]}='transstart';
-            $change_underline{$transsplicing[$c+1]}='transend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"Trans-splicing hit from $transsplicing[$c] to $transsplicing[$c+1]");
-        }
-    }
-
-    #Processing the IRE hits
-    #print "<p>DEBURG IRE: @ire</p>";
-    #print "PETERDEBUGGING";
-    for ($c=0;$c<=@ire-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$ire[$c];$d<=$ire[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_underline[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$ire[$c];$d<=$ire[$c+1];$d++) {
-                $possible_underline[$d] = 1;
-            }
-            #Add the lines to the hash
-            $change_underline{$ire[$c]}='irestart';
-            $change_underline{$ire[$c+1]}='ireend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"IRE hit from $ire[$c] to $ire[$c+1]");
-        }
-    }
-
-    ####################################################################################
-    ########################## Font Color #################################################
-    ####################################################################################
-   
-
-    
-    #Processing the PolyASignal
-    for ($c=0;$c<=@polyasignal-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$polyasignal[$c];$d<=$polyasignal[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$polyasignal[$c];$d<=$polyasignal[$c+1];$d++) {
-                $possible_fontcolor[$d] = 7;
-            }
-            $change_fontcolor{$polyasignal[$c]}='polyasignalstart';
-            $change_fontcolor{$polyasignal[$c+1]}='polyasignalend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"PolyA-Signal from $polyasignal[$c] to $polyasignal[$c+1]");
-        }
-    }
-    #Processing the smsites
-    for ($c=0;$c<=@smsite-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$smsite[$c];$d<=$smsite[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$smsite[$c];$d<=$smsite[$c+1];$d++) {
-                $possible_fontcolor[$d] = 5;
-            }
-            $change_fontcolor{$smsite[$c]}='smsitestart';
-            $change_fontcolor{$smsite[$c+1]}='smsiteend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"Sm-Site from $smsite[$c] to $smsite[$c+1]");
-        }
-    }
-
-    #Processing the au-rich-regions
-    for ($c=0;$c<=@aurichregion-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$aurichregion[$c];$d<=$aurichregion[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$aurichregion[$c];$d<=$aurichregion[$c+1];$d++) {
-                $possible_fontcolor[$d] = 5;
-            }
-            #Add the lines to the hash
-            $change_fontcolor{$aurichregion[$c]}='aurichregionstart';
-            $change_fontcolor{$aurichregion[$c+1]}='aurichregionend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"AU-rich region from $aurichregion[$c] to $aurichregion[$c+1]");
-        }
-    }
-    #Processing stemggpairs
-    for ($c=0;$c<=@stemggpairs-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$stemggpairs[$c];$d<=$stemggpairs[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$stemggpairs[$c];$d<=$stemggpairs[$c+1];$d++) {
-                $possible_fontcolor[$d] = 4;
-            }
-            #Add the lines to the hash
-            $change_fontcolor{$stemggpairs[$c]}='stemggpairsstemstart';
-            $change_fontcolor{$stemggpairs[$c]+1}='stemggpairsstemend';
-            $change_fontcolor{$stemggpairs[$c]+2}='stemggpairsbulge';
-            $change_fontcolor{$stemggpairs[$c]+3}='stemggpairsstemstart';
-            
-            $change_fontcolor{$stemggpairs[$c+1]-3}='stemggpairsstemend';
-            $change_fontcolor{$stemggpairs[$c+1]-2}='stemggpairsbulge';
-            $change_fontcolor{$stemggpairs[$c+1]-1}='stemggpairsstemstart';
-            $change_fontcolor{$stemggpairs[$c+1]}='stemggpairsstemend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"Stem-GG-Pair from $stemggpairs[$c] to $stemggpairs[$c+1]");
-        }
-    }
-     
-
-    ############################################################################
-    ########################### Bold ###########################################
-    ############################################################################
-    #Processing the exons
-    for ($c=0;$c<=@exons-1;$c=$c+2){
-        #Add the lines to the hash
-        $change_bold{$exons[$c]}='exonstart';
-        $change_bold{$exons[$c+1]}='exonend';
-    }
-
-    ############################################################################
-    ########################### Italic #########################################
-    ############################################################################
-    #Processing the untranslated regions UTR
-    for ($c=0;$c<=@utr-1;$c=$c+2){
-        #Add the lines to the hash
-        $change_italic{$utr[$c]}='utrstart';
-        $change_italic{$utr[$c+1]}='utrend';
-    }
-
-    #print $cgi->h3("");
-    print $cgi->h1("Summary");
-    
-    #Print out the predicted protein! reformat for a nicer looking on the page	
-    &predprotein;
-
-
-    #Now create the html output!!!!!!!!!!!!
-
-	if ($SEQUENCELENGTH <= $maxcoloredseqlen) {
-    print "<br><b>Colored Sequence:</b><br>";
-
-    my $ntausgabe=1;
-
-    my $boldonout=0;
-    my $fontcolor=0; #0=black 1=red 2=blue 3=navy 4=fuchsia
-    my $underlined=0; #0=no 1=yes
-
-    for ($c=1;$c<=@seq-1;$c++){
-        ###########################    
-        ### OUTPUT UNDERLINED ######
-        ###########################
-        if (defined $change_underline{$c}) {    
-            if ($change_underline{$c} eq 'transstart' || $change_underline{$c} eq 'irestart')  {
-                $seq[$c]='<u>'.$seq[$c];
-                $underlined=1;
-            }
-            if ($change_underline{$c} eq 'transend' || $change_underline{$c} eq 'ireend') {
-                $seq[$c]=$seq[$c].'</u>';
-                $underlined=0;
-            }
-        }       
-        
-        ###########################
-        ###### OUTPUT BOLD #########
-        ###########################
-        if (defined $change_bold{$c}) {
-            if ($change_bold{$c} eq 'exonstart') {
-                $seq[$c]='<b>'.$seq[$c];
-                $boldonout=1;
-            }
-            if ($change_bold{$c} eq 'exonend') {
-                $seq[$c]=$seq[$c].'</b>';
-                $boldonout=0;
-            }
-        }
-        
-       
-	###########################
-	###### OUTPUT ITALIC ######
-	###########################
-	if (defined $change_italic{$c}) {
-             if ($change_italic{$c} eq 'utrstart') {
-                     $seq[$c]='<i>'.$seq[$c];
-                     $italiconout=1;
-             }
-             if ($change_italic{$c} eq 'utrend') {
-                     $seq[$c]=$seq[$c].'</i>';
-                     $italiconout=0;
-             }
-        }
-	
-        ############################
-        ####### OUTPUT COLOR ########
-        ############################
-        if (defined $change_fontcolor{$c}) {
-		
-
-       	   ######## Promotor ##########
-           if ($change_fontcolor{$c} eq 'promotorstart') {
-                 $seq[$c]='<font color=purple>'.$seq[$c];
-                 $fontcolor=8;
-           }
-           if ($change_fontcolor{$c} eq 'promotorend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-           }
-           ######## PolyA-Signal ##########
-           if ($change_fontcolor{$c} eq 'polyasignalstart') {
-               $seq[$c]='<font color=lime>'.$seq[$c];
-               $fontcolor=5;
-           }
-           if ($change_fontcolor{$c} eq 'polyasignalend') {
-                 $seq[$c]=$seq[$c].'</font>';
-                 $fontcolor=0;
-           }
-	   ######## Sm-Site ##########
-           if ($change_fontcolor{$c} eq 'smsitestart') {
-                $seq[$c]='<font color=red>'.$seq[$c];
-                $fontcolor=1;
-            }
-            if ($change_fontcolor{$c} eq 'smsiteend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-            }
-            ####### AU-rich region #######
-            if ($change_fontcolor{$c} eq 'aurichregionstart') {
-                $seq[$c]='<font color=blue>'.$seq[$c];
-                $fontcolor=2;
-            }
-            if ($change_fontcolor{$c} eq 'aurichregionend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-            }
-            ####### Stem-GG-Pairs #######
-            if ($change_fontcolor{$c} eq 'stemggpairsstemstart') {
-                $seq[$c]='<font color=fuchsia>'.$seq[$c];
-                $fontcolor=4;  
-            }
-            if ($change_fontcolor{$c} eq 'stemggpairsstemend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-            }
-            if ($change_fontcolor{$c} eq 'stemggpairsbulge') {
-                $seq[$c]='<font color=green>'.$seq[$c].'</font>';
-            }
-        }
-        
-     
-        #############################
-        ###Formatting the Output ########
-        ### into suitable lines ###########
-        #############################
-        
-        
-        if ($c % 120 == 0) {   
-            if ($boldonout==1) {
-                $seq[$c]=$seq[$c].'</b>';
-                $seq[$c+1]='<b>'.$seq[$c+1];
-            }
-	    if ($italiconout==1) {
-		$seq[$c]=$seq[$c].'</i>';
-		$seq[$c+1]='<i>'.$seq[$c+1]; 
-	    }
-            if ($underlined==1) {
-                $seq[$c]=$seq[$c].'</u>';
-                $seq[$c+1]='<u>'.$seq[$c+1];
-            }
-            if ($fontcolor != 0) {
-                $seq[$c]=$seq[$c].'</font>';
-                $seq[$c+1]='<font color = red>'.$seq[$c+1] if ($fontcolor==1);
-                $seq[$c+1]='<font color = blue>'.$seq[$c+1] if ($fontcolor==2);
-                $seq[$c+1]='<font color = fuchsia>'.$seq[$c+1] if ($fontcolor==4);
-		$seq[$c+1]='<font color = lime>'.$seq[$c+1] if ($fontcolor==5);
-		$seq[$c+1]='<font color = purple>'.$seq[$c+1] if ($fontcolor==8);
-            }
-        }
-    }
-
-    #for debugging only
-    #$seq[30]='<span style="underline-color: yellow">'.$seq[30];
-    #$seq[45]=$seq[45].'</span>';
-    ################
-
-
-    for ($c=1;$c<=@seq-1;$c++){
-        print "$seq[$c]";
-        if ($c % 120 == 0) {
-            print "     ".$c."<br>";
-        }
-        if ($c %10 == 0) {
-            print "";
-        }
-    }
-    #print;
-    @seq=();
-    print "<br>Output not possible:<br>@nooutputpossible<br>" if (@nooutputpossible>0);
-	
-	&drawcoloredstructure;
-
-	print "<br><br><b>Legend:</b><br><b>BOLD</b> marks EXONS; <u>UNDERLINED</u> marks IRE or TRANSSPLICNG hits; <i>ITALIC</i> marks putative UTRs; <font color=red>RED </font> marks SMSITES or snRNP-binding motifs;";
-    print "<br><font color=blue>BLUE</font> marks AU-rich regions; <font color=fuchsia>FUCHSIA</font> with <font color=green>GREEN</font> marks Stemm-GG-Pairs; <font color=lime>LIME</font> marks PolyA-signal; <font color=purple>PURPLE</font> marks a Promotor<br>";
-	
-    }
-	else {
-		print "<b>Sequence limit reached for creating colored sequence</br>";
-	}
- 
-    #print "<br><br>%change_fontcolor<br><br>";
-}
-
-sub drawcoloredstructure {
-		
-	my @seq=@structure;
-    normalize_transcript_features(); 
-
-	#print ("<br>ire contains: @ire <br>");
-    my %change_underline=();      #the changes will be written into these hashes first!
-    my %change_fontcolor=();
-    my %change_bold=();
-    my %change_italic=();
-    my @nooutputpossible=();
-
-    my $c=0;
-    #Creating arrays to store, where the layout can't be changed further
-    my @possible_underline=@seq; #initialize them to be as big as the seq
-    my @possible_fontcolor=@seq;
-    #my @possible_bold_italic=@seq;
-    #my @possible_italic_only=@seq;
-    for ($c=0;$c<=@seq-1;$c++) {
-        $possible_underline[$c]=0; #and set them to 0 indicating that this field can be altered
-        $possible_fontcolor[$c]=0;     #a number above 0 codes for a color or bold or underlined
-	#$possible_bold_italic[$c]=0;
-    }
-
-
-    # print '<font face="monospace">';
-
-    ########### ATTENTION !!!!! ####################
-    ### Old problem the index of array starts at 0 !!! #####
-    ### So for the next lines to be correct we will add #####
-    ### an x to the beginning of the array !!!!!!!!!! #########
-    ### this won't be printed out, but then the ##########
-    ### nomenclature is okay !!!!#####################
-    @seq=('x',@seq);
-    ####
-    ###################################################################
-    ############ Underlined##############################################
-    ###################################################################
-    my $mark_in_seq_possible=0;
-    my $d=0;
-
-    #Processing the trans-splicing hits
-    for ($c=0;$c<=@transsplicing-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$transsplicing[$c];$d<=$transsplicing[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_underline[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$transsplicing[$c];$d<=$transsplicing[$c+1];$d++) {
-                $possible_underline[$d] = 1;
-            }
-            #Add the lines to the hash
-            $change_underline{$transsplicing[$c]}='transstart';
-            $change_underline{$transsplicing[$c+1]}='transend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"Trans-splicing hit from $transsplicing[$c] to $transsplicing[$c+1]");
-        }
-    }
-
-    #Processing the IRE hits
-    for ($c=0;$c<=@ire-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$ire[$c];$d<=$ire[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_underline[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$ire[$c];$d<=$ire[$c+1];$d++) {
-                $possible_underline[$d] = 1;
-            }
-            #Add the lines to the hash
-            $change_underline{$ire[$c]}='irestart';
-            $change_underline{$ire[$c+1]}='ireend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"IRE hit from $ire[$c] to $ire[$c+1]");
-        }
-    }
-
-    ####################################################################################
-    ########################## Font Color #################################################
-    ####################################################################################
-       
-    #Processing the PolyASignal
-    for ($c=0;$c<=@polyasignal-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$polyasignal[$c];$d<=$polyasignal[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$polyasignal[$c];$d<=$polyasignal[$c+1];$d++) {
-                $possible_fontcolor[$d] = 7;
-            }
-            $change_fontcolor{$polyasignal[$c]}='polyasignalstart';
-            $change_fontcolor{$polyasignal[$c+1]}='polyasignalend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"PolyA-Signal from $polyasignal[$c] to $polyasignal[$c+1]");
-        }
-    }
-
-    #Processing the smsites
-    for ($c=0;$c<=@smsite-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$smsite[$c];$d<=$smsite[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$smsite[$c];$d<=$smsite[$c+1];$d++) {
-                $possible_fontcolor[$d] = 5;
-            }
-            $change_fontcolor{$smsite[$c]}='smsitestart';
-            $change_fontcolor{$smsite[$c+1]}='smsiteend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"Sm-Site from $smsite[$c] to $smsite[$c+1]");
-        }
-    }
-
-    #Processing the au-rich-regions
-    for ($c=0;$c<=@aurichregion-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$aurichregion[$c];$d<=$aurichregion[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$aurichregion[$c];$d<=$aurichregion[$c+1];$d++) {
-                $possible_fontcolor[$d] = 5;
-            }
-            #Add the lines to the hash
-            $change_fontcolor{$aurichregion[$c]}='aurichregionstart';
-            $change_fontcolor{$aurichregion[$c+1]}='aurichregionend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"AU-rich region from $aurichregion[$c] to $aurichregion[$c+1]");
-        }
-    }
-    #Processing stemggpairs
-    for ($c=0;$c<=@stemggpairs-1;$c=$c+2){
-        $mark_in_seq_possible=1;
-        for ($d=$stemggpairs[$c];$d<=$stemggpairs[$c+1];$d++) {     #Okay, this checks whether a part of the seq is marked yet
-            $mark_in_seq_possible=0 if ($possible_fontcolor[$d]!=0);
-        }
-        if ($mark_in_seq_possible==1) {
-            #1. mark all fields in the array as nomorepossible
-            for ($d=$stemggpairs[$c];$d<=$stemggpairs[$c+1];$d++) {
-                $possible_fontcolor[$d] = 4;
-            }
-            #Add the lines to the hash
-            $change_fontcolor{$stemggpairs[$c]}='stemggpairsstemstart';
-            $change_fontcolor{$stemggpairs[$c]+1}='stemggpairsstemend';
-            $change_fontcolor{$stemggpairs[$c]+2}='stemggpairsbulge';
-            $change_fontcolor{$stemggpairs[$c]+3}='stemggpairsstemstart';
-            
-            $change_fontcolor{$stemggpairs[$c+1]-3}='stemggpairsstemend';
-            $change_fontcolor{$stemggpairs[$c+1]-2}='stemggpairsbulge';
-            $change_fontcolor{$stemggpairs[$c+1]-1}='stemggpairsstemstart';
-            $change_fontcolor{$stemggpairs[$c+1]}='stemggpairsstemend';
-        }
-        else { #If it is already marked
-            push (@nooutputpossible,"Stem-GG-Pair from $stemggpairs[$c] to $stemggpairs[$c+1]");
-        }
-    }
-     
-
-    ############################################################################
-    ########################### Bold ###########################################
-    ############################################################################
-    #Processing the exons
-    for ($c=0;$c<=@exons-1;$c=$c+2){
-        #Add the lines to the hash
-        $change_bold{$exons[$c]}='exonstart';
-        $change_bold{$exons[$c+1]}='exonend';
-    }
-
-    ############################################################################
-    ########################### Italic #########################################
-    ############################################################################
-    #Processing the untranslated regions UTR
-    for ($c=0;$c<=@utr-1;$c=$c+2){
-        #Add the lines to the hash
-        $change_italic{$utr[$c]}='utrstart';
-        $change_italic{$utr[$c+1]}='utrend';
-    }
-
-    
-
-    #Now create the html output!!!!!!!!!!!!
-	print "<br></br>";
-    print "<br><b>Colored Structure:</b><br>";
-
-    my $ntausgabe=1;
-
-    my $boldonout=0;
-    my $fontcolor=0; #0=black 1=red 2=blue 3=navy 4=fuchsia
-    my $underlined=0; #0=no 1=yes
-
-    for ($c=1;$c<=@seq-1;$c++){
-        ###########################    
-        ### OUTPUT UNDERLINED ######
-        ###########################
-        if (defined $change_underline{$c}) {    
-            if ($change_underline{$c} eq 'transstart' || $change_underline{$c} eq 'irestart')  {
-                $seq[$c]='<u>'.$seq[$c];
-                $underlined=1;
-            }
-            if ($change_underline{$c} eq 'transend' || $change_underline{$c} eq 'ireend') {
-                $seq[$c]=$seq[$c].'</u>';
-                $underlined=0;
-            }
-        }       
-        
-        ###########################
-        ###### OUTPUT BOLD #########
-        ###########################
-        if (defined $change_bold{$c}) {
-            if ($change_bold{$c} eq 'exonstart') {
-                $seq[$c]='<b>'.$seq[$c];
-                $boldonout=1;
-            }
-            if ($change_bold{$c} eq 'exonend') {
-                $seq[$c]=$seq[$c].'</b>';
-                $boldonout=0;
-            }
-        }
-        
-       
-	###########################
-	###### OUTPUT ITALIC ######
-	###########################
-	if (defined $change_italic{$c}) {
-             if ($change_italic{$c} eq 'utrstart') {
-                     $seq[$c]='<i>'.$seq[$c];
-                     $italiconout=1;
-             }
-             if ($change_italic{$c} eq 'utrend') {
-                     $seq[$c]=$seq[$c].'</i>';
-                     $italiconout=0;
-             }
-        }
-	
-        ############################
-        ####### OUTPUT COLOR ########
-        ############################
-        if (defined $change_fontcolor{$c}) {
-		
-
-       	   ######## Promotor ##########
-           if ($change_fontcolor{$c} eq 'promotorstart') {
-                 $seq[$c]='<font color=purple>'.$seq[$c];
-                 $fontcolor=8;
-           }
-           if ($change_fontcolor{$c} eq 'promotorend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-           }
-           ######## PolyA-Signal ##########
-           if ($change_fontcolor{$c} eq 'polyasignalstart') {
-               $seq[$c]='<font color=lime>'.$seq[$c];
-               $fontcolor=5;
-           }
-           if ($change_fontcolor{$c} eq 'polyasignalend') {
-                 $seq[$c]=$seq[$c].'</font>';
-                 $fontcolor=0;
-           }
-	       ######## Sm-Site ##########
-           if ($change_fontcolor{$c} eq 'smsitestart') {
-                $seq[$c]='<font color=red>'.$seq[$c];
-                $fontcolor=1;
-            }
-            if ($change_fontcolor{$c} eq 'smsiteend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-            }
-            ####### AU-rich region #######
-            if ($change_fontcolor{$c} eq 'aurichregionstart') {
-                $seq[$c]='<font color=blue>'.$seq[$c];
-                $fontcolor=2;
-            }
-            if ($change_fontcolor{$c} eq 'aurichregionend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-            }
-            ####### Stem-GG-Pairs #######
-            if ($change_fontcolor{$c} eq 'stemggpairsstemstart') {
-                $seq[$c]='<font color=fuchsia>'.$seq[$c];
-                $fontcolor=4;  
-            }
-            if ($change_fontcolor{$c} eq 'stemggpairsstemend') {
-                $seq[$c]=$seq[$c].'</font>';
-                $fontcolor=0;
-            }
-            if ($change_fontcolor{$c} eq 'stemggpairsbulge') {
-                $seq[$c]='<font color=green>'.$seq[$c].'</font>';
-            }
-        }
-        
-     
-        #############################
-        ###Formatting the Output ########
-        ### into suitable lines ###########
-        #############################
-        
-        
-        if ($c % 120 == 0) {   
-            if ($boldonout==1) {
-                $seq[$c]=$seq[$c].'</b>';
-                $seq[$c+1]='<b>'.$seq[$c+1];
-            }
-	    if ($italiconout==1) {
-		$seq[$c]=$seq[$c].'</i>';
-		$seq[$c+1]='<i>'.$seq[$c+1]; 
-	    }
-            if ($underlined==1) {
-                $seq[$c]=$seq[$c].'</u>';
-                $seq[$c+1]='<u>'.$seq[$c+1];
-            }
-            if ($fontcolor != 0) {
-                $seq[$c]=$seq[$c].'</font>';
-                $seq[$c+1]='<font color = red>'.$seq[$c+1] if ($fontcolor==1);
-                $seq[$c+1]='<font color = blue>'.$seq[$c+1] if ($fontcolor==2);
-                $seq[$c+1]='<font color = fuchsia>'.$seq[$c+1] if ($fontcolor==4);
-		$seq[$c+1]='<font color = lime>'.$seq[$c+1] if ($fontcolor==5);
-		$seq[$c+1]='<font color = purple>'.$seq[$c+1] if ($fontcolor==8);
-            }
-        }
-    }
-
-
-    for ($c=1;$c<=@seq-1;$c++){
-        print "$seq[$c]";
-        if ($c % 120 == 0) {
-            print "     ".$c."<br>";
-        }
-        if ($c %10 == 0) {
-            print "";
-        }
-    }
-    #print;
-    @seq=();
-    print "<br>Output not possible:<br>@nooutputpossible<br>" if (@nooutputpossible>0);
-}
-
-print "<br>*Pr.A1.bin.site = Protein A1 binding site<br>";
 
 write_file("$TEMPDIR/result.txt", "done\n");
 

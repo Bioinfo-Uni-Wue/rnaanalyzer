@@ -116,12 +116,12 @@ text-align: right;
   .elapsed {
     float: left;
     text-align: left;
-    font-weight: bold;
+    font-weight: 300;
   }
 
   .estimated {
     float: right;
     text-align: right;
-    font-weight: bold;
+    font-weight: 300;
   }
   
