@@ -35,13 +35,13 @@ $MAXFOLDINGLENUTR=5000;
 $MAXFORNALENGTH=5000;
 $maxcoloredseqlen=10000;
 
-# Create a new CGI object
+# aprsing cgi
 my $cgi = CGI->new;
 
 
 $job_id = $ARGV[0] // $cgi->param("job_id");  # passed from batch script
 $job = $job_id;
-# Store input in job folder
+
 
 $TEMPDIR = abs_path("../tmp/jobs/job_$job");
 
@@ -56,6 +56,7 @@ open my $log, ">>", "../tmp/backend_log.txt";
 print $log scalar localtime() . " Received job: $job\n";
 close $log;
 
+# chcking if backend is alive
 # print $cgi->header('text/plain');
 # print "Backend is alive. Job ID: $job_id\n";
 
@@ -151,6 +152,7 @@ sub analysis {
     if (length $SEQUENCECHECKED <= $maxcoloredseqlen) {
         &createfolding;
         &checkstems;
+        &stemggpairs;
     } else {
         print "<br><b>Length:</b>\t$SEQUENCELENGTH";
         print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH > $MAXFOLDINGLEN);
@@ -258,10 +260,6 @@ sub analysis {
 
     &location_table;
     print "<br>";
-
-    if (length $SEQUENCECHECKED <= $MAXFOLDINGLEN) {
-        &stemggpairs;
-    }
 
     # &drawcoloredsequence;
 
@@ -846,9 +844,9 @@ sub checkstems {
     if ($stem_count >= 15 && $avg_spacing < 100) {
         print "Highly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA\n";
     } elsif ($hairpin_count >= 1 && $stem_count <= 3) {
-        print "Simple structured RNA — possible miRNA, siRNA, or regulatory element\n";
+        print "Simple structured RNA, possible miRNA, siRNA, or regulatory element\n";
     } elsif ($stem_count >= 1) {
-        print "Some secondary structure detected — may have biological significance\n";
+        print "Some secondary structure detected, may have biological significance\n";
     } else {
         print "Minimal secondary structure\n";
     }
@@ -1059,7 +1057,7 @@ sub RNAMOTIF {
         my $forna_html = "";
 
         $forna_html .= "<button onclick=\"toggleStructure$i()\">View Structure</button>\n";
-        $forna_html .= "<div id='$div_id' style='width: 650px; height: 650px; display: none; margin-top: 10px;'></div>\n";
+        $forna_html .= "<div id='$div_id' style='width: 650px; height: 450px; display: none; margin-top: 10px;'></div>\n";
         $forna_html .= "<script>\n";
         $forna_html .= "  function toggleStructure$i() {\n";
         $forna_html .= "    var el = document.getElementById('$div_id');\n";
@@ -1071,7 +1069,8 @@ sub RNAMOTIF {
         $forna_html .= "        labelInterval: 0,\n";
         $forna_html .= "        allowPanningAndZooming: true,\n";
         $forna_html .= "        structurePadding: 0,\n";
-        $forna_html .= "        drawBackground: false\n";
+        $forna_html .= "        drawBackground: false,\n";
+        $forna_html .= "        layout: 'naview'\n";
         $forna_html .= "      });\n";
         $forna_html .= "      var options = {\n";
         $forna_html .= "        structure: '$dot_bracket',\n";
@@ -1276,13 +1275,11 @@ sub microRNA {
 			}
 
 			print "<br><b>Total microRNA hits found:</b> $total<br>\n";
-			print "Due to the number of hits, the sequence likely contains microRNA(s)<br>\n";
 		} else {
 			print "No regions matching a mircroRNA was found.<br></br>\n";
 		}
 
 		print "<br>";
-        print "DEBUG: @mirna_loc"
 
 
 }
@@ -1641,8 +1638,6 @@ sub predict_utrs {
 
     print "<i>No valid UTRs inferred.</i><br>" unless @utr;
 
-    print "DEBUG: POlYASIGNAL @polyasignal; POLYATAIL @polyatail";
-
     return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr, \@polyasignal, \@polyatail);
 }
 
@@ -1997,8 +1992,7 @@ sub createfoldingpicture {
 
         $color_text =~ s/\s+$//;  # Trim trailing space
 
-        print "DEBUG: POlYASIGNAL @polyasignal; POLYATAIL @polyatail";
-        print "DEBUG: $color_text";
+        # print "DEBUG: $color_text";
         # Inject JavaScript block to visualize RNA
         print "<script>\n";
         print "  var container;\n";  # Make container accessible globally\n";
@@ -2009,7 +2003,7 @@ sub createfoldingpicture {
         print "      labelInterval: 50,\n";
         print "      allowPanningAndZooming: true,\n";
         print "      drawBackground: false,\n";
-        print "      layout: 'force'\n";
+        print "      layout: 'naview'\n";
         print "    });\n";
 
         print "    var options = {\n";
@@ -2070,7 +2064,8 @@ sub location_table {
     print "<h2>Locations of the Detected Structures:</h2>\n";
     print "<table>\n";
 
-    # Only print each row if the array is not empty
+    print "<tr><th>Structure</th><td>Location(s)</td></tr>\n";
+
     if (@rna_motif) {
         my $motif_str = format_flat_ranges(@rna_motif);
         print "<tr><th>RNA Motifs</th><td>$motif_str</td></tr>\n";
@@ -2084,6 +2079,31 @@ sub location_table {
     if (@utr) {
         my $utr_str = format_flat_ranges(@utr);
         print "<tr><th>UTRs</th><td>$utr_str</td></tr>\n";
+    }
+
+    if (@trna_loc) {
+        my $trna_str = format_flat_ranges(@trna_loc);
+        print "<tr><th>tRNA(s)</th><td>$trna_str</td></tr>\n";
+    }
+
+    if (@mirna_loc) {
+        my $mirna_str = format_flat_ranges(@mirna_loc);
+        print "<tr><th>miRNA(s)</th><td>$mirna_str</td></tr>\n";
+    }
+
+    if (@transsplicing) {
+        my $trans_str = format_flat_ranges(@transsplicing);
+        print "<tr><th>tRNA(s)</th><td>$trans_str</td></tr>\n";
+    }
+
+    if (@polyasignal) {
+        my $polyasignal_str = format_flat_ranges(@polyasignal);
+        print "<tr><th>PolyA motif(s)</th><td>$polyasignal_str</td></tr>\n";
+    }
+
+    if (@polyatail) {
+        my $polyatail_str = format_flat_ranges(@polyatail);
+        print "<tr><th>PolyA motif(s)</th><td>$polyatail_str</td></tr>\n";
     }
 
     print "</table>\n";
