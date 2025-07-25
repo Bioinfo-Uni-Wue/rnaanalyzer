@@ -1,2 +1,0 @@
-#define REVISION "503cf781ac32d3f1ee52fc9d492e5f033fe7b6a7"
-#define ARCHIVE_DATE "Thu May 15 15:01:46 2025 -0700"
