@@ -1,0 +1,97 @@
+.loci_file {
+  /* note that this must be block or inline block */
+  position: relative;
+  padding: 2px;
+}
+
+.loci_file span.background {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 100%;
+  z-index: -2;
+}
+
+.loci_file span.indicator {
+  position: absolute;
+  left: 0;
+  top: 0;
+  height: 100%;
+  width: 0%;
+  z-index: -1;
+  transition: background-color 0.5s;
+  -moz-transition: background-color 0.5s; /* Firefox 4 */
+  -webkit-transition: background-color 0.5s; /* Safari and Chrome */
+  -o-transition: background-color 0.5s; /* Opera */
+}
+
+.loci_file input[type="file"] {
+  transition: background-color 0.5s;
+  -moz-transition: background-color 0.5s; /* Firefox 4 */
+  -webkit-transition: background-color 0.5s; /* Safari and Chrome */
+  -o-transition: background-color 0.5s; /* Opera */
+}
+
+.loci_file.good input[type="file"], 
+.loci_file.warning input[type="file"], 
+.loci_file.error input[type="file"]  {
+  background: transparent;
+}
+
+.loci_file.good span.indicator {
+  background-color: #00c800;
+}
+
+.loci_file.warning span.indicator {
+  background-color: #d1bf00; 
+}
+
+.loci_file.error span.indicator {
+  background-color: #d00a00;
+}
+
+.loci_file.good span.background {
+  background-color: #d9ecd9;
+}
+
+.loci_file.warning span.background {
+  background-color: #EEE8AA; /*#eeecd6;*/
+}
+
+.loci_file.error span.background {
+  background-color:  #FFC4C1;/*#ffeceb;*/
+}
+
+.loci_file div.popup {
+  display: none;
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  top: 100%;
+  width: 500px;
+  padding: 5px;
+  border-style: double;
+  border-width: 3px;
+}
+
+.loci_file.warning:hover div.popup {
+  display: block;
+  background-color: #EEE8AA;
+}
+
+.loci_file.error:hover div.popup {
+  display: block;
+  background-color: #FFE4E1;
+  border-color: #AA2244;
+}
+
+.loci_file div.popup table td {
+  vertical-align: top;
+}
+
+.loci_file div.popup table td ul {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+

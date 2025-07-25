@@ -340,3 +340,30 @@ make
 make check                                # optional: run automated tests
 make install                              # optional: install HMMER programs, man pages
 ```
+
+# adding protein binding motif scan
+# Installing FIMO
+
+```
+wget https://meme-suite.org/meme/meme-software/5.5.8/meme-5.5.8.tar.gz
+tar zxf meme-5.5.8.tar.gz
+cd meme-5.5.8
+./configure --prefix=$HOME/meme --enable-build-libxml2 --enable-build-libxslt
+make
+make test
+make install
+```
+
+# getting rbpdb pfm file 
+
+```
+http://rbpdb.ccbr.utoronto.ca/downloads/PFMDir.zip
+
+unzip PFMDir.zip
+```
+
+# creating a .meme file using PFMS from RBPDB using custom Python script 
+
+```
+change_name_PFM.py
+```

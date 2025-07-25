@@ -1,0 +1,7 @@
+mod	motif	regexp	score	fg_match	fg_size	bg_match	bg_size	fg/bg	unadjusted_p-value	tests	adjusted_p-value
+SPhospho-STY	xxxxxx_SPhospho-STY_Pxxxxx	......SP.....	9.91	108	469	58	469	1.9	1.2e-005	108	1.3e-003
+SPhospho-STY	xxxxxx_SPhospho-STY_DxExxx	......SD.E...	19.59	41	469	10	469	4.1	4.3e-006	85	3.7e-004
+
+# MoMo (Modification Motifs): Version 5.5.6 compiled on Jul 30 2024 at 18:44:20
+# The format of this file is described at https://meme-suite.org/meme/doc/momo-output-format.html.
+# momo motifx --oc results/momo19 --sequence-column 'Modified sequence' --width 13 --protein-database /Users/t.bailey/meme_git/meme/tests/common/tiny_mouse.fasta --eliminate-repeats 13 --min-occurrences 20 --score-threshold 1.0E-6 /Users/t.bailey/meme_git/meme/tests/common/text-in-weights.ptm.txt

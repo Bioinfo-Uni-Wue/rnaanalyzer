@@ -30,6 +30,8 @@ $MIRBASE=abs_path('../databases/mirbase'); #MirBASE database
 $MIRANDA=abs_path('../bin/miranda/bin'); #miRanda 
 $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus 
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
+$FIMO=abs_path('../bin/meme-5.5.8/bin'); #fimo rbp scan
+$RBPDB=abs_path('../databases/rbpdb/rbpdb.meme');
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
 $MAXFORNALENGTH=5000;
@@ -82,13 +84,13 @@ my $html_file = "$TEMPDIR/result.html";
 open my $out, ">", $html_file or die "Can't write result page: $!";
 select $out;  # Redirect STDOUT to file
 
-# Now all your print statements go into result.html
+# We print into one html which can be accessed again or bookmarked 
 # print "<!DOCTYPE html>\n";
 # print "<html><head><meta charset='UTF-8'><title>Job $job Results</title></head><body>";
 print <<'HTML';
 <html><head>
   <title>Batch Results</title>
-  <link rel="stylesheet" href="/css/results.css">
+  <link rel="stylesheet" href="/css/newresults.css">
 </head><body>
 <header>
     <a href="http://localhost">    <!--- change after putting on server -->
@@ -106,7 +108,7 @@ print <<'HTML';
   </header>
 
 <main>
-<h2>Results</h2>
+<div class="container">
 HTML
 # ... print your actual results here ...
 
@@ -149,6 +151,9 @@ sub analysis {
 
     print "<pre>";
 
+    print "<div class='box'>";
+    print "<div class='box-header'>Structural information</div>";
+    print "<div class='box-content'>";
     if (length $SEQUENCECHECKED <= $maxcoloredseqlen) {
         &createfolding;
         &checkstems;
@@ -157,30 +162,43 @@ sub analysis {
         print "<br><b>Length:</b>\t$SEQUENCELENGTH";
         print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH > $MAXFOLDINGLEN);
     }
+    print "</div>";
+    print "</div>";
 
+    print "<div class='box'>";
     &TRANS if $do_TRANS;
-    print "<br>";
-		
+    print "</div>";
+
+    print "<div class='box'>";	
 	&IRE if $do_IRE;
-    print "<br>";
+    print "</div>";
     
+    print "<div class='box'>";
     &ARE;
-    print "<br>";
+    print "</div>";
 
-    print "<br><b>Catalytic RNA:</b><br>";
+    print "<div class='box'>";
     &smsite;
-    print "<br>";
+    print "</div>";
 
-    &tRNA if $do_trna;
-    print "<br>";
-    
+    print "<div class='box'>";
     &RNAMOTIF if $do_rnamotif;
-    print "<br>";
+    print "</div>";
+
+    print "<div class='box'>";
+    &tRNA if $do_trna;
+    print "</div>";
+
+    print "<div class='box'>";
+    &rbp_motifs;
+    print "</div>";
     
+    print "<div class='box'>";
     &microRNA if $do_mirna;
-    print "<br>";
+    print "</div>";
 
     # --- Capture transcript models ---
+    print "<div class='box'>";
     my %transcripts;
     if ($do_augustus) {
         %transcripts = %{ AUGUSTUS() };   # Returns hashref
@@ -188,7 +206,9 @@ sub analysis {
         %transcripts = %{ CPC2() };       # Also returns hashref
         $cpc = "TRUE"; 
     }
-    print "<br>";
+    print "</div>";
+
+    print "<div class='box'>";
     foreach my $tid (keys %transcripts) {
         my $model = $transcripts{$tid};
 
@@ -232,7 +252,7 @@ sub analysis {
         $model->{polyAcoords}     = [@$polyasignal_ref] if $polyasignal_ref && @$polyasignal_ref;
         $model->{polyAtailcoords} = [@$polyatail_ref]   if $polyatail_ref   && @$polyatail_ref;   
     }
-    print "<br>";
+    print "</div>";
 
     normalize_transcript_features(
         \%transcripts,
@@ -244,22 +264,27 @@ sub analysis {
         \@structured_regions
     );
 
+    print "<div class='box'>" if $do_mirnatarget;
     miRNAtarget(\%transcripts) if $do_mirnatarget;
-    print "<br>";
+    print "</div>" if $do_mirnatarget; 
     # Optional: enable if scan_rbs supports multi-transcript
     # scan_rbs(\%transcripts);
 
-    &csfce;
-    print "<br>";
+    # print "<div class='box'>";
+    # &csfce;
+    # print "</div>";
 
-    &protA1bisite;
-    print "<br>";
+    # print "<div class='box'>";
+    # &protA1bisite;
+    # print "</div>";
 
+    print "<div class='box'>";
     &createfoldingpicture;
-    print "<br>";
+    print "</div>";
 
+    print "<div class='table-container'>";
     &location_table;
-    print "<br>";
+    print "</div>";
 
     # &drawcoloredsequence;
 
@@ -269,8 +294,9 @@ sub analysis {
 sub TRANS{
 	#this checkes the ciona-consensus !		
 			@transcionareturnvalues=RNASERVER::TRANS2::ciona($SEQUENCECHECKED); ## Ist das der CIONA ??? Auf jeden Fall aber SCHISOTSOMA
-			print "<b>Trans-Splicing:</b><br><br>";
+			print "<div class='box-header'>Trans-Splicing:</div>";
 			#print "<b> <big>Putative trans-splicing Schistosoma-consensus</b></big> search:";
+            print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
 				#print "No hit detected<br>";
 				print " Schistosoma: none<br>";
@@ -316,23 +342,22 @@ sub TRANS{
 					@transsplicing=(@transsplicing,$transcelegansvalues[$count*10+0]-21,($transcelegansvalues[$count*10+9]+(length $transcelegansvalues[$count*10+5])+(length $transcelegansvalues[$count*10+6]))); # counting 21 upsteam but why?
 				}
 			}
-
+    print "</div>";
     # print "DEBUG: @transsplicing";
-
 }
-
-
 
 sub IRE{
 	#So jetzt machen wir den gleichen Spass wie mit trans
 			@irereturnvalues=RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
 			$irelineprintout=0;
+            print "<div class='box-header'>Iron-resp Elements</div>";
+            print "<div class='box-content'>";
 			if (@irereturnvalues>1){
 				########new #####
 				
 				$posprintout=0;
 				for ($count=0;$count<=@irereturnvalues-1;$count=$count+7){
-				    print "<br><b>Iron-resp Ele.:</b><br>" if ($irelineprintout==0);
+				    # print "<div class='box-header'>Iron-resp Elements</div>" if ($irelineprintout==0);
 				    $irelineprintout=1;
 				    
 				    if ($posprintout!=$irereturnvalues[$count+0]) {
@@ -358,9 +383,12 @@ sub IRE{
 			    print "<b>Iron-resp Ele.:</b> none";
 
 			}
+            print "</div>";
+       
 }
 
 sub csfce {
+    
 	my $count1=0; #We will mark $count1 as my so that we won't have any problems later
 	#$seq='llllllllllllllllluugculllauuuacuglcculllaugcguuccucgucclllllllllllllllll';
 	my @seq=split ('',$SEQUENCECHECKED);
@@ -368,6 +396,7 @@ sub csfce {
 	my @element1=("a","u","g","c","g","u","u","c","c","u","c","g","u","c","c");
 	my $putativeCVfound=0;
 	#Now we will try to detect those elements Thomas wrote from
+    print "<div class='box-content'>";
 
 	ELEMENT1: for ($count1=0;$count1<@seq-14;$count1++) {
         	my $mismatch=0;
@@ -443,9 +472,11 @@ sub csfce {
 	@seq=();
 	print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
 
+    print "</div>";
 }
 
 sub stemggpairs {
+    # print "<div class='box-content'>";
     my @sequ=split('',$SEQUENCECHECKED);
     my $str=join ('',@structure);
     my $stemggpairfound=0;
@@ -489,41 +520,128 @@ sub stemggpairs {
     print "<b>StemGGpair:</b>    none<br>" if ($stemggpairfound==0); 
     @sequ=();
     $str='';
+
+    # print "</div>";
 }
 
-sub protA1bisite  {
+# sub protA1bisite  {
 
-	#finding the protein A1 binding motif
-	#allowing 5 mismatches but no insertions/deltions
-	#
-	my $line='cuggauuauucaacugaaugccucacucagagaaugaa';
-	my @protA1bisi=split('',$line);
-	#my $se='nnnnnnnnnnnncuggauuauucaacugaaugccucacucagagaaugaannnnnnnnnnnnnnncuggauuauucaacugaaugccucnacucagagaaugaannnnnnnnnnnnnnnnnnnnnnnnnnn';
-	my @sequence=split('',$SEQUENCECHECKED);
-	my $prota1startingline=0;
-	#allow 5 mismatches out of 38!
-	PROA1: for (my $wh=0;$wh<=@sequence-38;$wh++){
-	        my $pa1mismatches=0;
-	        for (my$c=0;$c<=37;$c++) {
-	                $pa1mismatches++ if ($sequence[$wh+$c] ne $protA1bisi[$c]);
-	                next PROA1 if ($pa1mismatches>5);
-	        }
-	        if ($pa1mismatches<=5) {#this is a hit
-                	print "<br><b>Pr.A1 bin.site:</b>start  -  mismatch  - seq<br>" if ($prota1startingline==0);
-			$prota1startingline=1;
-			my $pa1seq=substr($SEQUENCECHECKED,$wh,38);;			
-			printf ("               %-5d        %-2d       %s<br>",$wh,$pa1mismatches,$pa1seq);
+# 	#finding the protein A1 binding motif
+# 	#allowing 5 mismatches but no insertions/deltions
+# 	#
+# 	my $line='cuggauuauucaacugaaugccucacucagagaaugaa';
+# 	my @protA1bisi=split('',$line);
+# 	#my $se='nnnnnnnnnnnncuggauuauucaacugaaugccucacucagagaaugaannnnnnnnnnnnnnncuggauuauucaacugaaugccucnacucagagaaugaannnnnnnnnnnnnnnnnnnnnnnnnnn';
+# 	my @sequence=split('',$SEQUENCECHECKED);
+# 	my $prota1startingline=0;
+# 	#allow 5 mismatches out of 38!
+# 	PROA1: for (my $wh=0;$wh<=@sequence-38;$wh++){
+# 	        my $pa1mismatches=0;
+# 	        for (my$c=0;$c<=37;$c++) {
+# 	                $pa1mismatches++ if ($sequence[$wh+$c] ne $protA1bisi[$c]);
+# 	                next PROA1 if ($pa1mismatches>5);
+# 	        }
+# 	        if ($pa1mismatches<=5) {#this is a hit
+#                 	print "<br><b>Pr.A1 bin.site:</b>start  -  mismatch  - seq<br>" if ($prota1startingline==0);
+# 			$prota1startingline=1;
+# 			my $pa1seq=substr($SEQUENCECHECKED,$wh,38);;			
+# 			printf ("               %-5d        %-2d       %s<br>",$wh,$pa1mismatches,$pa1seq);
 			
-        	}
-	}
-	print "<br><br><b>Pr.A1 bin.site:</b>none<br>" if ($prota1startingline==0);
+#         	}
+# 	}
+# 	print "<div class='box-header'>Pr.A1 bin.site:</div>" if ($prota1startingline==0);
+# }
+
+sub rbp_motifs {
+    print "<div class='box-header'>RNA Binding Protein Scan:</div>";
+    print "<div class='box-content'>";
+
+    my $fimo_outfile = "$TEMPDIR/fimo.txt";
+    my $input_seq = "$TEMPDIR/$job.seq";  # path to your .meme file
+
+    # Run FIMO
+    my $fimo_cmd = "$FIMO/fimo --text $RBPDB $input_seq > $fimo_outfile";
+    system($fimo_cmd);
+
+    my @fimo_results;
+    @rbp_locs = ();  # global array to store start/end positions
+
+    # Parse FIMO output
+    if (-e $fimo_outfile) {
+        open my $fh, '<', $fimo_outfile or die "Cannot open FIMO output: $!";
+        while (my $line = <$fh>) {
+            next if $. == 1;
+            chomp $line;
+            my ($motif_id, $alt_id, $seq_name, $start, $stop, $strand, $score, $pvalue, $qvalue, $matched_seq) = split /\t/, $line;
+
+            my ($protein_name, $motif_name);
+
+            if ($alt_id && index($alt_id, '_') != -1) {
+                ($protein_name, $motif_name) = split(/_/, $alt_id, 2);
+            } elsif ($motif_id && index($motif_id, '_') != -1) {
+                ($protein_name, $motif_name) = split(/_/, $motif_id, 2);
+            } else {
+                $protein_name = $alt_id || $motif_id;
+                $motif_name = '';
+            }
+
+            push @rbp_locs, $start, $stop;
+
+            push @fimo_results, {
+                motif_id     => $motif_id,
+                alt_id       => $alt_id || $motif_id,
+                protein      => $protein_name,
+                motif        => $motif_name,
+                seq_name     => $seq_name,
+                start        => $start,
+                end          => $stop,
+                # strand       => $strand,
+                score        => $score,
+                pvalue       => $pvalue,
+                matched_seq  => $matched_seq,
+            };
+        }
+        close $fh;
+    }
+
+    # Display results
+    my $total = scalar @fimo_results;
+
+    if ($total > 0) {
+        print "<table class='table-result'>\n";
+        print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
+
+        foreach my $hit (@fimo_results) {
+            print "<tr>";
+            print "<td>$hit->{protein}</td>";
+            print "<td>$hit->{motif}</td>";
+            print "<td>$hit->{start}</td>";
+            print "<td>$hit->{end}</td>";
+            # print "<td>$hit->{strand}</td>";
+            print "<td>$hit->{score}</td>";
+            print "<td>$hit->{pvalue}</td>";
+            print "<td><tt>$hit->{matched_seq}</tt></td>";
+            print "</tr>";
+        }
+
+        print "</table>";
+    } else {
+        print "<b>FIMO Results:</b> none found above threshold.<br>\n";
+    }
+
+    print "</div>";
 }
+
+
+
 
 sub ARE {
     $arepresent=0;
     $are_pos=1;
     #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
+    print "<div class='box-header'>Au-rich regions:</div>";
 
+    print "<div class='box-content'>";
     while ($SEQUENCECHECKED=~/([ag]uuu[ag](uuu[ag])+)/g) {
         $are_len=length($1);
         $are_pos=pos($SEQUENCECHECKED)-$are_len;
@@ -548,12 +666,15 @@ sub ARE {
     if ($arepresent==0) {
         print "<b>ARE:</b>           None       *(AU-rich region of at least 30 nt)<br>";
     }
+    print "</div>";
 }
 
 
 sub tRNA {
     # Looking for tRNAs using tRNAscan-SE
-    
+
+    print "<div class='box-header'>tRNA Scan:</div>";
+    print "<div class='box-content'>";
     my $trnascan_output = "$TEMPDIR/$job.trnascanout";
     # my $trnascan_out    = "$TEMPDIR/$job.trnascanlog";
     
@@ -633,12 +754,14 @@ sub tRNA {
         print "<b>tRNAscan Results:</b>         none<br>";
     }
     
-    print "<br>";
+    print "</div>";
     # print "DEBUG: @trna_loc" if @trna_loc;
 }
 
 
 sub smsite {
+    print "<div class='box-header'>Catalytic RNA:</div>";
+    print "<div class='box-content'>";
 	$smlength=-1;
 	$smpos=-1;
         $leadlineprinted=0; #the first line not yet printed
@@ -667,6 +790,7 @@ sub smsite {
 	if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1 && @smsite>0){
 		print "<br>As I could not detect a coding sequence on this RNA, but there are 1 or more sn-RNP motifs (sm-sites),<br>it might be possible that this is a catalytic RNA!!<br>";
 	}
+    print "</div>";
 }
 
 sub createfolding {
@@ -692,7 +816,7 @@ sub createfolding {
         $energy = $2;
 		
 		
-		print "<br><b>Length:</b>        $SEQUENCELENGTH"; 
+		print "<br><b>Length:</b>\t$SEQUENCELENGTH"; 
 	        
 }
 
@@ -703,8 +827,8 @@ sub checkstems {
     # added checks for hairpins (only terminal?)
     # also added stacks to not miss or recount the stems and/or hairpins
     # finally also added bulge incorporation without breaking stem pairs
-    # need external input before final publishing 
-    
+    # need external input before final publishing
+
     my @pairing = ();
     my %visited;
     my @stack;
@@ -833,9 +957,9 @@ sub checkstems {
     }
     
     # Output results
-    print "\nEnergy:\t$energy kcal/mol\n";
-    print "Stems:\t$stem_count stem structure(s)\n";
-    print "Hairpins:\t$hairpin_count hairpin(s)\n";
+    print "\n<b>Energy:</b>\t$energy kcal/mol\n";
+    print "<b>Stems:</b>\t$stem_count stem structure(s)\n";
+    print "<b>Hairpins:</b>\t$hairpin_count hairpin(s)\n";
     
     # Prediction logic
     my $structure_length = scalar @structure;
@@ -977,8 +1101,9 @@ sub checkstemsonly {
 
 sub predprotein {
 	$predprotforAnDom=0;
-    
-	print "<br><b>Pred. Protein<sup>1</sup>:</b>";
+    print "<div class='box'>";
+	print "<div class='box-header'>Predicted Protein:</div>";
+    print "<div class='box-content'>";
     if (defined $cpc){
         print "Protein is predicted from CPC2 output.";
     }
@@ -993,6 +1118,8 @@ sub predprotein {
 	else {
 		print " none";
 	}
+
+    print "</div></div>";
 }
 
 # microrna search should be full length and should show potential micrornas with a warning. 
@@ -1011,13 +1138,12 @@ sub RNAMOTIF {
     my $found = 0;
     my $i = 0;
 
-    print "<link rel='stylesheet' href='/css/fornac.css'>\n";
-    print "<script src='/js/d3.v3.min.js'></script>\n";
-    print "<script src='/js/fornac.js'></script>\n";
+    print "<link rel='stylesheet' href='/css/fornac.css'>";
+    print "<script src='/js/d3.v3.min.js'></script>";
+    print "<script src='/js/fornac.js'></script>";
 
-	print "<pre>\n";
-	print "<b>RNA motif search:</b><br>\n";
-
+	print "<div class='box-header'>RNA motif search:</div>";
+    print "<div class='box-content'>";
 	
 	open my $fh_tbl, '<', $tblout_file or die "Cannot open RNAmotif scan file: $!";
 	while (my $line = <$fh_tbl>) {
@@ -1104,7 +1230,7 @@ sub RNAMOTIF {
 	} else {
 		print "No motif recognized\n";
     }
-	print "</pre>\n";
+    print "</div>";
 }
 
 sub CPC2 {
@@ -1118,7 +1244,8 @@ sub CPC2 {
     	print "CPC2 execution failed with exit code: $exit_code\n";
 	}
 
-	print "<b>Checking coding potential:</b>\n";
+	print "<div class='box-header'>Coding potential:</div>";
+    print "<div class='box-content'>";
 
 	open(my $fh_cpc2, "<", "$cpc_output.txt") or die "Cannot open CPC2 result $cpc_output: $!";
 	my @results;
@@ -1196,7 +1323,9 @@ sub CPC2 {
         print "<i>Transcript predicted to be noncoding. Running structural region scan instead.</i><br>";
         &scan_structured_regions;
     }
+    print "</div>";
     return \%transcripts;
+    
 }
 
 sub microRNA {
@@ -1207,6 +1336,9 @@ sub microRNA {
 		my $mirna_search = "$HMMER/nhmmer --rna --watson -Z 3.73 -E 1 --tblout $mirbase_output -o $mirbase_out $TEMPDIR/$job.seq $MIRBASE/hairpin.fa";
 
 		system($mirna_search);
+
+        print "<div class='box-header'>miRNA scan:</div>";
+        print "<div class='box-content'>";
 
 		my $format = "%-18s %-6s %-6s %-10s %-8s %-15s %-40s\n";
 
@@ -1274,12 +1406,12 @@ sub microRNA {
 				printf $format, $hit->{match}, $hit->{from}, $hit->{to}, $hit->{e_value}, $hit->{score}, $link, $hit->{description};
 			}
 
-			print "<br><b>Total microRNA hits found:</b> $total<br>\n";
+			print "<b>Total microRNA hits found:</b> $total\n";
 		} else {
-			print "No regions matching a mircroRNA was found.<br></br>\n";
+			print "No regions matching a mircroRNA was found.\n";
 		}
 
-		print "<br>";
+		print "</div>";
 
 
 }
@@ -1404,6 +1536,9 @@ sub miRNAtarget {
 # Refactored AUGUSTUS + UTR + PolyA logic to handle multiple transcripts
 
 sub AUGUSTUS {
+
+    print "<div class='box-header'>Gene Prediction:</div>";
+    print "<div class='box-content'>";
     my ($species) = @_;
     $species ||= "human";
     my $utr_flag = ($species =~ /^(human|fly|zebrafish)$/i) ? "--UTR=on" : "";
@@ -1467,6 +1602,9 @@ sub AUGUSTUS {
     close $GFF;
 
     my $i = 1;
+    if (keys %transcripts == 0) {
+        print "No gene predictions were found.<br>";
+    } else {
     foreach my $tid (sort keys %transcripts) {
         my $model = $transcripts{$tid};
         
@@ -1488,6 +1626,7 @@ sub AUGUSTUS {
         $model->{protein} =~ s/\s//g if exists $model->{protein};
 
         print "<br>";
+        }
     }
 
     @predprot = ();              
@@ -1500,8 +1639,9 @@ sub AUGUSTUS {
         }
     }
     print "Parsed type=$type, tid=$tid, start=$start, end=$end<br>" if defined $tid;
+    print "</div>";
+
     return \%transcripts;
-    
 }
 
 sub split_exon_by_cds {
@@ -1545,6 +1685,9 @@ sub predict_utrs {
     my @new3primeutr = ();
     my @utrprintout  = ();
     my @utr          = ();
+
+    print "<div class='box-header'>UTR(s) Prediction:</div>";
+    print "<div class='box-content'>";
 
     print "<i>UTR prediction source: $source</i><br>";
 
@@ -1638,6 +1781,7 @@ sub predict_utrs {
 
     print "<i>No valid UTRs inferred.</i><br>" unless @utr;
 
+    print "</div>";
     return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr, \@polyasignal, \@polyatail);
 }
 
@@ -1880,19 +2024,18 @@ sub createfoldingpicture {
         close($fh);
 
         # Print HTML content
-        print "<h3>RNA Structure Visualization:</h3>";
+        print "<div class='box-header'>RNA Structure Visualization:</div>";
+        print "<div class='box-content'>";
 
         if ($SEQUENCELENGTH >= 2500){
             print "Structure visualization can take a few seconds to load due to sequence length.";
         }
         
-        print "<div style='width: 700px;'>\n";
-        print "  <div id='rna_ss' style='width: 700px; height: 700px;'></div>\n";
-        print "  <p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
+        print "<div id='rna_ss'>RNA Structure</div>";
+        print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>";
         print "<b>Download Folding As: </b>\n";
         print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
         print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
-        print "</div>";
 
         # Include required scripts
         print "<link rel='stylesheet' href='/css/fornac.css'>\n";
@@ -1990,6 +2133,16 @@ sub createfoldingpicture {
             }
         }
 
+        for (my $j = 0; $j < @rbp_locs; $j += 2) {
+            my ($from, $to) = @rbp_locs[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:pink ";
+            }
+        }
+
         $color_text =~ s/\s+$//;  # Trim trailing space
 
         # print "DEBUG: $color_text";
@@ -2017,8 +2170,9 @@ sub createfoldingpicture {
         print "</script>";
 
         # creating legend for visual interpretation 
-        print "<div style='font-size: 0.9em; margin-top: 10px;'>";
-        print "<b>Legend:</b>\n";
+        print "<div class='legend'>";
+        print "<div class='legend-title'>Legend:</div>";
+        print "<div class='legend-items'>";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: red; margin-left: 10px;'></span> Motifs\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: lightblue; margin-left: 20px;'></span> UTRs\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 20px;'></span> Exons\t";
@@ -2027,12 +2181,16 @@ sub createfoldingpicture {
         print "<span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 20px;'></span> SM-site/snRNP-motif\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 20px;'></span> TRANS-splicing\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 20px;'></span> PolyA Signal/PolyA Tail\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: pink; margin-left: 20px;'></span> Protein Binding Site(s)";
 
-        print "</div>\n";
+        print "</div>";
+        print "</div>";
 
     } else {
         print "<br><b>Maximum folding limit reached</b><br>";
     }
+
+    print "</div>";
 }
 
 sub location_table {
@@ -2049,20 +2207,9 @@ sub location_table {
 
 
     # Begin styling and table
-    print "<style>
-        table, th, td {
-            border: 1px solid black;
-            border-collapse: collapse;
-            padding: 8px;
-        }
-        th {
-            background-color: #f2f2f2;
-            text-align: left;
-        }
-    </style>";
 
     print "<h2>Locations of the Detected Structures:</h2>\n";
-    print "<table>\n";
+    print "<table class='table-loc'>";
 
     print "<tr><th>Structure</th><td>Location(s)</td></tr>\n";
 
@@ -2106,10 +2253,16 @@ sub location_table {
         print "<tr><th>PolyA motif(s)</th><td>$polyatail_str</td></tr>\n";
     }
 
+    if (@rbp_locs) {
+        my $rbp_str = format_flat_ranges(@rbp_locs);
+        print "<tr><th>Protein Binding Site(s)</th><td>$rbp_str</td></tr>\n";
+    }
+
+
     print "</table>\n";
 }
 
 write_file("$TEMPDIR/result.txt", "done\n");
 
-print "</main></body></html>";
+print "</div></main></body></html>";
 close $out;

@@ -1,0 +1,5 @@
+#define MEME_DIR "/home/ama55id/rnaanalyzer/bin/meme-5.5.8"
+#define DATA_DIR "/home/ama55id/rnaanalyzer/bin/meme-5.5.8/share/meme-5.5.8" 
+#define BIN_DIR "/home/ama55id/rnaanalyzer/bin/meme-5.5.8/bin" 
+#define LIBEXEC_DIR "/home/ama55id/rnaanalyzer/bin/meme-5.5.8/libexec/meme-5.5.8" 
+#define TEMP_DIR "" 

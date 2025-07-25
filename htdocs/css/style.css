@@ -233,4 +233,30 @@ hr {
     height: 80px;
     margin: 20px;
   }
+
+  .inline-form {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.75em;
+    margin-bottom: 1.5em;
+  }
+
+  /* Prevent label or button wrapping */
+  .inline-form label,
+  .inline-form input[type="submit"] {
+    white-space: nowrap;
+  }
+
+  /* Limit the input field size */
+  .inline-form input[type="text"] {
+    max-width: 300px;
+    width: 100%;
+    padding: 0.4em;
+  }
+
+  /* Optional: button styling */
+  .inline-form input[type="submit"] {
+    padding: 0.4em 1em;
+  }
   

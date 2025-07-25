@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RNA Analyzer Preview</title>
+  <style>
+/* RNA Analyzer 2025 - Modular CSS */
+
+/* Reset and Base Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f8f9fa;
+}
+
+/* Layout Components */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+
+/* Header Component */
+header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 1rem 0;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+header .container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.logo {
+  height: 50px;
+  width: 50px;
+  background: rgba(255,255,255,0.2);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+.header-text h1 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 0.25rem;
+}
+
+.header-text p {
+  font-size: 0.9rem;
+  opacity: 0.9;
+}
+
+.header-links {
+  display: flex;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.header-links a {
+  color: white;
+  text-decoration: none;
+  opacity: 0.9;
+  transition: opacity 0.2s;
+}
+
+.header-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+/* Main Content */
+main {
+  padding: 2rem 0;
+}
+
+/* Typography */
+h2 {
+  color: #2c3e50;
+  font-size: 1.5rem;
+  margin-bottom: 1.5rem;
+  font-weight: 600;
+}
+
+/* Box Component - Main container for content sections */
+.box {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-bottom: 1.5rem;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+}
+
+.box-header {
+  background: linear-gradient(90deg, #4a90e2 0%, #357abd 100%);
+  color: white;
+  padding: 0.75rem 1rem;
+  font-weight: 600;
+  font-size: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.box-content {
+  padding: 1.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  background: #fafbfc;
+}
+
+/* Text Formatting in Box Content */
+.box-content b {
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.box-content i {
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Pre-formatted Content */
+pre {
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+/* Interactive Elements */
+button {
+  background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  margin: 0.25rem;
+}
+
+button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40,167,69,0.3);
+}
+
+button:active {
+  transform: translateY(0);
+}
+
+/* Links */
+a {
+  color: #4a90e2;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: #357abd;
+  text-decoration: underline;
+}
+
+/* RNA Structure Visualization */
+#rna_ss, #rna_ss_0 {
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  background: white;
+  margin: 1rem 0;
+  width: 100%;
+  height: 400px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Legend Component */
+.legend {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.legend-title {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: #495057;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+}
+
+/* Table Component */
+.table-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  margin-top: 2rem;
+  overflow: hidden;
+  border: 1px solid #e9ecef;
+}
+
+.table-container h2 {
+  background: linear-gradient(90deg, #6f42c1 0%, #5a32a3 100%);
+  color: white;
+  margin: 0;
+  padding: 1rem;
+  font-size: 1.25rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+}
+
+table th {
+  background: #f8f9fa;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #495057;
+  border-bottom: 2px solid #dee2e6;
+  width: 30%;
+}
+
+table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #dee2e6;
+  background: white;
+}
+
+table tr:hover td {
+  background: #f8f9fa;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  header .container {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .header-text h1 {
+    font-size: 1.5rem;
+  }
+  
+  .container {
+    padding: 0 15px;
+  }
+  
+  .box-content {
+    font-size: 0.8rem;
+    padding: 1rem;
+  }
+  
+  #rna_ss, #rna_ss_0 {
+    width: 100% !important;
+    height: 300px !important;
+  }
+  
+  .legend-items {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-text h1 {
+    font-size: 1.25rem;
+  }
+  
+  .box-content {
+    font-size: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  button {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <a href="#" class="logo">RNA</a>
+      <div class="header-text">
+        <h1>RNA Analyzer 2025</h1>
+        <p>Webserver for RNA Sequence Overview</p>
+      </div>
+      <div class="header-links">
+        <a href="#" target="_blank">About</a> |
+        <a href="#" target="_blank">Contact</a> |
+        <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+      <h2>Results</h2>
+      <h2>Here are the results for JOB ID: 1769 with sequence name: ire</h2>
+      
+      <div class='box'>
+        <div class='box-header'>Structural information</div>
+        <div class='box-content'>
+          <b>Length:</b> 359<br>
+          <b>Energy:</b> -115.30 kcal/mol<br>
+          <b>Stems:</b> 18 stem structure(s)<br>
+          <b>Hairpins:</b> 6 hairpin(s)<br>
+          Highly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA<br>
+          <i>****It might be interesting to have a closer look at the structures.<br>
+          You might find it useful to look in the book<br>
+          'RNA Motifs and Regulatory Elements'<br>
+          Thomas Dandekar (Ed.)<br>
+          ISBN 3-540-41701</i><br>
+          <b>StemGGpair:</b> start - end<br>
+          Hit: 309 - 326<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>Trans-Splicing</div>
+        <div class='box-content'>
+          Schistosoma: none<br>
+          C. elegans: none<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>Iron-resp Elements</div>
+        <div class='box-content'>
+          Position: 44<br>
+          Sequence: cugugucuugcuucaacaguguuugaacggaacagaccc<br>
+          Structure: ((((.((.((.(((((......))))))))))))).... -9.600000 kcal/mol Quality: good<br>
+          Structure: ((((.(((...(((((......))))).))))))).... -9.900000 kcal/mol Quality: good<br>
+          Structure: ((((.(((.(.(((((......))))))))))))).... -9.600000 kcal/mol Quality: good<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>Au-rich regions</div>
+        <div class='box-content'>
+          <b>ARE:</b> None *(AU-rich region of at least 30 nt)<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>Catalytic RNA</div>
+        <div class='box-content'>
+          <b>snRNP-motifs:</b> start sequence quality<br>
+          snRNP-motif: 45 aguguuuga +<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>tRNA Scan</div>
+        <div class='box-content'>
+          <b>tRNAscan Results:</b> none<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>RNA motif search</div>
+        <div class='box-content'>
+          Match Family From To Score E-Value Description<br>
+          --------------------------------------------------------------------------------<br>
+          IRE_I <a href="https://rfam.org/family/RF00037" target="_blank">RF00037</a> 28 62 57.2 5.7e-13 Iron response element I<br>
+          <button onclick="toggleStructure()">View Structure</button>
+          <div id='rna_ss_0' style='display: none; margin-top: 10px;'>
+            RNA Structure Visualization (would appear here)
+          </div>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>miRNA scan</div>
+        <div class='box-content'>
+          No regions matching a microRNA was found.<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>Coding potential</div>
+        <div class='box-content'>
+          ID Transcript Length Peptide Length Fickett pI ORF ORF Start Coding Prob. Label<br>
+          --------------------------------------------------------------------------------------------------------------<br>
+          1769 359 50 0.41 5.40 -1 208 0.020458 noncoding<br>
+          <i>Transcript predicted to be noncoding. Running structural region scan instead.</i><br><br>
+          <b>Structured regions detected:</b><br>
+          Region From To Stems Energy<br>
+          ------------------------------------------------------------<br>
+          Region 1 150 9 -50.00<br>
+          Region 151 300 7 -43.30<br>
+          Region 301 359 3 -14.70<br><br>
+          ** Highly structured regions found. Consider tRNA, rRNA, or ncRNA elements.<br>
+        </div>
+      </div>
+
+      <div class='box'>
+        <div class='box-header'>RNA Structure Visualization</div>
+        <div class='box-content'>
+          <div id='rna_ss'>RNA Structure would be visualized here</div>
+          <p style='font-size: 0.9em; color: gray; text-align: center;'>Drag to pan, scroll to zoom</p>
+          <b>Download Folding As:</b>
+          <button>SVG File</button>
+          <button>PS File</button>
+          
+          <div class='legend'>
+            <div class='legend-title'>Legend:</div>
+            <div class='legend-items'>
+              <span style='display: inline-block; width: 12px; height: 12px; background: red; margin-right: 5px;'></span> Motifs
+              <span style='display: inline-block; width: 12px; height: 12px; background: lightblue; margin-left: 20px; margin-right: 5px;'></span> UTRs
+              <span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 20px; margin-right: 5px;'></span> Exons
+              <span style='display: inline-block; width: 12px; height: 12px; background: orange; margin-left: 20px; margin-right: 5px;'></span> TRNA
+              <span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 20px; margin-right: 5px;'></span> MiRNA
+              <span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 20px; margin-right: 5px;'></span> SM-site/snRNP-motif
+              <span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 20px; margin-right: 5px;'></span> TRANS-splicing
+              <span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 20px; margin-right: 5px;'></span> PolyA Signal/PolyA Tail
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class='table-container'>
+        <h2>Locations of the Detected Structures:</h2>
+        <table>
+          <tr>
+            <th>Structure</th>
+            <td>Location(s)</td>
+          </tr>
+          <tr>
+            <th>RNA Motifs</th>
+            <td>28 to 62</td>
+          </tr>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function toggleStructure() {
+      var el = document.getElementById('rna_ss_0');
+      if (el.style.display === 'none') {
+        el.style.display = 'block';
+        el.innerHTML = 'RNA Structure Visualization (Interactive structure would appear here)';
+        el.style.border = '1px solid #dee2e6';
+        el.style.borderRadius = '4px';
+        el.style.background = 'white';
+        el.style.padding = '2rem';
+        el.style.textAlign = 'center';
+        el.style.color = '#6c757d';
+        el.style.fontStyle = 'italic';
+      } else {
+        el.innerHTML = '';
+        el.style.display = 'none';
+      }
+    }
+  </script>
+</body>
+</html>

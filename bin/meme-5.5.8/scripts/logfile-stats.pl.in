@@ -1,0 +1,119 @@
+#!@WHICHPERL@ -w
+# AUTHOR: Timothy L. Bailey
+# CREATE DATE: May 21, 2024
+use strict;
+use lib qw(@PERLLIBDIR@);
+use File::Basename;
+use Time::ParseDate qw(parsedate);
+
+my $PGM = $0;			# name of program
+$PGM =~ s#.*/##;                # remove part up to last slash
+#@args = @ARGV;			# arguments to program
+$| = 1;				# flush after all prints
+$SIG{'INT'} = \&cleanup;	# interrupt handler
+# Note: so that interrupts work, always use for system calls:
+# 	if ($status = system("$command")) {&cleanup($status)}
+
+# requires
+push(@INC, split(":", $ENV{'PATH'}));	# look in entire path
+
+# defaults
+
+my $usage = <<USAGE;		# usage message
+  USAGE:
+	$PGM [options]
+
+	Compute the wait time, run time, and elapsed time
+	in seconds for each job in a MEME Suite log file.
+	Writes one line for each (valid) log file line with the format:
+
+		<wait_time> <run_time> <elapsed_time>
+
+	Reads standard input.
+	Writes standard output.
+
+	Example:
+		~/logfile-stats < LOGS/mast-log.2024 > ! tmp1
+		cdf -c 1 < tmp1 > ! mast.wait.cdf
+		cdf -c 2 < tmp1 > ! mast.run.cdf
+		cdf -c 3 < tmp1 > ! mast.elapsed.cdf
+		plotgen wait mast.wait.cdf run mast.run.cdf elapsed mast.elapsed.cdf -title MAST -misc 'set logscale x' -misc 'set key bottom right' -xlabel seconds -ylabel CDF
+
+        Copyright
+        (2024) Timothy L. Bailey
+        All Rights Reserved.
+USAGE
+
+my $nargs = 0;			# number of required args
+if ($#ARGV+1 < $nargs) { &print_usage("$usage", 1); }
+
+# get input arguments
+while ($#ARGV >= 0) {
+  $_ = shift;
+  if ($_ eq "-h") {				# help
+    &print_usage("$usage", 0);
+  } elsif ($_ eq "-w") {
+    print "Whatever!\n"; exit(1);
+  } else {
+    &print_usage("$usage", 1);
+  }
+}
+
+my ($submit, $start, $end);
+my (@fields);
+printf "# %s\t%s\t%s\n", "wait", "run", "elapsed";
+while (<STDIN>) {
+  next if (/^#/ || /^\s*$/);                    # skip comment, blank lines
+  @fields = split;
+  next if ($fields[2] ne "submit:" || $fields[5] ne "start:" || $fields[8] ne "end:");
+  $submit = "$fields[3] $fields[4]";
+  $start = "$fields[6] $fields[7]";
+  $end = "$fields[9] $fields[10]";
+  my $wait_time = (parsedate($start, UK => 1) - parsedate($submit, UK => 1));
+  my $run_time = (parsedate($end, UK => 1) - parsedate($start, UK => 1));
+  my $elapsed_time = (parsedate($end, UK => 1) - parsedate($submit, UK => 1));
+
+  printf "%d\t%d\t%d\n", $wait_time, $run_time, $elapsed_time;
+};
+
+my $status = 1;
+
+# cleanup files
+&cleanup($status, "");
+ 
+################################################################################
+#                       Subroutines                                            #
+################################################################################
+ 
+################################################################################
+#
+#       print_usage
+#
+#	Print the usage message and exit.
+#
+################################################################################
+sub print_usage {
+  my($usage, $status) = @_;
+ 
+  if (-c STDOUT) {			# standard output is a terminal
+    open(C, "| more");
+    print C $usage;
+    close C;
+  } else {				# standard output not a terminal
+    print STDERR $usage;
+  }
+
+  exit $status;
+}
+ 
+################################################################################
+#       cleanup
+#
+#       cleanup stuff
+#
+################################################################################
+sub cleanup {
+  my($status, $msg) = @_;
+  if ($status && "$msg") {print STDERR "$msg: $status\n";}
+  exit($status);
+}

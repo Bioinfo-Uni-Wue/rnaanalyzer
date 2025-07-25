@@ -1,0 +1,10 @@
+# <db_root>,<prot?>,<nuc?>,<short_seqs?>,<db_menu_name>,<db_long_name>,<protein_url>,<nuc_url>
+,,,no,----Other Genomes----,,,
+
+lotus_japonicus,no,yes,no,Lotus Japonicus Gifu v1.2 assembly,Genome of L. japonicus from Gifu v1.2 <a href="https://lotus.au.dk/data/download">LOTUS Base</a>. We have stripped the text "LjG1.1_" from in front of the chromosome names.,,https://meme-suite.org/meme/meme-software/Databases/OTHER_GENOMES/Lotusjaponicus_Gifu_v1.2_genome.ucsd.fa.gz
+
+strongylocentrotus_purpuratus,yes,yes,yes,Strongylocentrotus Purpuratus v5.0,Genome and proteins for <i>S. purpuratus</i> v5.0 from <a href="https://www.echinobase.org/echinobase/static-echinobase/ftpDatafiles.jsp">Echinobase</a>.,https://download.xenbase.org/echinobase/Genomics/Spur5.0/sp5_0_GCF_proteins.fa.gz,https://download.xenbase.org/echinobase/Genomics/Spur5.0/sp5_0_GCF_genomic.fa.gz
+
+exaiptasia_diaphana,yes,yes,yes,Aiptasia diaphana 1.1,Genome and proteins for <i>Exaiptasia diaphana</i> v1.1 from <a href="https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_001417965.1">NLM</a>.,https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/417/965/GCF_001417965.1_Aiptasia_genome_1.1/GCF_001417965.1_Aiptasia_genome_1.1_protein.faa.gz,https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/001/417/965/GCF_001417965.1_Aiptasia_genome_1.1/GCF_001417965.1_Aiptasia_genome_1.1_genomic.fna.gz  
+
+bacillus_amyloliquefaciens,yes,yes,yes,Bacillus amyloliquefaciens strain T-5,Genome and proteins for <i>Bacillus amyloliquefaciens strain T-5</i> from <a href="https://www.ncbi.nlm.nih.gov/datasets/genome/GCF_014622745.1">NLM</a>.,https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/014/622/745/GCF_014622745.1_ASM1462274v1/GCF_014622745.1_ASM1462274v1_protein.faa.gz,https://ftp.ncbi.nlm.nih.gov/genomes/all/GCF/014/622/745/GCF_014622745.1_ASM1462274v1/GCF_014622745.1_ASM1462274v1_genomic.fna.gz

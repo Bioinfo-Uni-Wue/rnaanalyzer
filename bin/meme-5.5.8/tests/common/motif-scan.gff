@@ -1,0 +1,4 @@
+Scer	motif-scan	sequence	1	2666	.	+	.	
+Scer	motif-scan	sequence	1	2666	.	+	.	
+Scer	motif-scan	motif	121	133	3.318e-08	+	.	motif "+1";Sequence "TTTCCTAAATGGG"
+Scer	motif-scan	motif	1918	1930	3.318e-08	-	.	motif "-1";Sequence "CCCATTTAGGAAA"

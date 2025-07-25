@@ -1,0 +1,37 @@
+Motif_Identifier	GO_Term_Identifier	GOMo_Score	p-value	q-value
+crp	GO:0044248	1.341e-06	5.615e-07	4.553e-04
+crp	GO:0009056	8.869e-07	5.615e-07	4.553e-04
+crp	GO:0008643	1.075e-04	5.615e-06	3.035e-03
+crp	GO:0051119	2.285e-04	1.797e-05	5.463e-03
+crp	GO:0044275	2.652e-04	2.021e-05	5.463e-03
+crp	GO:0015144	2.665e-04	2.021e-05	5.463e-03
+crp	GO:0016861	3.954e-04	3.200e-05	7.415e-03
+crp	GO:0016860	4.737e-04	4.323e-05	8.764e-03
+crp	GO:0016052	5.421e-04	5.053e-05	9.106e-03
+crp	GO:0009057	5.850e-04	5.615e-05	9.106e-03
+crp	GO:0016853	7.322e-04	7.748e-05	1.142e-02
+crp	GO:0044265	8.893e-04	1.028e-04	1.389e-02
+crp	GO:0019321	1.272e-03	1.909e-04	2.382e-02
+nagC	GO:0051704	1.801e-04	3.088e-05	3.407e-02
+nagC	GO:0042710	4.020e-04	6.738e-05	3.407e-02
+nagC	GO:0009252	8.308e-04	1.516e-04	3.407e-02
+nagC	GO:0007047	8.308e-04	1.516e-04	3.407e-02
+nagC	GO:0031504	8.308e-04	1.516e-04	3.407e-02
+nagC	GO:0009273	8.308e-04	1.516e-04	3.407e-02
+nagC	GO:0042546	8.308e-04	1.516e-04	3.407e-02
+nagC	GO:0016798	1.101e-03	2.066e-04	3.611e-02
+nagC	GO:0004553	1.101e-03	2.066e-04	3.611e-02
+narP	GO:0009061	3.737e-04	5.109e-05	4.964e-02
+narP	GO:0045333	5.182e-04	7.692e-05	4.964e-02
+narP	GO:0030151	6.633e-04	1.140e-04	4.964e-02
+narP	GO:0015980	9.717e-04	1.797e-04	4.964e-02
+narP	GO:0006091	9.717e-04	1.797e-04	4.964e-02
+narP	GO:0017004	1.063e-03	1.993e-04	4.964e-02
+narP	GO:0043623	1.063e-03	1.993e-04	4.964e-02
+narP	GO:0042592	1.382e-03	2.847e-04	4.964e-02
+narP	GO:0048878	1.382e-03	2.847e-04	4.964e-02
+narP	GO:0019725	1.382e-03	2.847e-04	4.964e-02
+
+# GOMo (Gene Ontology for Motifs): Version 5.5.6 compiled on Jul 30 2024 at 18:44:55
+# The format of this file is described at https://meme-suite.org/meme/doc/gomo-output-format.html.
+# gomo --oc gomo_example_output_files --dag go.dag --motifs dpinteract_subset.meme bacteria_escherichia_coli_k12_1000_199.na.csv ama.xml

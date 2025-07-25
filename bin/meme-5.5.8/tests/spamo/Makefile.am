@@ -1,0 +1,27 @@
+#####################################################################
+## FILE: Makefile.am
+# AUTHOR: James Johnson
+# CREATE DATE: 2011
+# PROJECT: SpaMo (MEME Suite)
+# COPYRIGHT: 2011, UQ
+#####################################################################
+
+## Automake uses this file to generate a Makefile
+
+# These files should be included with the distribution.
+DATAFILES = \
+	dna_with_covalent.html \
+	dna_with_covalent.tsv \
+	dumpseqs.html \
+	dumpseqs.seqs_MA0039.2_db1_MA0039.2.tsv \
+	dumpseqs.seqs_MA0039.2_db1_MA0140.1.tsv \
+	dumpseqs.tsv \
+	dumpsigs.tsv \
+	limits.html \
+	limits.tsv \
+	random.html \
+	random.tsv \
+	rna.html \
+	rna.tsv
+
+EXTRA_DIST = $(DATAFILES)

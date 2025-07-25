@@ -25,6 +25,8 @@
   
 
   <main>
+
+
       <form action="../cgi-bin/batchsubmit.cgi" method="post" enctype="multipart/form-data" onsubmit="return validateForm(event)">
 
       <section>
@@ -37,7 +39,7 @@
       </section>
 
       <section>
-        OR Upload FASTA file:  <input type="file" name="fasta_file"><br><span style="font-weight: lighter; font-size: small;">Size limit: 1 mb</span>
+        OR Upload FASTA file:  <input type="file" name="fasta_file"><br>s<pan style="font-weight: lighter; font-size: small;">Size limit: 1 mb</span>
       </section>
 
       <section>
@@ -113,6 +115,17 @@
     <br>
     <p><a href="examples.html" target="_blank">Examples to test</a></p>
 
+    <br>
+    <hr>
+
+    <section>
+      <form class="inline-form" action="../cgi-bin/retrieve_job.cgi" method="get">
+        <label for="job_id">Retrieve a Previous Job:</label>
+        <input type="text" id="job_id" name="job_id" placeholder="Enter Job Number eg., 1741" required>
+        <input type="submit" value="Submit">
+      </form>
+    </section>
+
     <script>
       function validateForm(event) {
         const textInput = document.querySelector('textarea[name="SEQUENCE"]').value.trim();
@@ -125,7 +138,6 @@
           return false;
         }
       
-        // If a file is selected, check its size
         if (fileInput && fileInput.size > 1 * 1024 * 1024) {
           alert("File is too large. Please upload a file smaller than 1 MB.");
           event.preventDefault();
@@ -137,28 +149,28 @@
       </script>
 
   <section class="links">
-  <div class="bottom-container">
-  <div class="bottom-left">
-  <div class="text-group">
-    <p><strong>Help</strong></p>
-    <a href="about.html">About</a>
-    <a href="contact.html">Contact</a>
-    <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Bioinfo Uni Wü</a>
-    <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo/computing" target="_blank">Our Other Apps</a>
-  </div>
-  <div class="text-group"> 
-    <p><strong>Important Databases</strong></p>
-    <a href="https://rfam.org/" target="_blank">Rfam</a>
-    <a href="https://www.mirbase.org" target="_blank">miRbase</a>
-    <a href="http://rna.tbi.univie.ac.at/cgi-bin/RNAWebSuite/RNAfold.cgi" target="_blank">RNAfold</a>
-    <a href="https://bioinf.uni-greifswald.de/augustus" target="_blank">Augustus</a>
-  </div>
-  </div>
-  <div class="divider"></div>
-  <div class="bottom-logos">
-    <a href="https://www.uni-wuerzburg.de" target="_blank"><img src="images/uni_logo.png" alt="University Logo" /></a>
-    <a href="https://www.biozentrum.uni-wuerzburg.de" target="_blank"><img src="images/biozentrum_logo.jpg" alt="Institute Logo" /></a>
-  </div>
+    <div class="bottom-container">
+      <div class="bottom-left">
+      <div class="text-group">
+        <p><strong>Help</strong></p>
+        <a href="about.html">About</a>
+        <a href="contact.html">Contact</a>
+        <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Bioinfo Uni Wü</a>
+        <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo/computing" target="_blank">Our Other Apps</a>
+      </div>
+      <div class="text-group"> 
+        <p><strong>Important Databases</strong></p>
+        <a href="https://rfam.org/" target="_blank">Rfam</a>
+        <a href="https://www.mirbase.org" target="_blank">miRbase</a>
+        <a href="http://rna.tbi.univie.ac.at/cgi-bin/RNAWebSuite/RNAfold.cgi" target="_blank">RNAfold</a>
+        <a href="https://bioinf.uni-greifswald.de/augustus" target="_blank">Augustus</a>
+      </div>
+      </div>
+      <div class="divider"></div>
+      <div class="bottom-logos">
+        <a href="https://www.uni-wuerzburg.de" target="_blank"><img src="images/uni_logo.png" alt="University Logo" /></a>
+        <a href="https://www.biozentrum.uni-wuerzburg.de" target="_blank"><img src="images/biozentrum_logo.jpg" alt="Institute Logo" /></a>
+      </div>
     
   
   </div>
