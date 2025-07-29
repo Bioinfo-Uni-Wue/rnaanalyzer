@@ -64,6 +64,7 @@ my $trna      = $q->param("trna") // '';
 my $coding    = $q->param("run_coding") // '';
 my $species   = $q->param("species") // '';
 my $mirna_target    =  $q->param("mirna_target") // '';
+my $rbp       = $q->param("RBP") // '';
 
 
 my @job_ids = $q->multi_param('job_ids');
@@ -148,6 +149,7 @@ unless ($is_refresh) {
             run_coding      => $coding,
             species         => $species,
             mirna_target    => $mirna_target,
+            RBP             => $rbp,
             dnarna          => $sanitized->{type},
             sequence_name   => $sanitized->{name},
             sequence_clean  => $sanitized->{cleaned_seq},

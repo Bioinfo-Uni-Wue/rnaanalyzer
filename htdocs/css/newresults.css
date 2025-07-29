@@ -49,7 +49,7 @@ text-align: right;
 
 .header-links a {
 margin: 0 10px;
-color: #ccc;
+color: #ffffff;
 text-decoration: none;
 }
 
@@ -145,12 +145,12 @@ a:hover {
 }
 
 /* RNA Structure Visualization */
-#rna_ss, #rna_ss_0 {
+/* #rna_ss, #rna_ss_0 {
   border: 1px solid #dee2e6;
   border-radius: 4px;
   background: white;
   margin: 1rem 0;
-}
+} */
 
 /* Legend Component */
 .legend {
@@ -224,7 +224,7 @@ a:hover {
   width: 100%;
   border-collapse: collapse;
   font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
 }
 
 .table-result th {

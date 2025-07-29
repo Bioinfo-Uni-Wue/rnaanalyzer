@@ -74,6 +74,7 @@ my $do_IRE              = $params->{IRE};
 my $do_TRANS            = $params->{TRANS};
 my $species             = $params->{species};
 my $do_mirnatarget      = $params->{mirna_target};
+my $do_rbp              = $params->{RBP};
 my $dnarna              = $params->{dnarna};
 my $SEQNAMECHECKED      = $params->{sequence_name};
 my $SEQUENCECHECKED     = $params->{sequence_clean};
@@ -165,14 +166,18 @@ sub analysis {
     print "</div>";
     print "</div>";
 
+    if ($do_TRANS) {
     print "<div class='box'>";
-    &TRANS if $do_TRANS;
+    &TRANS;
     print "</div>";
+    }
 
+    if ($do_IRE) {
     print "<div class='box'>";	
-	&IRE if $do_IRE;
+	&IRE;
     print "</div>";
-    
+    }
+
     print "<div class='box'>";
     &ARE;
     print "</div>";
@@ -181,21 +186,29 @@ sub analysis {
     &smsite;
     print "</div>";
 
+    if ($do_rnamotif) {
     print "<div class='box'>";
-    &RNAMOTIF if $do_rnamotif;
+    &RNAMOTIF;
     print "</div>";
+    }
 
+    if ($do_trna) {
     print "<div class='box'>";
-    &tRNA if $do_trna;
+    &tRNA;
     print "</div>";
+    }
 
-    print "<div class='box'>";
-    &rbp_motifs;
+    if ($do_rbp) {
+    print "<div class='box'>"; 
+    &rbp;
     print "</div>";
-    
+    }
+
+    if ($do_mirna) {
     print "<div class='box'>";
-    &microRNA if $do_mirna;
+    &microRNA;
     print "</div>";
+    }
 
     # --- Capture transcript models ---
     print "<div class='box'>";
@@ -264,18 +277,20 @@ sub analysis {
         \@structured_regions
     );
 
-    print "<div class='box'>" if $do_mirnatarget;
-    miRNAtarget(\%transcripts) if $do_mirnatarget;
-    print "</div>" if $do_mirnatarget; 
+    print "<div class='box'>";
+    &predprotein;
+    print "</div>";
+
+    if ($do_mirnatarget) {
+    print "<div class='box'>";
+    miRNAtarget(\%transcripts);
+    print "</div>";
+    } 
     # Optional: enable if scan_rbs supports multi-transcript
     # scan_rbs(\%transcripts);
 
     # print "<div class='box'>";
     # &csfce;
-    # print "</div>";
-
-    # print "<div class='box'>";
-    # &protA1bisite;
     # print "</div>";
 
     print "<div class='box'>";
@@ -299,19 +314,34 @@ sub TRANS{
             print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
 				#print "No hit detected<br>";
-				print " Schistosoma: none<br>";
+				print "<h3><b>Schistosoma:</b>\tNone</h3><br>";
 			}
 			else {
 				$hits=pop @transcionareturnvalues;
 				for ($count=0;$count<$hits;$count++){
-					print " Schistosoma: <br>";
-					print "  Position:   $transcionareturnvalues[$count*6+0] with 35 bp ustream region<br>";
-					$transcionareturnvalues[$count*6+4]=uc ($transcionareturnvalues[$count*6+4]);
-					$transcionareturnvalues[$count*6+2]=uc ($transcionareturnvalues[$count*6+2]);
-					print "  Stem1:      $transcionareturnvalues[$count*6+4]<br>";
-					print "  Structure:  $transcionareturnvalues[$count*6+5]<br>";
-					print "  Energy:     $transcionareturnvalues[$count*6+3]<br>";
-					print "  Sm-Site:    $transcionareturnvalues[$count*6+2] at pos: $transcionareturnvalues[$count*6+1]<br>";
+					# print " Schistosoma: <br>";
+					# print "  Position:   $transcionareturnvalues[$count*6+0] with 35 bp ustream region<br>";
+					# $transcionareturnvalues[$count*6+4]=uc ($transcionareturnvalues[$count*6+4]);
+					# $transcionareturnvalues[$count*6+2]=uc ($transcionareturnvalues[$count*6+2]);
+					# print "  Stem1:      $transcionareturnvalues[$count*6+4]<br>";
+					# print "  Structure:  $transcionareturnvalues[$count*6+5]<br>";
+					# print "  Energy:     $transcionareturnvalues[$count*6+3]<br>";
+					# print "  Sm-Site:    $transcionareturnvalues[$count*6+2] at pos: $transcionareturnvalues[$count*6+1]<br>";
+
+                    print "<h3>Schistosoma:</h3>\n";
+                    print "<table class='table-result'>\n";
+                    print "<tr><td>Position</td><td>$transcionareturnvalues[$count*6+0] with 35 bp upstream region</td></tr>\n";
+
+                    $transcionareturnvalues[$count*6+4] = uc($transcionareturnvalues[$count*6+4]);
+                    $transcionareturnvalues[$count*6+2] = uc($transcionareturnvalues[$count*6+2]);
+
+                    print "<tr><td>Stem1</td><td>$transcionareturnvalues[$count*6+4]</td></tr>\n";
+                    print "<tr><td>Structure</td><td>$transcionareturnvalues[$count*6+5]</td></tr>\n";
+                    print "<tr><td>Energy</td><td>$transcionareturnvalues[$count*6+3]</td></tr>\n";
+                    print "<tr><td>Sm-Site</td><td>$transcionareturnvalues[$count*6+2] at pos: $transcionareturnvalues[$count*6+1]</td></tr>\n";
+
+                    print "</table>\n";
+
 					@transsplicing=(@transsplicing,$transcionareturnvalues[$count*6+0]-35,($transcionareturnvalues[$count*6+1]+length $transcionareturnvalues[$count*6+2])-1); #for the formatted output of sequence # counting 35 bp upstream why?
 				}
 			}
@@ -319,26 +349,43 @@ sub TRANS{
 			@transcelegansvalues=RNASERVER::TRANS2::celegans($SEQUENCECHECKED);	
 			if (@transcelegansvalues==1){
 				#print "No hit detected<br>";
-				print " C. elegans:  none<br>";
+				print "<h3><b>C. elegans:</b>\tNone</h3>";
 			}
 			else {
 				$hits=pop @transcelegansvalues;
 				for ($count=0;$count<$hits;$count++){
 					$transcelegansvalues[$count*10+5]=uc($transcelegansvalues[$count*10+5]);
-					print " C.elegans:<br>  Position:   $transcelegansvalues[$count*10+0] with 21 bp ustream region ; pointing to ggua of stem1<br>";
+					# print " C.elegans:<br>  Position:   $transcelegansvalues[$count*10+0] with 21 bp ustream region ; pointing to ggua of stem1<br>";
 					
-					print "  Stem1:      $transcelegansvalues[$count*10+1]<br>";
-					print "  Structure:  $transcelegansvalues[$count*10+2]<br>";
-					print "  Stem2:      $transcelegansvalues[$count*10+3]<br>";
-					print "  Structure:  $transcelegansvalues[$count*10+4]<br>";
-					print "  Sm-Site:    $transcelegansvalues[$count*10+5]<br>";
-					print "  Stem3:      $transcelegansvalues[$count*10+6]<br>";
-					print "  Structure:  $transcelegansvalues[$count*10+7]<br>";
-					print "  Leader:     $transcelegansvalues[$count*10+8]<br>" if ($transcelegansvalues[$count*10+8] !=0);
-					print "  Leader:     none<br>" if ($transcelegansvalues[$count*10+8] == 0);
-					
-					
-					
+					# print "  Stem1:      $transcelegansvalues[$count*10+1]<br>";
+					# print "  Structure:  $transcelegansvalues[$count*10+2]<br>";
+					# print "  Stem2:      $transcelegansvalues[$count*10+3]<br>";
+					# print "  Structure:  $transcelegansvalues[$count*10+4]<br>";
+					# print "  Sm-Site:    $transcelegansvalues[$count*10+5]<br>";
+					# print "  Stem3:      $transcelegansvalues[$count*10+6]<br>";
+					# print "  Structure:  $transcelegansvalues[$count*10+7]<br>";
+					# print "  Leader:     $transcelegansvalues[$count*10+8]<br>" if ($transcelegansvalues[$count*10+8] !=0);
+					# print "  Leader:     none<br>" if ($transcelegansvalues[$count*10+8] == 0);
+                    print "\n<h3>C. elegans:</h3>\n";
+
+                    print "<table class='table-result'>\n";
+                    print "<tr><td><b>Position</b></td><td>$transcelegansvalues[$count*10+0] with 21 bp upstream region ; pointing to ggua of stem1</td></tr>\n";
+                    print "<tr><td><b>Stem1</b></td><td>$transcelegansvalues[$count*10+1]</td></tr>\n";
+                    print "<tr><td><b>Structure (1)</b></td><td>$transcelegansvalues[$count*10+2]</td></tr>\n";
+                    print "<tr><td><b>Stem2</b></td><td>$transcelegansvalues[$count*10+3]</td></tr>\n";
+                    print "<tr><td><b>Structure (2)</b></td><td>$transcelegansvalues[$count*10+4]</td></tr>\n";
+                    print "<tr><td><b>Sm-Site</b></td><td>$transcelegansvalues[$count*10+5]</td></tr>\n";
+                    print "<tr><td><b>Stem3</b></td><td>$transcelegansvalues[$count*10+6]</td></tr>\n";
+                    print "<tr><td><b>Structure (3)</b></td><td>$transcelegansvalues[$count*10+7]</td></tr>\n";
+
+                    if ($transcelegansvalues[$count*10+8] != 0) {
+                        print "<tr><td>Leader</td><td>$transcelegansvalues[$count*10+8]</td></tr>\n";
+                    } else {
+                        print "<tr><td>Leader</td><td>none</td></tr>\n";
+                    }
+                    
+                    print "</table>";
+
 					@transsplicing=(@transsplicing,$transcelegansvalues[$count*10+0]-21,($transcelegansvalues[$count*10+9]+(length $transcelegansvalues[$count*10+5])+(length $transcelegansvalues[$count*10+6]))); # counting 21 upsteam but why?
 				}
 			}
@@ -346,131 +393,175 @@ sub TRANS{
     # print "DEBUG: @transsplicing";
 }
 
-sub IRE{
-	#So jetzt machen wir den gleichen Spass wie mit trans
-			@irereturnvalues=RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
-			$irelineprintout=0;
-            print "<div class='box-header'>Iron-resp Elements</div>";
-            print "<div class='box-content'>";
-			if (@irereturnvalues>1){
-				########new #####
-				
-				$posprintout=0;
-				for ($count=0;$count<=@irereturnvalues-1;$count=$count+7){
-				    # print "<div class='box-header'>Iron-resp Elements</div>" if ($irelineprintout==0);
-				    $irelineprintout=1;
-				    
-				    if ($posprintout!=$irereturnvalues[$count+0]) {
-				    @ire=(@ire,$irereturnvalues[$count+0]-16,$irereturnvalues[$count+0]+22) if ($posprintout!=$irereturnvalues[$count+0]);
-				    print " Position:     $irereturnvalues[$count+0]<br>" if ($posprintout!=$irereturnvalues[$count+0]);
-				   		
-				    print " Sequence:     $irereturnvalues[$count+2]<br>" if ($posprintout!=$irereturnvalues[$count+0]); 
-			        }
-				    print " Structure:    $irereturnvalues[$count+3]";
-			    
-				    printf ("  %2f kcal/mol ",$irereturnvalues[$count+4]);
-				    print "Quality: good <br>" if ($irereturnvalues[$count+1] == 1);
-				    print "Quality: bad <br>" if ($irereturnvalues[$count+1] ==2);
-
-				    $posprintout=$irereturnvalues[$count+0]; 
-				 }
-					
-				########endnew ####
-				
-			}
-			else{
-				#print "Nothing found<br>";
-			    print "<b>Iron-resp Ele.:</b> none";
-
-			}
-            print "</div>";
-       
+sub IRE {
+    @irereturnvalues = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
+    $irelineprintout = 0;
+    print "<div class='box-header'>Iron-resp Elements</div>";
+    print "<div class='box-content'>";
+    
+    if (@irereturnvalues > 1) {
+        # Group results by position
+        my %positions;
+        for (my $count = 0; $count <= @irereturnvalues - 1; $count += 7) {
+            my $pos = $irereturnvalues[$count + 0];
+            push @{$positions{$pos}}, {
+                position => $irereturnvalues[$count + 0],
+                quality => $irereturnvalues[$count + 1],
+                sequence => $irereturnvalues[$count + 2],
+                structure => $irereturnvalues[$count + 3],
+                energy => $irereturnvalues[$count + 4]
+            };
+        }
+        
+        # Display each position with its structures
+        foreach my $pos (sort {$a <=> $b} keys %positions) {
+            my @structures = @{$positions{$pos}};
+            
+            print "<table class='table-result'>\n";
+            print "<tr><th>Position</th><td>$pos</td></tr>\n";
+            print "<tr><th>Sequence</th><td>$structures[0]->{sequence}</td></tr>\n";
+            
+            @ire = (@ire, $pos - 16, $pos + 22);
+            
+            # Display all structures for this position
+            for (my $i = 0; $i < @structures; $i++) {
+                my $struct_num = $i + 1;
+                my $struct = $structures[$i];
+                
+                print "<tr><th>Structure $struct_num</th><td>$struct->{structure}</td></tr>\n";
+                printf "<tr><th>Energy $struct_num</th><td>%.2f kcal/mol</td></tr>\n", $struct->{energy};
+                
+                my $quality_text = ($struct->{quality} == 1) ? "good" : "bad";
+                print "<tr><th>Quality $struct_num</th><td>$quality_text</td></tr>\n";
+                
+                # Add separator line between structures (except for the last one)
+                if ($i < @structures - 1) {
+                    print "<tr><td colspan='2' style='border-bottom: 1px dashed #ccc; padding: 5px;'></td></tr>\n";
+                }
+            }
+            
+            print "</table>\n";
+            print "<br>\n"; 
+        }
+        
+        $irelineprintout = 1;
+        
+    } else {
+        print "<h3><b>Iron-resp Ele.:</b> None</h3>";
+    }
+    
+    print "</div>";
 }
 
 sub csfce {
     
-	my $count1=0; #We will mark $count1 as my so that we won't have any problems later
-	#$seq='llllllllllllllllluugculllauuuacuglcculllaugcguuccucgucclllllllllllllllll';
-	my @seq=split ('',$SEQUENCECHECKED);
-	#my @seq=split ('',$seq);
-	my @element1=("a","u","g","c","g","u","u","c","c","u","c","g","u","c","c");
-	my $putativeCVfound=0;
-	#Now we will try to detect those elements Thomas wrote from
+    my $count1=0; #We will mark $count1 as my so that we won't have any problems later
+    #$seq='llllllllllllllllluugculllauuuacuglcculllaugcguuccucgucclllllllllllllllll';
+    my @seq=split ('',$SEQUENCECHECKED);
+    #my @seq=split ('',$seq);
+    my @element1=("a","u","g","c","g","u","u","c","c","u","c","g","u","c","c");
+    my $putativeCVfound=0;
+    #Now we will try to detect those elements Thomas wrote from
     print "<div class='box-content'>";
 
-	ELEMENT1: for ($count1=0;$count1<@seq-14;$count1++) {
-        	my $mismatch=0;
-	        for ($count2=0;$count2<=14;$count2++){
-        	        $mismatch ++ if ($seq[$count1+$count2] ne $element1[$count2]);
-                	next ELEMENT1 if ($mismatch >=2);
-	        }
-        	print "<br><br><b>CstF:</b>          start      mismatch<br>" if ($putativeCVfound==0);
-		printf (" Element1:     %-6d     %-2d<br>",$count1,$mismatch);
-		$putativeCVfound=1;
-	}
-	#Next comes Element2, the consensus is: YGUGUYN(0-4)UUYAYUGYGU with 2 mismatches allowed
-	ELEMENT2A:  for ($count1=0;$count1<=@seq-20;$count1++) {
-        	my $ele2a=0;
-	        $ele2a++ if ($seq[$count1+0] eq 'c' || $seq[$count1+0] eq 'u'); #c or u = y is the first nt of the element2a consensus
-        	$ele2a++ if ($seq[$count1+1] eq 'g');
-	        $ele2a++ if ($seq[$count1+2] eq 'u');
-	        $ele2a++ if ($seq[$count1+3] eq 'g');
-	        $ele2a++ if ($seq[$count1+4] eq 'u');
-        	$ele2a++ if ($seq[$count1+5] eq 'c' || $seq[$count1+5] eq 'u');
-	        my $ele2ab1=$ele2a;
-        	next ELEMENT2A if ($ele2a<=3); #stoppe wenn nicht mind 4 Punkte vergeben werden
-	        for (my $count2=0;$count2<=4;$count2++) { #this will allow the 4 possible N(0-4)
-        	        $ele2a=$ele2ab1;
-                	$ele2a++ if ($seq[$count1+$count2+6] eq 'u');
-	                $ele2a++ if ($seq[$count1+$count2+7] eq 'u');
-        	        $ele2a++ if ($seq[$count1+$count2+8] eq 'c' || $seq[$count1+$count2+8] eq 'u');
-                	$ele2a++ if ($seq[$count1+$count2+9] eq 'a');
-	                $ele2a++ if ($seq[$count1+$count2+10] eq 'c' || $seq[$count1+$count2+10] eq 'u');
-        	        $ele2a++ if ($seq[$count1+$count2+11] eq 'u');
-                	$ele2a++ if ($seq[$count1+$count2+12] eq 'g');
-        	        $ele2a++ if ($seq[$count1+$count2+13] eq 'c' || $seq[$count1+$count2+10] eq 'u');
-	                $ele2a++ if ($seq[$count1+$count2+14] eq 'g');
-                	$ele2a++ if ($seq[$count1+$count2+15] eq 'u');
-	                print "<b>CstF:</b>          start      mismatch<br>" if  (($ele2a>=14)&& $putativeCVfound==0);
-			printf (" Element2a     %-6d     %-2d<br>",$count1,(16-$ele2a)) if  ($ele2a>=14);
-			$putativeCVfound=1 if ($ele2a>=14);
-		}
-	}
-	#Next comes Element2b, the consensus is: UUGYUN(0-4)AUUUACU(U/G)N(0-2)YCU with 2 mismatches allowed
-	ELEMENT2B: for ($count1=0;$count1<@seq-23;$count1++) {
-        	my $ele2b=0;
-	        $ele2b++ if ($seq[$count1+0] eq 'u'); #c or u = y is the first nt of the element2a consensus
-        	$ele2b++ if ($seq[$count1+1] eq 'u');
-	        $ele2b++ if ($seq[$count1+2] eq 'g');
-        	$ele2b++ if ($seq[$count1+3] eq 'c' || $seq[$count1+3] eq 'u');
-	        $ele2b++ if ($seq[$count1+4] eq 'u');
-        	my $ele2bb1=$ele2b;
-	        next ELEMENT2B if ($ele2b<=2); #stoppe wenn nicht mind 3 Punkte vergeben werden
-        	ELEMENT2BB1: for ($count2=0;$count2<=4;$count2++) { #element 2b (b)reakpunkt 1
-                	$ele2b=$ele2bb1;
-	                $ele2b++ if ($seq[$count1+$count2+5] eq 'a');
-        	        $ele2b++ if ($seq[$count1+$count2+6] eq 'u');
-                	$ele2b++ if ($seq[$count1+$count2+7] eq 'u');
-	                $ele2b++ if ($seq[$count1+$count2+8] eq 'u');
-        	        $ele2b++ if ($seq[$count1+$count2+9] eq 'a');
-                	$ele2b++ if ($seq[$count1+$count2+10] eq 'c');
-	                $ele2b++ if ($seq[$count1+$count2+11] eq 'u');
-        	        $ele2b++ if ($seq[$count1+$count2+12] eq 'u' || $seq[$count1+$count2+12] eq 'g');
-                	next ELEMENT2BB1 if ($ele2b <=11);
-	                $ele2bb2=$ele2b;
-        	        for ($count3=0;$count3<=2;$count3++) {
-                	        $ele2b=$ele2bb2;
-                        	$ele2b++ if ($seq[$count1+$count2+$count3+13] eq 'c' || $seq[$count1+$count2+$count3+0] eq 'u');
-	                        $ele2b++ if ($seq[$count1+$count2+$count3+14] eq 'c');
-        	                $ele2b++ if ($seq[$count1+$count2+$count3+15] eq 'u');
-                	        print "<b>CstF:</b>          start      mismatch<br>" if  (($ele2b>=14)&& $putativeCVfound==0);
-				printf (" Element2b:    %-6d     %-2d<br>",$count1,(16-$ele2b)) if  ($ele2b>=14);
-	                	$putativeCVfound=1;
-			}
-        	}
-	}
-	@seq=();
-	print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
+    ELEMENT1: for ($count1=0;$count1<@seq-14;$count1++) {
+        my $mismatch=0;
+        for ($count2=0;$count2<=14;$count2++){
+            $mismatch ++ if ($seq[$count1+$count2] ne $element1[$count2]);
+            next ELEMENT1 if ($mismatch >=2);
+        }
+        if ($putativeCVfound == 0) {
+            print "<h4>CstF Motif Hits</h4>\n";
+        }
+
+        print "<table class='table-result'>\n";
+        print "<tr><th>Element</th><td>Element1</td></tr>\n";
+        print "<tr><th>Start Position</th><td>$count1</td></tr>\n";
+        print "<tr><th>Mismatches</th><td>$mismatch</td></tr>\n";
+        print "</table>\n";
+
+        $putativeCVfound = 1;
+    }
+
+    #Next comes Element2, the consensus is: YGUGUYN(0-4)UUYAYUGYGU with 2 mismatches allowed
+    ELEMENT2A:  for ($count1=0;$count1<=@seq-20;$count1++) {
+        my $ele2a=0;
+        $ele2a++ if ($seq[$count1+0] eq 'c' || $seq[$count1+0] eq 'u'); #c or u = y is the first nt of the element2a consensus
+        $ele2a++ if ($seq[$count1+1] eq 'g');
+        $ele2a++ if ($seq[$count1+2] eq 'u');
+        $ele2a++ if ($seq[$count1+3] eq 'g');
+        $ele2a++ if ($seq[$count1+4] eq 'u');
+        $ele2a++ if ($seq[$count1+5] eq 'c' || $seq[$count1+5] eq 'u');
+        my $ele2ab1=$ele2a;
+        next ELEMENT2A if ($ele2a<=3); #stoppe wenn nicht mind 4 Punkte vergeben werden
+        for (my $count2=0;$count2<=4;$count2++) { #this will allow the 4 possible N(0-4)
+            $ele2a=$ele2ab1;
+            $ele2a++ if ($seq[$count1+$count2+6] eq 'u');
+            $ele2a++ if ($seq[$count1+$count2+7] eq 'u');
+            $ele2a++ if ($seq[$count1+$count2+8] eq 'c' || $seq[$count1+$count2+8] eq 'u');
+            $ele2a++ if ($seq[$count1+$count2+9] eq 'a');
+            $ele2a++ if ($seq[$count1+$count2+10] eq 'c' || $seq[$count1+$count2+10] eq 'u');
+            $ele2a++ if ($seq[$count1+$count2+11] eq 'u');
+            $ele2a++ if ($seq[$count1+$count2+12] eq 'g');
+            $ele2a++ if ($seq[$count1+$count2+13] eq 'c' || $seq[$count1+$count2+10] eq 'u');
+            $ele2a++ if ($seq[$count1+$count2+14] eq 'g');
+            $ele2a++ if ($seq[$count1+$count2+15] eq 'u');
+
+            # Create table header only once for Element2 results
+            if (($ele2a >= 14) && $putativeCVfound == 0) {
+                print "<table class='table-result'>\n";
+                print "<tr><th><b>CstF:</b></th><th>Start</th><th>Mismatch</th></tr>\n";
+                $putativeCVfound = 1;
+            }
+            printf "<tr><td>Element2a</td><td>%d</td><td>%d</td></tr>\n", $count1, (16 - $ele2a) if ($ele2a >= 14);
+        }
+    }
+
+    #Next comes Element2b, the consensus is: UUGYUN(0-4)AUUUACU(U/G)N(0-2)YCU with 2 mismatches allowed
+    ELEMENT2B: for ($count1=0;$count1<@seq-23;$count1++) {
+        my $ele2b=0;
+        $ele2b++ if ($seq[$count1+0] eq 'u'); #c or u = y is the first nt of the element2a consensus
+        $ele2b++ if ($seq[$count1+1] eq 'u');
+        $ele2b++ if ($seq[$count1+2] eq 'g');
+        $ele2b++ if ($seq[$count1+3] eq 'c' || $seq[$count1+3] eq 'u');
+        $ele2b++ if ($seq[$count1+4] eq 'u');
+        my $ele2bb1=$ele2b;
+        next ELEMENT2B if ($ele2b<=2); #stoppe wenn nicht mind 3 Punkte vergeben werden
+        ELEMENT2BB1: for ($count2=0;$count2<=4;$count2++) { #element 2b (b)reakpunkt 1
+            $ele2b=$ele2bb1;
+            $ele2b++ if ($seq[$count1+$count2+5] eq 'a');
+            $ele2b++ if ($seq[$count1+$count2+6] eq 'u');
+            $ele2b++ if ($seq[$count1+$count2+7] eq 'u');
+            $ele2b++ if ($seq[$count1+$count2+8] eq 'u');
+            $ele2b++ if ($seq[$count1+$count2+9] eq 'a');
+            $ele2b++ if ($seq[$count1+$count2+10] eq 'c');
+            $ele2b++ if ($seq[$count1+$count2+11] eq 'u');
+            $ele2b++ if ($seq[$count1+$count2+12] eq 'u' || $seq[$count1+$count2+12] eq 'g');
+            next ELEMENT2BB1 if ($ele2b <=11);
+            $ele2bb2=$ele2b;
+            for ($count3=0;$count3<=2;$count3++) {
+                $ele2b=$ele2bb2;
+                $ele2b++ if ($seq[$count1+$count2+$count3+13] eq 'c' || $seq[$count1+$count2+$count3+0] eq 'u');
+                $ele2b++ if ($seq[$count1+$count2+$count3+14] eq 'c');
+                $ele2b++ if ($seq[$count1+$count2+$count3+15] eq 'u');
+                
+                # Element2b uses the same table as Element2a (shared $putativeCVfound flag)
+                if (($ele2b >= 14) && $putativeCVfound == 0) {
+                    print "<table class='table-result'>\n";
+                    print "<tr><th><b>CstF:</b></th><th>Start</th><th>Mismatch</th></tr>\n";
+                    $putativeCVfound = 1;
+                }
+                printf "<tr><td>Element2b</td><td>%d</td><td>%d</td></tr>\n", $count1, (16 - $ele2b) if ($ele2b >= 14);
+            }
+        }
+    }
+
+    if ($putativeCVfound == 1) {
+        print "</table>\n";
+    }
+
+    @seq=();
+    print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
 
     print "</div>";
 }
@@ -502,57 +593,40 @@ sub stemggpairs {
                         $closedkl++ if ($1 eq ')');
                     }
                     if ($openkl==$closedkl && $ende-$anfang<=50) {
-		    	print "<b>StemGGpair:</b>    start     -     end<br>" if ($stemggleadlineprinted==0);
-			$stemggleadlineprinted=1;
-			
-			printf (" Hit:          %-5d     -  %5d<br>",$anfang-2,$ende-2);
+                        # Create table 
+                        if ($stemggleadlineprinted == 0) {
+                            print "<table class='table-result'>\n";
+                            print "<tr><th><b>StemGGpair:</b></th><th>Start</th><th>End</th></tr>\n";
+                            $stemggleadlineprinted = 1;
+                        }
+                        
+                        printf "<tr><td>Hit</td><td>%d</td><td>%d</td></tr>\n", $anfang-2, $ende-2;
+                        
                         @stemggpairs=(@stemggpairs,$anfang-4,$ende); #these are pointing here
-								#	((.((    )).))
-			$stemggpairfound=1;			#       ^            ^
-								#       |            |
-		    }
-		}
+                                                #	((.((    )).))
+                        $stemggpairfound=1;		#       ^            ^
+                                                #       |            |
+                    }
+                    
+                }
                 pos($str)=pos($str)-2;
             }        
         }
         pos($str)=$anfang-2;
     }
-    print "<b>StemGGpair:</b>    none<br>" if ($stemggpairfound==0); 
+    if ($stemggleadlineprinted == 1) {
+                        print "</table>\n";
+                    }
+
+    print "<h3>No Stem GG Pair Found.</h3><br>" if ($stemggpairfound==0); 
     @sequ=();
     $str='';
 
     # print "</div>";
 }
 
-# sub protA1bisite  {
 
-# 	#finding the protein A1 binding motif
-# 	#allowing 5 mismatches but no insertions/deltions
-# 	#
-# 	my $line='cuggauuauucaacugaaugccucacucagagaaugaa';
-# 	my @protA1bisi=split('',$line);
-# 	#my $se='nnnnnnnnnnnncuggauuauucaacugaaugccucacucagagaaugaannnnnnnnnnnnnnncuggauuauucaacugaaugccucnacucagagaaugaannnnnnnnnnnnnnnnnnnnnnnnnnn';
-# 	my @sequence=split('',$SEQUENCECHECKED);
-# 	my $prota1startingline=0;
-# 	#allow 5 mismatches out of 38!
-# 	PROA1: for (my $wh=0;$wh<=@sequence-38;$wh++){
-# 	        my $pa1mismatches=0;
-# 	        for (my$c=0;$c<=37;$c++) {
-# 	                $pa1mismatches++ if ($sequence[$wh+$c] ne $protA1bisi[$c]);
-# 	                next PROA1 if ($pa1mismatches>5);
-# 	        }
-# 	        if ($pa1mismatches<=5) {#this is a hit
-#                 	print "<br><b>Pr.A1 bin.site:</b>start  -  mismatch  - seq<br>" if ($prota1startingline==0);
-# 			$prota1startingline=1;
-# 			my $pa1seq=substr($SEQUENCECHECKED,$wh,38);;			
-# 			printf ("               %-5d        %-2d       %s<br>",$wh,$pa1mismatches,$pa1seq);
-			
-#         	}
-# 	}
-# 	print "<div class='box-header'>Pr.A1 bin.site:</div>" if ($prota1startingline==0);
-# }
-
-sub rbp_motifs {
+sub rbp {
     print "<div class='box-header'>RNA Binding Protein Scan:</div>";
     print "<div class='box-content'>";
 
@@ -560,7 +634,7 @@ sub rbp_motifs {
     my $input_seq = "$TEMPDIR/$job.seq";  # path to your .meme file
 
     # Run FIMO
-    my $fimo_cmd = "$FIMO/fimo --text $RBPDB $input_seq > $fimo_outfile";
+    my $fimo_cmd = "$FIMO/fimo --text --thresh 1e-5 $RBPDB $input_seq > $fimo_outfile";
     system($fimo_cmd);
 
     my @fimo_results;
@@ -626,18 +700,17 @@ sub rbp_motifs {
 
         print "</table>";
     } else {
-        print "<b>FIMO Results:</b> none found above threshold.<br>\n";
+        print "<b>No Protein Binding Motif found above threshold.</b>\n";
     }
 
     print "</div>";
 }
 
 
-
-
 sub ARE {
     $arepresent=0;
     $are_pos=1;
+    my $are_table_opened = 0;
     #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
     print "<div class='box-header'>Au-rich regions:</div>";
 
@@ -646,25 +719,33 @@ sub ARE {
         $are_len=length($1);
         $are_pos=pos($SEQUENCECHECKED)-$are_len;
         if ($are_len >=9){
-	    printf ("<b>ARE</b>:          %-6d - %6d   possi. match:   %s<br>",
-		    $are_pos,$are_pos+$are_len-1,
-		    $1);
-	    $arepresent=1;
+            # Open table only once when first ARE is found
+            if ($are_table_opened == 0) {
+                print "<table class='table-result'>\n";
+                print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th></tr>\n";
+                $are_table_opened = 1;
+            }
+            
+            $arepresent=1;
             $mismatchinare=0;
             @aretemp=split('',$1);
             for ($arecount=0;$arecount<@aretemp;$arecount++){
                 $mismatchinare++ if ($aretemp[$arecount] eq 'g');
             }
-	    if ($mismatchinare) {
-		printf ("<b>ARE</b>:          %-6d - %6d   mismatch:  %2d<br>",
-			$are_pos,($are_pos+$are_len-1),$mismatchinare);
-	    }
-	    @aurichregion=(@aurichregion,$are_pos+1,$are_pos+$are_len);
+            
+            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td></tr>\n",
+                   $are_pos, $are_pos+$are_len-1, $1, $mismatchinare;
+            @aurichregion=(@aurichregion,$are_pos+1,$are_pos+$are_len);
         }
     }
 
+    # Close table if it was opened
+    if ($are_table_opened == 1) {
+        print "</table>\n";
+    }
+
     if ($arepresent==0) {
-        print "<b>ARE:</b>           None       *(AU-rich region of at least 30 nt)<br>";
+        print "<h3>None found.</h3>     *(AU-rich region of at least 30 nt)<br>";
     }
     print "</div>";
 }
@@ -681,9 +762,7 @@ sub tRNA {
     my $trnascan = "$TRNASCANFOLDER/tRNAscan-SE -Q -y -f $trnascan_output $TEMPDIR/$job.seq";
     
     system($trnascan);
-    
-    my $format = "%-15s %-12s %-8s %-8s %-12s %-15s %-8s\n";
-    
+        
     my @results;
     @trna_loc = ();
     
@@ -728,30 +807,32 @@ sub tRNA {
     
     my $total = scalar @results;
     
-    if ($total) {
-        print "<b>tRNA<sup>2</sup>:</b><br>\n";
-        printf $format, "Name", "Position", "Length", "Type", "Anticodon", "Anticodon Pos", "Score";
-        print "-" x 85, "\n";
+    if ($total > 0) {
+        print "<table class='table-result'>\n";
+        print  "<tr><th>Name</th><th>Start</th><th>End</th><th>Length</th><th>Type</th><th>Anticodon</th><th>Anticodon Pos</th><th>Score</th></tr>\n";
+        # printf $format, "Name", "Position", "Length", "Type", "Anticodon", "Anticodon Pos", "Score";
+        # print "-" x 85, "\n";
         
         # Sort by score descending (higher scores are better)
         @results = sort { $b->{score} <=> $a->{score} } @results;
         
         foreach my $hit (@results) {
-            my $position = "$hit->{from}-$hit->{to}";
-            printf $format, 
-                $hit->{name}, 
-                $position, 
-                $hit->{length}, 
-                $hit->{type}, 
-                $hit->{anticodon}, 
-                $hit->{anticodon_pos}, 
-                $hit->{score};
+            # my $position = "$hit->{from}-$hit->{to}";
+                print "<tr>"; 
+                print "<td>$hit->{name}</td>"; 
+                print "<td>$hit->{from}</td>"; 
+                print "<td>$hit->{to}</td>";
+                print "<td>$hit->{length}</td>"; 
+                print "<td>$hit->{type}</td>"; 
+                print "<td>$hit->{anticodon}</td>"; 
+                print "<td>$hit->{anticodon_pos}</td>"; 
+                print "<td>$hit->{score}</td>";
+                print "<tr>";
         }
-    }
-    if ($total > 0) {
-        print "<br><b>Total tRNA hits found:</b> $total<br>\n";
+
+        print "</table>";
     } else {
-        print "<b>tRNAscan Results:</b>         none<br>";
+        print "<h3>None Found.</h3>";
     }
     
     print "</div>";
@@ -762,34 +843,46 @@ sub tRNA {
 sub smsite {
     print "<div class='box-header'>Catalytic RNA:</div>";
     print "<div class='box-content'>";
-	$smlength=-1;
-	$smpos=-1;
-        $leadlineprinted=0; #the first line not yet printed
-	while ($SEQUENCECHECKED=~/([ag][ag](u+([agc]?)u+)[ag][ag])/g){
-		$smlength=length $1;
-		$smpos=pos($SEQUENCECHECKED)-$smlength+1;
-		
-		if (length $3 == 1 && length $2 >=4) {
-			#print "Potential snRNP binding motif, similar to a sm-site, at position $smpos with the sequence $1 <br>";
-			print "<b>snRNP-motifs:</b>  start      sequence                quality<br>" if ($leadlineprinted==0);
-			$leadlineprinted=1;
-			printf (" snRNP-motif:  %-6d     %-20s          +<br>",$smpos,$1);
-			@smsite=(@smsite,$smpos,$smpos+((length $1)-1));
-		}
-		if (length $3 == 0 && length $2>=4) {
-			print "<b>snRNP-motifs:</b>  start      sequence                quality<br>" if ($leadlineprinted==0);
-			$leadlineprinted=1;
-			printf (" Put. sm-site: %-6d     %-20s          ++<br>",$smpos,$1);
-			@smsite=(@smsite,$smpos,$smpos+((length $1)-1));
-		}
-	}
-	print "<b>snRNP-motifs:</b>  none<br>" if ($leadlineprinted==0);
-	
-	##### OUTPUT if Seq is RNA has no cds but smsite --> structured perhaps catalytic RNA !
+    $smlength=-1;
+    $smpos=-1;
+    $leadlineprinted=0; #the first line not yet printed
+    my $table_opened = 0;
+    
+    while ($SEQUENCECHECKED=~/([ag][ag](u+([agc]?)u+)[ag][ag])/g){
+        $smlength=length $1;
+        $smpos=pos($SEQUENCECHECKED)-$smlength+1;
+        
+        # Open table only once when first motif is found
+        if ($table_opened == 0) {
+            print "<table class='table-result'>\n";
+            print "<tr><th><b>snRNP-motifs:</b></th><th>Start</th><th>Sequence</th><th>Quality</th></tr>\n";
+            $table_opened = 1;
+        }
 
-	if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1 && @smsite>0){
-		print "<br>As I could not detect a coding sequence on this RNA, but there are 1 or more sn-RNP motifs (sm-sites),<br>it might be possible that this is a catalytic RNA!!<br>";
-	}
+        if (length $3 == 1 && length $2 >=4) {
+            printf "<tr><td>snRNP-motif</td><td>%d</td><td>%s</td><td>+</td></tr>\n", $smpos, $1;
+            @smsite=(@smsite,$smpos,$smpos+((length $1)-1));
+            $leadlineprinted=1;
+        }
+        if (length $3 == 0 && length $2>=4) {
+            printf "<tr><td>Put. sm-site</td><td>%d</td><td>%s</td><td>++</td></tr>\n", $smpos, $1;
+            @smsite=(@smsite,$smpos,$smpos+((length $1)-1));
+            $leadlineprinted=1;
+        }
+    }
+    
+    # Close table if it was opened
+    if ($table_opened == 1) {
+        print "</table>\n";
+    }
+    
+    print "<h3>No snRNP-motifs found.</h3>" if ($leadlineprinted==0);
+    
+    ##### OUTPUT if Seq is RNA has no cds but smsite --> structured perhaps catalytic RNA !
+
+    if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1 && @smsite>0){
+        print "<br>As I could not detect a coding sequence on this RNA, but there are 1 or more sn-RNP motifs (sm-sites),<br>it might be possible that this is a catalytic RNA!!<br>";
+    }
     print "</div>";
 }
 
@@ -815,9 +908,6 @@ sub createfolding {
         $structure = $1;
         $energy = $2;
 		
-		
-		print "<br><b>Length:</b>\t$SEQUENCELENGTH"; 
-	        
 }
 
 
@@ -957,33 +1047,38 @@ sub checkstems {
     }
     
     # Output results
-    print "\n<b>Energy:</b>\t$energy kcal/mol\n";
-    print "<b>Stems:</b>\t$stem_count stem structure(s)\n";
-    print "<b>Hairpins:</b>\t$hairpin_count hairpin(s)\n";
+    print "<table class='table-result'>";
+    print "<tr><th>Length</th><td>$SEQUENCELENGTH</td></tr>\n";
+    print "<tr><th>Energy</th><td>$energy kcal/mol</td></tr>\n";
+    print "<tr><th>Stems</th><td>$stem_count stem structure(s)</td></tr>\n";
+    print "<tr><th>Hairpins</th><td>$hairpin_count hairpin(s)</td></tr>\n";
     
+    print "</table>";
     # Prediction logic
     my $structure_length = scalar @structure;
     my $avg_spacing = $structure_length / ($stem_count || 1);
     
     if ($stem_count >= 15 && $avg_spacing < 100) {
-        print "Highly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA\n";
+        print "\t\tHighly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA\n";
     } elsif ($hairpin_count >= 1 && $stem_count <= 3) {
-        print "Simple structured RNA, possible miRNA, siRNA, or regulatory element\n";
+        print "\t\tSimple structured RNA, possible miRNA, siRNA, or regulatory element\n";
     } elsif ($stem_count >= 1) {
-        print "Some secondary structure detected, may have biological significance\n";
+        print "\t\tSome secondary structure detected, may have biological significance\n";
     } else {
-        print "Minimal secondary structure\n";
+        print "\t\tMinimal secondary structure\n";
     }
     
-    print "         ****It might be interesting to have a closer look at the structures.\n";
-    print "         You might find it useful to look in the book\n";
-    print "         'RNA Motifs and Regulatory Elements'\n";
-    print "         Thomas Dandekar (Ed.)\n";
-    print "         ISBN 3-540-41701\n";
+    print "\t\t****It might be interesting to have a closer look at the structures.\n";
+    print "\t\tYou might find it useful to look in the book\n";
+    print "\t\t'RNA Motifs and Regulatory Elements'\n";
+    print "\t\tThomas Dandekar (Ed.)\n";
+    print "\t\tISBN 3-540-41701\n";
 
     if ($hairpin_count > 0 && $stem_count > 0 && $hairpin_count / $stem_count > 0.7) {
-        print "High hairpin content — characteristic of miRNA precursors\n";
+        print "\t\tHigh hairpin content — characteristic of miRNA precursors\n";
     }
+
+    print "<br>";
     
     return ($stem_count, $hairpin_count);
 }
@@ -1101,17 +1196,16 @@ sub checkstemsonly {
 
 sub predprotein {
 	$predprotforAnDom=0;
-    print "<div class='box'>";
 	print "<div class='box-header'>Predicted Protein:</div>";
     print "<div class='box-content'>";
     if (defined $cpc){
-        print "Protein is predicted from CPC2 output.";
+        print "<i>Protein is predicted from CPC2 output.<i><br>";
     }
 	if (@predprot>1){
 		print "<br>";	
 		for ($count1=1;$count1<=@predprot;$count1++) {
 			print $predprot[$count1-1];
-			print "<br>" if ($count1%120==0);
+			# print "<br>" if ($count1%120==0);
 		}
 	print "<br>";
 	}
@@ -1119,7 +1213,7 @@ sub predprotein {
 		print " none";
 	}
 
-    print "</div></div>";
+    print "</div>";
 }
 
 # microrna search should be full length and should show potential micrornas with a warning. 
@@ -1130,7 +1224,7 @@ sub RNAMOTIF {
 	my $cmd = "$CMSCAN/cmscan -E 0.001 --tblout $tblout_file -o $output_file $RFAM $TEMPDIR/$job.seq > /dev/null 2>&1";
 	system($cmd);
 
-	my $format = "%-12s %-12s %-12s %-6s %-8s %-10s %-20s\n";
+	# my $format = "%-12s %-12s %-12s %-6s %-8s %-10s %-20s\n";
 
 	my $found = 0;
     @rna_motif =();
@@ -1170,20 +1264,18 @@ sub RNAMOTIF {
 
         my $dot_bracket = '';
         $dot_bracket = $1 if $fold_lines[1] && $fold_lines[1] =~ /([().]+)\s+\([^)]+\)/;
-
         # print "Structure: $dot_bracket\n";
-
         # now save the results 
 		my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
 
-		my $row = sprintf($format, $match, "$family_link     ", $from, $to, $score, $e_value, $description);
+		# my $row = sprintf($format, $match, "$family_link     ", $from, $to, $score, $e_value, $description);
         # adding forna visual
        
         my $div_id = "rna_ss_$i";
         my $forna_html = "";
 
         $forna_html .= "<button onclick=\"toggleStructure$i()\">View Structure</button>\n";
-        $forna_html .= "<div id='$div_id' style='width: 650px; height: 450px; display: none; margin-top: 10px;'></div>\n";
+        $forna_html .= "<div id='rna_ss_0' style='width: 250px; height: 250px; display: none; 10px; overflow: hidden;'></div>\n";
         $forna_html .= "<script>\n";
         $forna_html .= "  function toggleStructure$i() {\n";
         $forna_html .= "    var el = document.getElementById('$div_id');\n";
@@ -1210,7 +1302,17 @@ sub RNAMOTIF {
         $forna_html .= "  }\n";
         $forna_html .= "</script>\n";
 
-        push @results, $row . $forna_html;
+        # push @results, $row . $forna_html;
+        push @results, {
+            match       => $match,
+            family      => $family_link,
+            from        => $from,
+            to          => $to,
+            score       => $score,
+            evalue      => $e_value,
+            description => $description,
+            structure   => $forna_html,
+        };
 
 		$found = 1;
         $i++;
@@ -1220,15 +1322,32 @@ sub RNAMOTIF {
 
 	
 	if ($found) {
-		# Print header only if results exist
-		printf $format, "Match", "Family", "From", "To", "Score", "E-Value", "Description";
-		print "-" x 80, "\n";  # Simple separator
+		# # Print header only if results exist
+		# printf $format, "Match", "Family", "From", "To", "Score", "E-Value", "Description";
+		# print "-" x 80, "\n";  # Simple separator
 
-		# Print stored results
-		print @results;
+		# # Print stored results
+		# print @results;
+        print "<table class='table-result'>";
+        print "<tr><th>Match</th><th>Family</th><th>From</th><th>To</th><th>Score</th><th>E-value</th><th>Description</th><th>Structure</th></tr>\n";
+
+        foreach my $hit (@results) {
+            print "<tr>";
+            print "<td>$hit->{match}</td>";
+            print "<td>$hit->{family}</td>";
+            print "<td>$hit->{from}</td>";
+            print "<td>$hit->{to}</td>";
+            print "<td>$hit->{score}</td>";
+            print "<td>$hit->{evalue}</td>";
+            print "<td>$hit->{description}</td>";
+            print "<td>$hit->{structure}</td>";
+            print "</tr>";
+        }
+        
+        print "</table>";
 
 	} else {
-		print "No motif recognized\n";
+		print "No RNA motif recognized\n";
     }
     print "</div>";
 }
@@ -1251,7 +1370,7 @@ sub CPC2 {
 	my @results;
 	my $found = 0;
 
-	my $format = "%-10s %-18s %-15s %-10s %-10s %-10s %-15s %-10s %-10s\n";
+	# my $format = "%-10s %-18s %-15s %-10s %-10s %-10s %-15s %-10s %-10s\n";
 
     my ($orf_start, $peptide_length, $label);
 
@@ -1276,16 +1395,49 @@ sub CPC2 {
 		$coding_probability = sprintf("%.6f", $coding_probability);  # Keep precision for probability
 
 		# Store formatted row
-		push @results, sprintf($format, $id, $transcript_length, $peptide_length, $fickett_score, $pI, $orf_integrity, $orf_start, $coding_probability, $label);
+		# push @results, sprintf($format, $id, $transcript_length, $peptide_length, $fickett_score, $pI, $orf_integrity, $orf_start, $coding_probability, $label);
+
+        push @results, {
+            id          => $id,
+            tlength     => $transcript_length,
+            plength     => $peptide_length,
+            fscore      => $fickett_score,
+            pI          => $pI,
+            orf_int     => $orf_integrity,
+            orf_start   => $orf_start,
+            coding_prob => $coding_probability,
+            label       => $label,
+
+        };
 
         $found = 1;
     }
     close $fh_cpc2;
 
     if ($found) {
-        printf $format, "ID", "Transcript Length", "Peptide Length", "Fickett", "pI", "ORF", "ORF Start", "Coding Prob.", "Label";
-        print "-" x 110, "\n";
-        print @results;
+        # printf $format, "ID", "Transcript Length", "Peptide Length", "Fickett", "pI", "ORF", "ORF Start", "Coding Prob.", "Label";
+        # print "-" x 110, "\n";
+        # print @results;
+
+        # making tbaular output
+        print "<table class='table-result'>";
+        print "<tr><th>ID</th><th>Transcript Length</th><th>Peptide Length</th><th>Fickett</th><th>pI</th><th>ORF</th><th>ORF Start</th><th>Coding Prob.</th><th>Label</th></tr>";
+
+        foreach my $hit (@results) {
+            print "<tr>";
+            print "<td>$hit->{id}</td>";
+            print "<td>$hit->{tlength}</td>";
+            print "<td>$hit->{plength}</td>";
+            print "<td>$hit->{fscore}</td>";
+            print "<td>$hit->{pI}</td>";
+            print "<td>$hit->{orf_int}</td>";
+            print "<td>$hit->{orf_start}</td>";
+            print "<td>$hit->{coding_prob}</td>";
+            print "<td>$hit->{label}</td>";
+            print "</tr>";
+        }
+        print "</table>"
+
     } else {
         print "No result in CPC2 output\n";
     }
@@ -1321,7 +1473,9 @@ sub CPC2 {
     };
     } else {
         print "<i>Transcript predicted to be noncoding. Running structural region scan instead.</i><br>";
+        print "<div class='box'>";
         &scan_structured_regions;
+        "</div>";
     }
     print "</div>";
     return \%transcripts;
@@ -1339,8 +1493,6 @@ sub microRNA {
 
         print "<div class='box-header'>miRNA scan:</div>";
         print "<div class='box-content'>";
-
-		my $format = "%-18s %-6s %-6s %-10s %-8s %-15s %-40s\n";
 
 		my @results;
         @mirna_loc = ();
@@ -1380,11 +1532,14 @@ sub microRNA {
 		my $total = scalar @results;
 
 		if ($total) {
-			print "<b>miRNA search:</b><br>\n";
-			printf $format, "Match", "From", "To", "E-Value", "Score", "Accession", "Description";
-			print "-" x 120, "\n";
+			# print "<b>miRNA search:</b><br>\n";
+			# printf $format, "Match", "From", "To", "E-Value", "Score", "Accession", "Description";
+			# print "-" x 120, "\n";
+            #making tabular
+            print "<table class='table-result'>";
+            print "<tr><th>Match</th><th>From</th><th>To</th><th>E-Value</th><th>Score</th><th>Accession</th><th>Description</th></tr>";
 
-			# Split into human vs others (e.g., match starts with hsa- or description contains Homo sapiens)
+			# Prioritize human miRNA
 			my (@human_hits, @other_hits);
 			foreach my $hit (@results) {
 				if ($hit->{match} =~ /^hsa-/i || $hit->{description} =~ /Homo sapiens/i) {
@@ -1403,9 +1558,18 @@ sub microRNA {
 
 			foreach my $hit (@top_hits) {
 				my $link = "<a href=\"https://www.mirbase.org/hairpin/$hit->{accession}\" target=\"_blank\">$hit->{accession}</a>";
-				printf $format, $hit->{match}, $hit->{from}, $hit->{to}, $hit->{e_value}, $hit->{score}, $link, $hit->{description};
-			}
-
+				# printf $format, $hit->{match}, $hit->{from}, $hit->{to}, $hit->{e_value}, $hit->{score}, $link, $hit->{description};
+                print "<tr>";
+                print "<td>$hit->{match}</td>";
+                print "<td>$hit->{from}</td>";
+                print "<td>$hit->{to}</td>";
+                print "<td>$hit->{e_value}</td>";
+                print "<td>$hit->{score}</td>";
+                print "<td>$link</td>";
+                print "<td>$hit->{description}</td>";
+                print "</tr>";           
+            }
+            print "</table>";
 			print "<b>Total microRNA hits found:</b> $total\n";
 		} else {
 			print "No regions matching a mircroRNA was found.\n";
@@ -1429,6 +1593,10 @@ sub miRNAtarget {
 
     my $seq = $SEQUENCECHECKED;
     $seq =~ tr/uU/tT/;
+
+
+    print "<div class='box-header'>miRNA target prediction</div>\n";
+    print "<div class='box-content'>";
 
     # 1. Create UTR3 FASTA file (or fallback)
     my $found_valid = 0;
@@ -1510,18 +1678,18 @@ sub miRNAtarget {
         push @filtered, $best;
     }
 
-  
-    print "<b>miRanda target prediction (3' UTR only):</b><br>\n";
-    printf "%-18s %-6s %-6s %-10s %-6s\n", "miRNA", "From", "To", "Energy", "Score";
-    print "-" x 60 . "\n";
+
+    print "<table class='table-result'>";
+    print "<tr><th>miRNA</th><th>From</th><th>To</th><th>Energy</th><th>Score</th></tr>";
 
     my @regions;
     foreach my $line (@filtered) {
         my (undef, $mirna, $score, $energy, $start, $end) = split /\t/, $line;
-        printf "%-18s %-6s %-6s %-10.2f %-6.1f\n", $mirna, $start, $end, $energy, $score;
+        print "<tr><td>$mirna</td><td>$start</td><td>$end</td><td>$energy</td><td>$score</td></tr>";
         push @regions, [$start, $end];
     }
-
+    print "</table>";
+    print "</div>";
     return @regions;
 }
 
@@ -1602,6 +1770,7 @@ sub AUGUSTUS {
     close $GFF;
 
     my $i = 1;
+    my $j = 1;
     if (keys %transcripts == 0) {
         print "No gene predictions were found.<br>";
     } else {
@@ -1609,20 +1778,24 @@ sub AUGUSTUS {
         my $model = $transcripts{$tid};
         
         my ($gene_id) = $tid =~ /^(g\d+)\./;
-        print "<b>Transcript $i</b> (ID: $tid";
+        print "<h3>Transcript $i (ID: $tid";
         print ", gene: $gene_id" if $gene_id;
-        print ")<br>";
+        print ")</h3><br>";
         $i++;
+
+        print "<table class='table-result'>";
+        print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
 
         foreach my $exon (@{ $model->{exons} }) {
             my ($start, $end) = @$exon;
             my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
             foreach my $seg (@segments) {
                 my ($seg_start, $seg_end, $type) = @$seg;
-                printf("Exon: %-6d - %6d     %s<br>", $seg_start, $seg_end, $type);
+                print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
+                $j++;
             }
         }
-
+        print "</table>";
         $model->{protein} =~ s/\s//g if exists $model->{protein};
 
         print "<br>";
@@ -1915,20 +2088,31 @@ sub scan_structured_regions {
         last if $count + 150 >= $len;
         $count += 150;
     }
-
+    print "<br><br>";
+    print "<div class='box-header'>Structured region scan</div>";
     if ($printout) {
-        print "<br>";
-        print "<b>Structured regions detected:</b><br>";
-        printf "%-12s %-6s %-6s %-10s %-10s<br>", "Region", "From", "To", "Stems", "Energy";
-        print "-" x 60 . "<br>";
+        my $i = 1;
+        # print "<b>Structured regions detected:</b><br>";
+        print "<table class='table-result'>";
+        print "<tr><th>Region</th><th>From</th><th>To</th><th>Stems</th><th>Energy</th></tr>";
+        # printf "%-12s %-6s %-6s %-10s %-10s<br>", "Region", "From", "To", "Stems", "Energy";
+        # print "-" x 60 . "<br>";
         foreach my $r (@high_struct_regions) {
-            printf "%-12s %-6d %-6d %-10s %-10s<br>", 
-                "Region", $r->[0], $r->[1], $r->[2], $r->[3];
+            print "<tr>";
+            print "<td>$i</td>";
+            print "<td>$r->[0]</td>";
+            print "<td>$r->[1]</td>";
+            print "<td>$r->[2]</td>";
+            print "<td>$r->[3]</td>";
+            $i++;
         }
+        print "</table>";
         print "<br>** Highly structured regions found. Consider tRNA, rRNA, or ncRNA elements.<br>";
     } else {
         print "<i>No regions with significant RNA structure detected.</i><br>";
     }
+    print "<br>";
+    print "</div>";
 }
 
 sub normalize_transcript_features {
@@ -2173,15 +2357,15 @@ sub createfoldingpicture {
         print "<div class='legend'>";
         print "<div class='legend-title'>Legend:</div>";
         print "<div class='legend-items'>";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: red; margin-left: 10px;'></span> Motifs\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: lightblue; margin-left: 20px;'></span> UTRs\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 20px;'></span> Exons\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: orange; margin-left: 20px;'></span> TRNA\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 20px;'></span> MiRNA\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 20px;'></span> SM-site/snRNP-motif\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 20px;'></span> TRANS-splicing\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 20px;'></span> PolyA Signal/PolyA Tail\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: pink; margin-left: 20px;'></span> Protein Binding Site(s)";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: red; margin-left: 0px;'></span> Motifs\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: lightblue; margin-left: 10px;'></span> UTRs\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 10px;'></span> Exons\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: orange; margin-left: 10px;'></span> TRNA\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 10px;'></span> MiRNA\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 10px;'></span> SM-site/snRNP-motif\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 10px;'></span> TRANS-splicing\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 10px;'></span> PolyA Signal/PolyA Tail\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: pink; margin-left: 10px;'></span> Protein Binding Site(s)";
 
         print "</div>";
         print "</div>";
@@ -2220,7 +2404,7 @@ sub location_table {
 
     if (@exons) {
         my $exons_str = format_flat_ranges(@exons);
-        print "<tr><th>Exons</th><td>$exons_str</td></tr>\n";
+        print "<tr><th>Coding Sequence</th><td>$exons_str</td></tr>\n";
     }
 
     if (@utr) {

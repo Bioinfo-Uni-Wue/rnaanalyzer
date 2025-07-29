@@ -48,80 +48,79 @@ text-align: right;
   text-decoration: underline;
 }
   
-  .results-container {
-    background: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    max-width: 700px;
-    margin: auto;
-    margin-top: 2rem;
-  }
-  
-  h2 {
-    color: #003c7f;
-  }
-  
-  table {
-    border-collapse: collapse;
-    width: 100%;
-    margin-top: 15px;
-  }
-  
-  th, td {
-    padding: 12px 15px;
-    text-align: center;
-  }
-  
-  th {
-    background-color: #34495e;
-    color: white;
-  }
-  
-  tr:nth-child(even) {
-    background-color: #f2f2f2;
-  }
-  
-  .status-button {
-    padding: 6px 10px;
-    background-color: #47b92f;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    text-decoration: none;
-  }
-  
-  .status-button:hover {
-    background-color: #2980b9;
-  }
-  
-  .done-msg {
-    margin-top: 20px;
-    color: green;
-    font-weight: bold;
-  }
-  
-  .waiting-msg {
-    margin-top: 20px;
-    color: orange;
-  }
+.results-container {
+  background: #fff;
+  padding: 20px;
+  border-radius: 10px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  max-width: 700px;
+  margin: auto;
+  margin-top: 2rem;
+}
 
-  .timing-line {
-    width: 100%;
-    overflow: hidden;
-    margin-bottom: 10px;
-  }
+h2 {
+  color: #003c7f;
+}
 
-  .elapsed {
-    float: left;
-    text-align: left;
-    font-weight: 300;
-  }
+table {
+  border-collapse: collapse;
+  width: 100%;
+  margin-top: 15px;
+}
 
-  .estimated {
-    float: right;
-    text-align: right;
-    font-weight: 300;
-  }
-  
+th, td {
+  padding: 12px 15px;
+  text-align: center;
+}
+
+th {
+  background-color: #34495e;
+  color: white;
+}
+
+tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+
+.status-button {
+  padding: 6px 10px;
+  background-color: #47b92f;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.status-button:hover {
+  background-color: #2980b9;
+}
+
+.done-msg {
+  margin-top: 20px;
+  color: green;
+  font-weight: bold;
+}
+
+.waiting-msg {
+  margin-top: 20px;
+  color: orange;
+}
+
+.timing-line {
+  width: 100%;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.elapsed {
+  float: left;
+  text-align: left;
+  font-weight: 300;
+}
+
+.estimated {
+  float: right;
+  text-align: right;
+  font-weight: 300;
+}
