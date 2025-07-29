@@ -141,7 +141,9 @@ sub startproggi {
 
     
     print $cgi->h2("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
-
+    if ($SEQUENCELENGTH >= 2500){
+            print "<i>i. Structure visualization can take a few seconds to load due to sequence length.</i>\n";
+        }
     # running analysis
     &analysis;
 }
@@ -289,9 +291,9 @@ sub analysis {
     # Optional: enable if scan_rbs supports multi-transcript
     # scan_rbs(\%transcripts);
 
-    # print "<div class='box'>";
-    # &csfce;
-    # print "</div>";
+    print "<div class='box'>";
+    &csfce;
+    print "</div>";
 
     print "<div class='box'>";
     &createfoldingpicture;
@@ -314,7 +316,7 @@ sub TRANS{
             print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
 				#print "No hit detected<br>";
-				print "<h3><b>Schistosoma:</b>\tNone</h3><br>";
+				print "<b>Schistosoma:</b>\tNone<br>";
 			}
 			else {
 				$hits=pop @transcionareturnvalues;
@@ -349,7 +351,7 @@ sub TRANS{
 			@transcelegansvalues=RNASERVER::TRANS2::celegans($SEQUENCECHECKED);	
 			if (@transcelegansvalues==1){
 				#print "No hit detected<br>";
-				print "<h3><b>C. elegans:</b>\tNone</h3>";
+				print "<b>C. elegans:</b>\tNone";
 			}
 			else {
 				$hits=pop @transcelegansvalues;
@@ -440,8 +442,7 @@ sub IRE {
                 }
             }
             
-            print "</table>\n";
-            print "<br>\n"; 
+            print "</table>";
         }
         
         $irelineprintout = 1;
@@ -462,6 +463,7 @@ sub csfce {
     my @element1=("a","u","g","c","g","u","u","c","c","u","c","g","u","c","c");
     my $putativeCVfound=0;
     #Now we will try to detect those elements Thomas wrote from
+    print "<div class='box-header'>CstF Motif Scan</div>";
     print "<div class='box-content'>";
 
     ELEMENT1: for ($count1=0;$count1<@seq-14;$count1++) {
@@ -471,7 +473,7 @@ sub csfce {
             next ELEMENT1 if ($mismatch >=2);
         }
         if ($putativeCVfound == 0) {
-            print "<h4>CstF Motif Hits</h4>\n";
+            # print "<h4>CstF Motif Hits</h4>\n";
         }
 
         print "<table class='table-result'>\n";
@@ -562,12 +564,13 @@ sub csfce {
 
     @seq=();
     print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
+    print "<i>No CstF Motif found.<i><br>";
 
     print "</div>";
 }
 
 sub stemggpairs {
-    # print "<div class='box-content'>";
+    print "<div class='box-header'>Stem GG pairs</div>";
     my @sequ=split('',$SEQUENCECHECKED);
     my $str=join ('',@structure);
     my $stemggpairfound=0;
@@ -745,7 +748,7 @@ sub ARE {
     }
 
     if ($arepresent==0) {
-        print "<h3>None found.</h3>     *(AU-rich region of at least 30 nt)<br>";
+        print "No Au-rich region found.";   #     *(AU-rich region of at least 30 nt)<br>";
     }
     print "</div>";
 }
@@ -832,7 +835,7 @@ sub tRNA {
 
         print "</table>";
     } else {
-        print "<h3>None Found.</h3>";
+        print "<b>No region matching a tRNA was found.</b>";
     }
     
     print "</div>";
@@ -924,6 +927,7 @@ sub checkstems {
     my @stack;
     my $stem_count = 0;
     my $hairpin_count = 0;
+    my $comment;
     
     # Build pairing map
     for (my $i = 0; $i < @structure; $i++) {
@@ -1053,31 +1057,27 @@ sub checkstems {
     print "<tr><th>Stems</th><td>$stem_count stem structure(s)</td></tr>\n";
     print "<tr><th>Hairpins</th><td>$hairpin_count hairpin(s)</td></tr>\n";
     
-    print "</table>";
+    
     # Prediction logic
     my $structure_length = scalar @structure;
     my $avg_spacing = $structure_length / ($stem_count || 1);
     
     if ($stem_count >= 15 && $avg_spacing < 100) {
-        print "\t\tHighly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA\n";
+        $comment = "Highly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA\n";
     } elsif ($hairpin_count >= 1 && $stem_count <= 3) {
-        print "\t\tSimple structured RNA, possible miRNA, siRNA, or regulatory element\n";
+        $comment = "Simple structured RNA, possible miRNA, siRNA, or regulatory element\n";
     } elsif ($stem_count >= 1) {
-        print "\t\tSome secondary structure detected, may have biological significance\n";
+        $comment = "Some secondary structure detected, may have biological significance\n";
     } else {
-        print "\t\tMinimal secondary structure\n";
+        $comment = "Minimal secondary structure\n";
     }
-    
-    print "\t\t****It might be interesting to have a closer look at the structures.\n";
-    print "\t\tYou might find it useful to look in the book\n";
-    print "\t\t'RNA Motifs and Regulatory Elements'\n";
-    print "\t\tThomas Dandekar (Ed.)\n";
-    print "\t\tISBN 3-540-41701\n";
-
+    print "<tr><th>Comment</th><td>$comment</td></tr>\n";
+    print "</table>";
     if ($hairpin_count > 0 && $stem_count > 0 && $hairpin_count / $stem_count > 0.7) {
         print "\t\tHigh hairpin content — characteristic of miRNA precursors\n";
     }
-
+    
+    
     print "<br>";
     
     return ($stem_count, $hairpin_count);
@@ -1195,14 +1195,14 @@ sub checkstemsonly {
 }
 
 sub predprotein {
-	$predprotforAnDom=0;
+	# $predprotforAnDom=0;
 	print "<div class='box-header'>Predicted Protein:</div>";
     print "<div class='box-content'>";
     if (defined $cpc){
-        print "<i>Protein is predicted from CPC2 output.<i><br>";
+        print "<i>Protein is predicted from CPC2 output.</i><br>";
     }
 	if (@predprot>1){
-		print "<br>";	
+		# print "<br>";	
 		for ($count1=1;$count1<=@predprot;$count1++) {
 			print $predprot[$count1-1];
 			# print "<br>" if ($count1%120==0);
@@ -1210,7 +1210,8 @@ sub predprotein {
 	print "<br>";
 	}
 	else {
-		print " none";
+        # print "<br>";
+		print "<b>No predicted protein</b>";
 	}
 
     print "</div>";
@@ -1275,7 +1276,7 @@ sub RNAMOTIF {
         my $forna_html = "";
 
         $forna_html .= "<button onclick=\"toggleStructure$i()\">View Structure</button>\n";
-        $forna_html .= "<div id='rna_ss_0' style='width: 250px; height: 250px; display: none; 10px; overflow: hidden;'></div>\n";
+        $forna_html .= "<div id='$div_id' style='width: 250px; height: 250px; display: none; margin: 10px; overflow: hidden;'></div>\n";
         $forna_html .= "<script>\n";
         $forna_html .= "  function toggleStructure$i() {\n";
         $forna_html .= "    var el = document.getElementById('$div_id');\n";
@@ -1472,10 +1473,11 @@ sub CPC2 {
         protein   => $protein_seq,
     };
     } else {
-        print "<i>Transcript predicted to be noncoding. Running structural region scan instead.</i><br>";
+        print "<i>Transcript predicted to be noncoding. Running structural region scan instead.</i>\n";
+        print "<br>";
         print "<div class='box'>";
         &scan_structured_regions;
-        "</div>";
+        print "</div>";
     }
     print "</div>";
     return \%transcripts;
@@ -1858,6 +1860,7 @@ sub predict_utrs {
     my @new3primeutr = ();
     my @utrprintout  = ();
     my @utr          = ();
+    my @results      = ();
 
     print "<div class='box-header'>UTR(s) Prediction:</div>";
     print "<div class='box-content'>";
@@ -1912,7 +1915,7 @@ sub predict_utrs {
 
     @utr = sort { $a <=> $b } (@new5primeutr, @new3primeutr);
 
-    print "<b>UTR:</b>           start  -   end   -  stems - energy<br>";
+    # print "<b>UTR:</b>           start  -   end   -  stems - energy<br>";
     for (my $i = 0; $i < @utrprintout; $i += 3) {
         my ($type, $start, $end) = @utrprintout[$i, $i+1, $i+2];
 
@@ -1923,21 +1926,40 @@ sub predict_utrs {
 
         my @returnout = checkstemsonly($utr_seq, 1);
 
-        printf(" %d'            %-6d - %6d", $type, $start, $end);
-        print "       $returnout[0]-$returnout[1]" if $returnout[0] != $returnout[1];
-        print "       $returnout[0]" if $returnout[0] == $returnout[1];
-        print "     $returnout[2]<br>" if $returnout[2] != 1;
+        # printf(" %d'            %-6d - %6d", $type, $start, $end);
+        # print "       $returnout[0]-$returnout[1]" if $returnout[0] != $returnout[1];
+        # print "       $returnout[0]" if $returnout[0] == $returnout[1];
+        # print "     $returnout[2]<br>" if $returnout[2] != 1;
+
+        # collecting info for tabular output
+
+        my $stems_info;
+        if ($returnout[0] != $returnout[1]) {
+            $stems_info = "$returnout[0]-$returnout[1]";
+        } else {
+            $stems_info = "$returnout[0]"
+        }
+
+        my $energy = ($returnout[2] != 1) ? $returnout[2] : "";
+        my @motifs = ();
 
         if ($type == 5) {
-            print "         SD motif<br>" if $utr_seq =~ /AGGAGG/i;
-            print "         Kozak motif<br>" if $utr_seq =~ /gcc[AG]ccATGG/i;
+            if ($utr_seq =~ /AGGAGG/i) {
+                my $pos = $-[0] + $start;
+                push @motifs, "SD motif AGGAGG at $pos<br>";
+            }
+            if ($utr_seq =~ /gcc[AG]ccATGG/i) {
+                my $pos = $-[0] + $start;
+                my $matched_seq = $&;
+                push @motifs, "Kozak motif $matched_seq at $pos<br>";
+            }
         }
 
         if ($type == 3) {
             foreach my $motif (qw(AATAAA ATTAAA TATAAA AAGAAA AGTAAA AATATA)) {
                 if ($utr_seq =~ /$motif/i) {
                     my $pos = $-[0] + $start;
-                    print "         PolyA signal $motif at $pos<br>";
+                    push @motifs, "PolyA signal $motif at $pos<br>";
                     my $signal_end = $pos + length($motif) - 1;
                     push @polyasignal, $pos, $signal_end;
                     last;
@@ -1945,15 +1967,43 @@ sub predict_utrs {
             }
             if ($utr_seq =~ /A{10,}/i) {
                 my $tail_pos = $-[0] + $start;
-                print "         PolyA tail near $tail_pos<br>";
+                push @motifs, "PolyA tail near $tail_pos<br>";
                 my $tail_end = $+[0] - 1 + $start;
                 push @polyatail, $tail_pos, $tail_end;
             }
         }
+
+        push @results, {
+            type        => "${type}'",
+            start       => $start,
+            end         => $end,
+            length      => $end - $start + 1,
+            stems       => $stems_info,
+            energy      => $energy,
+            motifs      => join("; ", @motifs) || "None"
+        };
+
     }
 
-    print "<i>No valid UTRs inferred.</i><br>" unless @utr;
+     if (@results) {
+        print "<table class='table-result'>";
+        print "<tr><th>UTR Type</th><th>Start</th><th>End</th><th>Length</th><th>Stems</th><th>Energy</th><th>Motifs</th></tr>";
 
+        foreach my $hit (@results) {
+            print "<tr>";
+            print "<td>$hit->{type}</td>";
+            print "<td>$hit->{start}</td>";
+            print "<td>$hit->{end}</td>";
+            print "<td>$hit->{length}</td>";
+            print "<td>$hit->{stems}</td>";
+            print "<td>$hit->{energy}</td>";
+            print "<td>$hit->{motifs}</td>";
+            print "</tr>";
+        }
+        print "</table>";
+    } else {
+        print "<i>No valid UTRs inferred.</i><br>" unless @utr;
+    }
     print "</div>";
     return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr, \@polyasignal, \@polyatail);
 }
@@ -2062,7 +2112,7 @@ sub scan_rbs {
         my $percent = sprintf("%.1f", 100 * $with_rbs / $total);
         print "$with_rbs of $total transcript(s) have a Shine-Dalgarno motif ($percent%)<br>";
     } else {
-        print "No Shine-Dalgarno motifs detected in 5′ UTR regions.<br>";
+        print "No Shine-Dalgarno motifs detected in 5' UTR regions.<br>";
     }
 }
 
@@ -2088,7 +2138,6 @@ sub scan_structured_regions {
         last if $count + 150 >= $len;
         $count += 150;
     }
-    print "<br><br>";
     print "<div class='box-header'>Structured region scan</div>";
     if ($printout) {
         my $i = 1;
@@ -2107,12 +2156,11 @@ sub scan_structured_regions {
             $i++;
         }
         print "</table>";
-        print "<br>** Highly structured regions found. Consider tRNA, rRNA, or ncRNA elements.<br>";
+        print "<br><i>*Highly structured regions found. Consider tRNA, rRNA, or ncRNA elements.</i><br>";
     } else {
         print "<i>No regions with significant RNA structure detected.</i><br>";
     }
     print "<br>";
-    print "</div>";
 }
 
 sub normalize_transcript_features {
@@ -2211,11 +2259,9 @@ sub createfoldingpicture {
         print "<div class='box-header'>RNA Structure Visualization:</div>";
         print "<div class='box-content'>";
 
-        if ($SEQUENCELENGTH >= 2500){
-            print "Structure visualization can take a few seconds to load due to sequence length.";
-        }
         
-        print "<div id='rna_ss'>RNA Structure</div>";
+        
+        print "<div id='rna_ss'></div>";
         print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>";
         print "<b>Download Folding As: </b>\n";
         print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
