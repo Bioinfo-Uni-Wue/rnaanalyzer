@@ -69,15 +69,15 @@ mkdir /tmp/tRNAscan-SE
 git clone https://github.com/UCSC-LoweLab/tRNAscan-SE.git /tmp/tRNAscan-SE 
 cd /tmp/tRNAscan-SE
 autoreconf -fi 
-./configure --prefix=/var/www/rnaanalyzer/bin/tRNAscan-SE 
+./configure --prefix=/storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE 
 make 
-mkdir -p /var/www/rnaanalyzer/bin/tRNAscan-SE/bin
-cp tRNAscan-SE /var/www/rnaanalyzer/bin/tRNAscan-SE/bin/
-cp tRNAscan-SE.conf /var/www/rnaanalyzer/bin/tRNAscan-SE/bin/
-cp -R lib/ /var/www/rnaanalyzer/bin/tRNAscan-SE/
+mkdir -p /storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE/bin
+cp tRNAscan-SE /storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE/bin/
+cp tRNAscan-SE.conf /storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE/bin/
+cp -R lib/ /storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE/
 
 # Set PERL5LIB so Perl can locate tRNAscan-SE's Perl modules
-export PERL5LIB="/var/www/rnaanalyzer/bin/tRNAscan-SE/lib:$PERL5LIB"
+export PERL5LIB="/storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE/lib:$PERL5LIB"
 ```
 
 ### Infernal (Required for tRNAscan-SE)
@@ -85,18 +85,18 @@ export PERL5LIB="/var/www/rnaanalyzer/bin/tRNAscan-SE/lib:$PERL5LIB"
 Install Infernal:
 
 ```bash
-cd /var/www/rnaanalyzer/bin
+cd /storage/srv/bioapps/rnaanalyzer/bin
 wget http://eddylab.org/software/infernal/infernal.tar.gz
-tar zxf infernal.tar.gz
+tar -zxf infernal.tar.gz
 cd infernal-1.1.5
-./configure --prefix=/var/www/rnaanalyzer/bin/tRNAscan-SE/
+./configure --prefix=/storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE/
 make
 ```
 
 Create symbolic links:
 
 ```bash
-cd /var/www/rnaanalyzer/bin/tRNAscan-SE/bin
+cd /storage/srv/bioapps/rnaanalyzer/bin/tRNAscan-SE/bin
 ln -s ../infernal-1.1.5/src/cmsearch cmsearch
 ln -s ../infernal-1.1.5/src/cmscan cmscan
 ln -s ../infernal-1.1.5/src/cmstat cmstat
@@ -105,11 +105,11 @@ ln -s ../infernal-1.1.5/src/cmstat cmstat
 ### ViennaRNA Package
 
 ```bash
-cd /var/www/rnaanalyzer/bin/
+cd /storage/srv/bioapps/rnaanalyzer/bin/
 wget https://www.tbi.univie.ac.at/RNA/download/sourcecode/2_7_x/ViennaRNA-2.7.0.tar.gz
 tar -xzf ViennaRNA-2.7.0.tar.gz
 cd ViennaRNA-2.7.0
-./configure
+./configure  
 make
 make install
 ```
@@ -117,8 +117,8 @@ make install
 ## RFAM database (uses infernal from tRNAscan folder)
 
 ```
-mkdir /var/www/rnaanalyzer/databases/
-mkdir /var/www/rnaanalyzer/databases/rfam
+mkdir /storage/srv/bioapps/rnaanalyzer/databases/
+mkdir /storage/srv/bioapps/rnaanalyzer/databases/rfam
 cd ../databases/rfam
 wget https://ftp.ebi.ac.uk/pub/databases/Rfam/CURRENT/Rfam.cm.gz
 gunzip Rfam.cm.gz
@@ -128,7 +128,7 @@ cmpress Rfam.cm
 ## CPC2_standalone CPC2 (requires python3 and bipython)
 
 ```
-mkdir /var/www/rnaanalyzer/bin/cpc2
+mkdir /storage/srv/bioapps/rnaanalyzer/bin/cpc2
 wget https://github.com/gao-lab/CPC2_standalone/archive/refs/tags/v1.0.1.tar.gz
 gunzip v1.0.1.tar.gz | tar -xvf
 cd libs/libsvm/

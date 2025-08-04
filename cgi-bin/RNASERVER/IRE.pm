@@ -40,7 +40,7 @@ sub findire {
             $length = length($string);
                     #printf("length = %d\n", $length); #if ($istty);                 
             $structure=$string; # wierd way to allocate space     UUGCUUUCCAACUUCAGCUACAGUGUUAGCUAAGUUUGGA
-            $min_en = RNA::fold($string, $structure);
+            ($structure, $min_en) = RNA::fold($string);
           
                     ###########################################UUGCUUUCCAACUUCAGCUACAGUGUUAGCUAAGUUUGGA#################
                     ############# Jetzt wird das Motif beschrieben #############

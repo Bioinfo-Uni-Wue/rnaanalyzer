@@ -86,35 +86,32 @@ open my $out, ">", $html_file or die "Can't write result page: $!";
 select $out;  # Redirect STDOUT to file
 
 # We print into one html which can be accessed again or bookmarked 
-# print "<!DOCTYPE html>\n";
-# print "<html><head><meta charset='UTF-8'><title>Job $job Results</title></head><body>";
-print <<'HTML';
-<html><head>
-  <title>Batch Results</title>
-  <link rel="stylesheet" href="/css/newresults.css">
-</head><body>
-<header>
-    <a href="http://localhost">    <!--- change after putting on server -->
-      <img src="http://localhost/images/logo.png" alt="RNA Analyzer Logo" class="logo" />
-    </a>
-    <div class="header-text">
-      <h1>RNA Analyzer 2025</h1>
-      <p>Webserver for RNA Sequence Overview</p>
-    </div>
-    <div class="header-links">
-      <a href="http://localhost/about.html" target="_blank">About</a> |
-      <a href="http://localhost/contact.html" target="_blank">Contact</a> |
-      <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
-    </div>
-  </header>
 
-<main>
-<div class="container">
-HTML
-# ... print your actual results here ...
+# setting up the html headers and links 
+print "<html>";
+print "<head>";
+print "  <title>Batch Results</title>";
+print "  <link rel='stylesheet' href='/css/newresults.css'>";
+print "</head><body>";
+print "<header>";
+print "    <a href='http://localhost'>";    # change after putting on server
+print "      <img src='http://localhost/images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
+print "    </a>";
+print "    <div class='header-text'>";
+print "      <h1>RNA Analyzer 2025</h1>";
+print "      <p>Webserver for RNA Sequence Overview</p>";
+print "    </div>";
+print "    <div class='header-links'>";
+print "      <a href='http://localhost/about.html' target='_blank'>About</a> |";
+print "      <a href='http://localhost/contact.html' target='_blank'>Contact</a> |";
+print "      <a href='https://www.biozentrum.uni-wuerzburg.de/bioinfo' target='_blank'>Dandekar Lab</a>";
+print "    </div>";
+print "  </header>";
+print "";
+print "<main>";
+print "<div class='container'>";
 
-
-    
+   
 # Start processing with the single sequence input.
 &startproggi;
 
@@ -140,11 +137,12 @@ sub startproggi {
     our @trna_loc;
 
     
-    print $cgi->h2("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
+    print $cgi->h3("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
     if ($SEQUENCELENGTH >= 2500){
-            print "<i>i. Structure visualization can take a few seconds to load due to sequence length.</i>\n";
+            print "<i>\ti.    Structure visualization can take a few seconds to load due to sequence length.</i>\n";
         }
     # running analysis
+    print "<br>";
     &analysis;
 }
 
@@ -155,7 +153,7 @@ sub analysis {
     print "<pre>";
 
     print "<div class='box'>";
-    print "<div class='box-header'>Structural information</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Structural information</div>";
     print "<div class='box-content'>";
     if (length $SEQUENCECHECKED <= $maxcoloredseqlen) {
         &createfolding;
@@ -311,7 +309,7 @@ sub analysis {
 sub TRANS{
 	#this checkes the ciona-consensus !		
 			@transcionareturnvalues=RNASERVER::TRANS2::ciona($SEQUENCECHECKED); ## Ist das der CIONA ??? Auf jeden Fall aber SCHISOTSOMA
-			print "<div class='box-header'>Trans-Splicing:</div>";
+			print "<div class='box-header' onclick='toggleBoxContent(this)'>Trans-Splicing:</div>";
 			#print "<b> <big>Putative trans-splicing Schistosoma-consensus</b></big> search:";
             print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
@@ -398,7 +396,7 @@ sub TRANS{
 sub IRE {
     @irereturnvalues = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
     $irelineprintout = 0;
-    print "<div class='box-header'>Iron-resp Elements</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Elements</div>";
     print "<div class='box-content'>";
     
     if (@irereturnvalues > 1) {
@@ -463,7 +461,7 @@ sub csfce {
     my @element1=("a","u","g","c","g","u","u","c","c","u","c","g","u","c","c");
     my $putativeCVfound=0;
     #Now we will try to detect those elements Thomas wrote from
-    print "<div class='box-header'>CstF Motif Scan</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>CstF Motif Scan</div>";
     print "<div class='box-content'>";
 
     ELEMENT1: for ($count1=0;$count1<@seq-14;$count1++) {
@@ -570,7 +568,8 @@ sub csfce {
 }
 
 sub stemggpairs {
-    print "<div class='box-header'>Stem GG pairs</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Stem GG pairs</div>";
+    print "<div class=box-content>";
     my @sequ=split('',$SEQUENCECHECKED);
     my $str=join ('',@structure);
     my $stemggpairfound=0;
@@ -625,19 +624,19 @@ sub stemggpairs {
     @sequ=();
     $str='';
 
-    # print "</div>";
+    print "</div>";
 }
 
 
 sub rbp {
-    print "<div class='box-header'>RNA Binding Protein Scan:</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif Scan</div>";
     print "<div class='box-content'>";
 
     my $fimo_outfile = "$TEMPDIR/fimo.txt";
     my $input_seq = "$TEMPDIR/$job.seq";  # path to your .meme file
 
     # Run FIMO
-    my $fimo_cmd = "$FIMO/fimo --text --thresh 1e-5 $RBPDB $input_seq > $fimo_outfile";
+    my $fimo_cmd = "$FIMO/fimo --text --thresh 1e-4 $RBPDB $input_seq > $fimo_outfile";
     system($fimo_cmd);
 
     my @fimo_results;
@@ -715,7 +714,7 @@ sub ARE {
     $are_pos=1;
     my $are_table_opened = 0;
     #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
-    print "<div class='box-header'>Au-rich regions:</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Au-rich regions:</div>";
 
     print "<div class='box-content'>";
     while ($SEQUENCECHECKED=~/([ag]uuu[ag](uuu[ag])+)/g) {
@@ -757,7 +756,7 @@ sub ARE {
 sub tRNA {
     # Looking for tRNAs using tRNAscan-SE
 
-    print "<div class='box-header'>tRNA Scan:</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>tRNA Scan</div>";
     print "<div class='box-content'>";
     my $trnascan_output = "$TEMPDIR/$job.trnascanout";
     # my $trnascan_out    = "$TEMPDIR/$job.trnascanlog";
@@ -844,7 +843,7 @@ sub tRNA {
 
 
 sub smsite {
-    print "<div class='box-header'>Catalytic RNA:</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Catalytic RNA site scan</div>";
     print "<div class='box-content'>";
     $smlength=-1;
     $smpos=-1;
@@ -1196,7 +1195,7 @@ sub checkstemsonly {
 
 sub predprotein {
 	# $predprotforAnDom=0;
-	print "<div class='box-header'>Predicted Protein:</div>";
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>Predicted Protein Sequence</div>";
     print "<div class='box-content'>";
     if (defined $cpc){
         print "<i>Protein is predicted from CPC2 output.</i><br>";
@@ -1237,7 +1236,7 @@ sub RNAMOTIF {
     print "<script src='/js/d3.v3.min.js'></script>";
     print "<script src='/js/fornac.js'></script>";
 
-	print "<div class='box-header'>RNA motif search:</div>";
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA motif Scan</div>";
     print "<div class='box-content'>";
 	
 	open my $fh_tbl, '<', $tblout_file or die "Cannot open RNAmotif scan file: $!";
@@ -1364,7 +1363,7 @@ sub CPC2 {
     	print "CPC2 execution failed with exit code: $exit_code\n";
 	}
 
-	print "<div class='box-header'>Coding potential:</div>";
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>Coding potential</div>";
     print "<div class='box-content'>";
 
 	open(my $fh_cpc2, "<", "$cpc_output.txt") or die "Cannot open CPC2 result $cpc_output: $!";
@@ -1493,7 +1492,7 @@ sub microRNA {
 
 		system($mirna_search);
 
-        print "<div class='box-header'>miRNA scan:</div>";
+        print "<div class='box-header' onclick='toggleBoxContent(this)'>miRNA scan:</div>";
         print "<div class='box-content'>";
 
 		my @results;
@@ -1597,7 +1596,7 @@ sub miRNAtarget {
     $seq =~ tr/uU/tT/;
 
 
-    print "<div class='box-header'>miRNA target prediction</div>\n";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>miRNA target prediction</div>\n";
     print "<div class='box-content'>";
 
     # 1. Create UTR3 FASTA file (or fallback)
@@ -1707,7 +1706,7 @@ sub miRNAtarget {
 
 sub AUGUSTUS {
 
-    print "<div class='box-header'>Gene Prediction:</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Gene Prediction</div>";
     print "<div class='box-content'>";
     my ($species) = @_;
     $species ||= "human";
@@ -1862,7 +1861,7 @@ sub predict_utrs {
     my @utr          = ();
     my @results      = ();
 
-    print "<div class='box-header'>UTR(s) Prediction:</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>UTR(s) Prediction:</div>";
     print "<div class='box-content'>";
 
     print "<i>UTR prediction source: $source</i><br>";
@@ -1959,7 +1958,7 @@ sub predict_utrs {
             foreach my $motif (qw(AATAAA ATTAAA TATAAA AAGAAA AGTAAA AATATA)) {
                 if ($utr_seq =~ /$motif/i) {
                     my $pos = $-[0] + $start;
-                    push @motifs, "PolyA signal $motif at $pos<br>";
+                    push @motifs, "PolyA signal $motif at $pos";
                     my $signal_end = $pos + length($motif) - 1;
                     push @polyasignal, $pos, $signal_end;
                     last;
@@ -1980,7 +1979,7 @@ sub predict_utrs {
             length      => $end - $start + 1,
             stems       => $stems_info,
             energy      => $energy,
-            motifs      => join("; ", @motifs) || "None"
+            motifs      => join(";<br>", @motifs) || "None"
         };
 
     }
@@ -2138,7 +2137,8 @@ sub scan_structured_regions {
         last if $count + 150 >= $len;
         $count += 150;
     }
-    print "<div class='box-header'>Structured region scan</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Structured region scan</div>";
+    print "<div class='box-content'>";
     if ($printout) {
         my $i = 1;
         # print "<b>Structured regions detected:</b><br>";
@@ -2161,6 +2161,7 @@ sub scan_structured_regions {
         print "<i>No regions with significant RNA structure detected.</i><br>";
     }
     print "<br>";
+    print "</div>";
 }
 
 sub normalize_transcript_features {
@@ -2256,7 +2257,7 @@ sub createfoldingpicture {
         close($fh);
 
         # Print HTML content
-        print "<div class='box-header'>RNA Structure Visualization:</div>";
+        print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Structure Analysis:</div>";
         print "<div class='box-content'>";
 
         
@@ -2378,9 +2379,9 @@ sub createfoldingpicture {
         # print "DEBUG: $color_text";
         # Inject JavaScript block to visualize RNA
         print "<script>\n";
-        print "  var container;\n";  # Make container accessible globally\n";
+        print "  var container;\n";
 
-        print "  window.onload = function () {\n";
+        print "  window.addEventListener('load', function () {\n";
         print "    container = new fornac.FornaContainer(\"#rna_ss\", {\n";
         print "      animation: false,\n";
         print "      labelInterval: 50,\n";
@@ -2396,8 +2397,8 @@ sub createfoldingpicture {
         print "    container.addRNA(options.structure, options);\n";
         print "    var colorText = \"$color_text\";\n";
         print "    container.addCustomColorsText(colorText);\n";
-        print "  };\n";
-        print "</script>";
+        print "  });\n";
+        print "</script>\n";
 
         # creating legend for visual interpretation 
         print "<div class='legend'>";
@@ -2438,7 +2439,7 @@ sub location_table {
 
     # Begin styling and table
 
-    print "<h2>Locations of the Detected Structures:</h2>\n";
+    print "<h2>Feature table</h2>\n";
     print "<table class='table-loc'>";
 
     print "<tr><th>Structure</th><td>Location(s)</td></tr>\n";
@@ -2491,6 +2492,27 @@ sub location_table {
 
     print "</table>\n";
 }
+
+print "<script>";
+print "  function toggleBoxContent(header) {";
+print "    const content = header.nextElementSibling;";
+print "    if (content.style.display === 'none') {";
+print "      content.style.display = 'block';";
+print "    } else {";
+print "      content.style.display = 'none';";
+print "    }";
+print "  }";
+
+print "  window.onload = function() {";
+print "    const contents = document.querySelectorAll('.box-content');";
+print "    contents.forEach(function(content) {";
+print "      content.style.display = 'none';";
+print "    });";
+print "  };";
+print "</script>";
+
+
+
 
 write_file("$TEMPDIR/result.txt", "done\n");
 
