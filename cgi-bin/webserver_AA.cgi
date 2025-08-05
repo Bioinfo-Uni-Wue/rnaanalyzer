@@ -2258,7 +2258,7 @@ sub createfoldingpicture {
 
         # Print HTML content
         print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Structure Analysis:</div>";
-        print "<div class='box-content'>";
+        print "<div class='box-content-structure'>";
 
         
         
