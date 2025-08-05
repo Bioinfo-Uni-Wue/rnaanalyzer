@@ -7,6 +7,7 @@ use lib "/home/ama55id/rnaanalyzer/cgi-bin/";
 use RNA;
 $RNA::noLonelyPairs=1;	#important for correct use of the RNA-module!
 
+
 sub findire {
 
     my $SEQUENCE=$_[0];
