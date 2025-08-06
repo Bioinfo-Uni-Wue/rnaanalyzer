@@ -154,7 +154,7 @@ sub analysis {
 
     print "<div class='box'>";
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Structural information</div>";
-    print "<div class='box-content'>";
+    print "<div class='box-content-structure'>";
     if (length $SEQUENCECHECKED <= $maxcoloredseqlen) {
         &createfolding;
         &checkstems;
@@ -2508,6 +2508,7 @@ print "    const contents = document.querySelectorAll('.box-content');";
 print "    contents.forEach(function(content) {";
 print "      content.style.display = 'none';";
 print "    });";
+print "     setTimeout(() => window.scrollTo(0, 0), 50);";
 print "  };";
 print "</script>";
 
