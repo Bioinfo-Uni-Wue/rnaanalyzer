@@ -35,7 +35,6 @@ $RBPDB=abs_path('../databases/rbpdb/rbpdb.meme');
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
 $MAXFORNALENGTH=5000;
-$maxcoloredseqlen=10000;
 
 # aprsing cgi
 my $cgi = CGI->new;
@@ -166,14 +165,14 @@ sub analysis {
     print "<div class='box'>";
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Structural information</div>";
     print "<div class='box-content-structure'>";
-    if (length $SEQUENCECHECKED <= $maxcoloredseqlen) {
+    if (length $SEQUENCECHECKED <= $MAXFOLDINGLEN) {
         &createfolding;
         &checkstems;
         &stemggpairs;
     } else {
         print "<br><b>Length:</b>\t$SEQUENCELENGTH";
-        print "<div class='info-warning'>";
-        print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH > $MAXFOLDINGLEN);
+        print "<div class='info-error'>";
+        print "Some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH > $MAXFOLDINGLEN);
         print "</div>";
     }
     print "</div>";
@@ -2242,6 +2241,12 @@ sub createfoldingpicture {
     my $seq_file       = "$TEMPDIR/$job.seq";
     my $foldout_file   = "$TEMPDIR/$job.foldout";
 
+    # Print HTML content
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Structure Analysis:</div>";
+    print "<div class='box-content-structure'>";
+
+        
+
 	# if ($SEQUENCELENGTH <= $MAXFOLDINGLEN && $SEQUENCELENGTH > $MAXFORNALENGTH) {
     #     my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
     #     my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
@@ -2299,13 +2304,7 @@ sub createfoldingpicture {
         $structure_line =~ /^([().]+)\s+/;
         my $structure = $1;
         close($fh);
-
-        # Print HTML content
-        print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Structure Analysis:</div>";
-        print "<div class='box-content-structure'>";
-
-        
-        
+          
         print "<div id='rna_ss'></div>";
         print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>";
         print "<b>Download Folding As: </b>\n";
@@ -2462,7 +2461,9 @@ sub createfoldingpicture {
         print "</div>";
 
     } else {
+        print "<div class='info-error'>";
         print "<br><b>Maximum folding limit reached</b><br>";
+        print "</div>";
     }
 
     print "</div>";
