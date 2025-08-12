@@ -191,7 +191,7 @@ unless ($is_refresh) {
 sub sanitize_sequence {
     my ($fasta_block) = @_;
     $fasta_block =~ s/\r//g;  # Remove carriage returns from windows or older systems 
-    if (length($fasta_block) > 20_000) {
+    if (length($fasta_block) > 20_000) {      # how much shall be the input length?
       die "Input too long.";
     }
 

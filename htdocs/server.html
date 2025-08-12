@@ -35,11 +35,12 @@
       </section>
 
       <section>
-        <textarea name="SEQUENCE" rows="10" placeholder="Enter your sequence here..."></textarea>
+        <textarea id="SEQUENCE" name="SEQUENCE" rows="10" placeholder="Enter your sequence here..."></textarea>
+        <div class="info-box tip"><strong>Tip: </strong>If your sequence is too long you can always divide it into several sequences as RNAanalyzer accepts upto 5 sequences at once.</div>
       </section>
 
       <section>
-        OR Upload FASTA file:  <input type="file" name="fasta_file"><br>s<pan style="font-weight: lighter; font-size: small;">Size limit: 1 mb</span>
+        OR Upload FASTA file:  <input type="file" name="fasta_file"><br><span style="font-weight: lighter; font-size: small;">Size limit: 1 mb</span>
       </section>
 
       <section>
@@ -60,6 +61,7 @@
       </div>
       </section>  
       
+      <section>
       <label>
         <input type="checkbox" id="run_coding" name="run_coding" value="yes" onchange="toggleSpeciesDropdown()">
         Run Coding Prediction using Augustus
@@ -76,49 +78,29 @@
           <option value="zebrafish">D. rerio</option>
         </select>
       </div>
-      
+      <div class ="info-box info">When Augustus is not chosen, coding potenial of the given sequence will be calculated by CPC2.</div>
+      </section>
       <br>
-
+      <section>
       <label><input type="checkbox" name="mirna_target" value="ON" unchecked />
         miRNA Target scan
-        <span style="font-weight: normal; font-size: small;">can take long based on input sequence length</span>
       </label>
-      
+      <div class ="info-box warning">can take a few minutes based on input sequence length</div>
+      </section>
 
       <div id="submit">
         <div id="button-group">
           <input type="submit" value="Submit">
           <input type="reset" value="Reset">
+          <br>
+          <input type="button" value="Example" onclick="insertEx()"> 
+          <a href="examples.html" target="_blank">More examples</a>  
+
         </div>
-      
-        <div id="loading" style="display: none; align-items: center; gap: 10px; margin-top: 10px;">
-          <div class="spinner"></div>
-          <span>Launching your jobs...</span>
-        </div>
+        <br>
+        
       </div>
     </form>
-    
-    <script>
-    function toggleSpeciesDropdown() {
-      const checkbox = document.getElementById('run_coding');
-      const dropdown = document.getElementById('species_dropdown');
-    
-      if (checkbox.checked) {
-        dropdown.disabled = false;
-        dropdown.required = true;
-      } else {
-        dropdown.disabled = true;
-        dropdown.required = false;
-        dropdown.value = "human"; 
-      }
-    }
-    </script>
-
-    <br>
-    <p><a href="examples.html" target="_blank">Examples to test</a></p>
-
-    <br>
-    <hr>
 
     <section>
       <form class="inline-form" action="../cgi-bin/retrieve_job.cgi" method="get">
@@ -146,7 +128,27 @@
           return false;
         }
       
-        return true; // All checks passed
+        return true; 
+      }
+
+      function toggleSpeciesDropdown() {
+        const checkbox = document.getElementById('run_coding');
+        const dropdown = document.getElementById('species_dropdown');
+      
+        if (checkbox.checked) {
+          dropdown.disabled = false;
+          dropdown.required = true;
+        } else {
+          dropdown.disabled = true;
+          dropdown.required = false;
+          dropdown.value = "human"; 
+        }
+      }
+
+      function insertEx() {
+        let inputField = document.getElementById("SEQUENCE");
+        let standardText = "gagcagcgccttggaggtcccgtggatctgtgtcttgcttcaacagtgtttgaacggaacagacccggggattcccactgtactcgcttccagccgcctttacaagtctctccagtcgcagcctccgggaccatctcctcgctgccttcagctcctaggaccagtctgcaccgtctcttcgcggttagctcctactccggatcagccatgacctctcagattcgtcagaattattccaccgaggtggaagctgccgtgaaccgcctggtcaacttgcacctgcgggcctcctacacctacctctctctgggcttcttttttgatcgggatgacgtggctctggagggcgtaggccactt";
+        inputField.value = standardText; // Replace existing text
       }
       </script>
 
@@ -156,17 +158,22 @@
       <div class="text-group">
         <p><strong>Help</strong></p>
         <a href="about.html">About</a>
+        <a href="tutorial.html">Tutorial</a>
         <a href="contact.html">Contact</a>
+        
+      </div>
+      <div class="text-group"> 
+        <p><strong>Check out our other apps:</strong></p>
         <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Bioinfo Uni Wü</a>
         <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo/computing" target="_blank">Our Other Apps</a>
       </div>
-      <div class="text-group"> 
+      <!-- <div class="text-group"> 
         <p><strong>Important Databases</strong></p>
         <a href="https://rfam.org/" target="_blank">Rfam</a>
         <a href="https://www.mirbase.org" target="_blank">miRbase</a>
         <a href="http://rna.tbi.univie.ac.at/cgi-bin/RNAWebSuite/RNAfold.cgi" target="_blank">RNAfold</a>
         <a href="https://bioinf.uni-greifswald.de/augustus" target="_blank">Augustus</a>
-      </div>
+      </div> -->
       </div>
       <div class="divider"></div>
       <div class="bottom-logos">

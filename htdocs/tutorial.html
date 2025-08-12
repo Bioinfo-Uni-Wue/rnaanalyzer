@@ -1,0 +1,341 @@
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RNA Analyzer Tutorial</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+  <header>
+    <a href="server.html">
+      <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
+    </a>
+    <div class="header-text">
+      <h1>RNA Analyzer Tutorial</h1>
+      <p>Step-by-step guide to using the RNA Analyzer</p>
+    </div>
+    <div class="header-links">
+      <a href="server.html">Back to Mainpage</a> |
+      <a href="about.html" target="_blank">About</a> |
+      <a href="contact.html" target="_blank">Contact</a> |
+      <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
+    </div>
+  </header>
+
+  <main>
+    <!-- Tutorial Navigation -->
+    <div class="tutorial-nav">
+      <h2>Tutorial Contents</h2>
+      <ul>
+        <li><a href="#getting-started">1. Getting Started</a></li>
+        <li><a href="#input-preparation">2. Preparing Your Input</a></li>
+        <li><a href="#motif-selection">3. Selecting Motif Scans</a></li>
+        <li><a href="#advanced-options">4. Advanced Options</a></li>
+        <li><a href="#result-interpretation">5. Interpreting Results</a></li>
+        <li><a href="#troubleshooting">6. Troubleshooting</a></li>
+      </ul>
+    </div>
+
+    <!-- Tutorial Section 1 -->
+    <section id="getting-started">
+      <br>
+      
+      <p>Welcome to RNA Analyzer 2025 tutorial! This brief guide will walk you through the process of analyzing your RNA/DNA sequences using our comprehensive web application.</p>
+      <br>
+
+      <h3>What is RNA Analyzer?</h3>
+      
+      <p>RNA Analyzer is a web-based tool that allows you to search your RNA and/or DNA sequences for several known RNA structures and retrieve general information about your sequences.
+        Check out out help page to know more about the scans it offers.
+      </p>
+      <br>
+    </section>
+
+    <!-- Tutorial Section 2 -->
+    <section id="input-preparation">
+      <h2>1. Input</h2>
+      <br>
+      <p>RNA Analyzer accepts RNA and/or DNA sequences in fasta format. Users can input the sequences in two ways:</p>
+      <br>
+      <h3>Option 1: Direct Sequence Entry</h3>
+      <div class="step-box">
+        <div class="step-number">1</div>
+        <p>Copy your RNA or DNA sequence to your clipboard. The sequence should be in plain text format without any special characters.</p>
+      </div>
+      
+      <div class="step-box">
+        <div class="step-number">2</div>
+        <p>Paste your sequence into the large text area on the main page. Each sequence can be upto 20,000 nucleotides long.</p>
+      </div>
+    
+      <div class="info-box info">
+        <strong>Info:</strong> You can input upto 5 sequences as long as they are seperated by a fasta sequence header followed by sequence identifier.
+      </div>
+
+      <div class="code-example">
+        >seq1 
+        <br>
+        auguaguguugaggagcgauugguguuguguuuguuguugucgaguggugguugug 
+        <br>
+        >seq2 
+        <br>
+        cggagaugauuaauuugcaaauggaugagugggagugagguguuguuuugug
+      </div>
+      
+      <h3>Option 2: FASTA File Upload</h3>
+      <div class="step-box">
+        <div class="step-number">1</div>
+        <p>Prepare your sequence(s) in FASTA format. Each sequence should start with a header line followed by the sequence identifier.</p>
+      </div>
+      
+      <div class="step-box">
+        <div class="step-number">2</div>
+        <p>Click the "Choose File" button and select your FASTA file. The file size limit is 1 MB.</p>
+      </div>
+      
+      <div class="info-box warning">
+        <strong>Warning:</strong> Make sure to provide either a pasted sequence OR upload a file, not both. In case you provide both, the text input will be given priority. 
+      </div>
+    </section>
+
+    <!-- Tutorial Section 3 -->
+    <section id="motif-selection">
+      <h2>3. Selecting Motif Scans</h2>
+      <br>
+      
+      <p>RNA Analyzer offers several types of motif scans. By default, all motif scans are enabled, but you can chose which ones to perform:</p>
+      <br>
+      <h3>Available Motif Scans</h3>
+      <br>
+        <p><strong>Iron Response Elements (IRE):</strong> Identifies iron-responsive elements that regulate iron metabolism in cells.</p>
+      <br>
+        <p><strong>RNA Motif Scan:</strong> Searches for various known RNA structural motifs.</p>
+      <br>
+        <p><strong>Protein Binding Motif Scan:</strong> Finds RNA-binding protein recognition sites.</p>
+      <br>
+        <p><strong>Trans-splicing Structure:</strong> Detects trans-splicing signals and structures.</p>
+      <br>
+      <b>It also offers detecting regulatory RNA scans:</b>
+      <br>
+        <p><strong>tRNA Scan:</strong> Detects transfer RNA sequences and secondary structures.</p>
+      <br>
+        <p><strong>miRNA Scan:</strong> Identifies microRNA sequences and precursors.</p>
+      <br>
+      
+      
+      <div class="info-box tip">
+        <strong>Tip:</strong> If you're only interested in specific types of analysis, uncheck the boxes for scans you don't need. This will make your results cleaner and processing faster.
+      </div>
+    </section>
+
+    <!-- Tutorial Section 4 -->
+    <section id="advanced-options">
+      <h2>4. Advanced Options</h2>
+      <br>
+      <h3>Coding Prediction with Augustus</h3>
+      <p>You can optionally run gene prediction on your sequence using the Augustus software:</p>
+      <div class="info-box info">
+        <strong>Info:</strong> There is default coding potential analysis using CPC2 which runs when augustus is not chosen. This is more suitable if organism info is not known or is not present in the available organisms.
+      </div>
+      
+
+      <div class="step-box">
+        <div class="step-number">1</div>
+        <p>Check the "Run Coding Prediction using Augustus" checkbox to enable this feature.</p>
+      </div>
+      
+      <div class="step-box">
+        <div class="step-number">2</div>
+        <p>Select the appropriate species model from the dropdown menu. Choose the organism that is most closely related to your sequence source.</p>
+      </div>
+      
+      <p>Available species models:</p>
+      <ul style="margin-left: 2rem;">
+        <li>Human (Homo sapiens)</li>
+        <li>C. elegans (Caenorhabditis elegans)</li>
+        <li>E. coli (Escherichia coli K12)</li>
+        <li>A. thaliana (Arabidopsis thaliana)</li>
+        <li>S. cerevisiae (Saccharomyces cerevisiae)</li>
+        <li>D. melanogaster (Drosophila melanogaster)</li>
+        <li>D. rerio (Danio rerio/Zebrafish)</li>
+      </ul>
+      <br>
+      <h3>miRNA Target Scan</h3>
+      
+      <div class="step-box">
+        <div class="step-number">1</div>
+        <p>Check the "miRNA Target scan" checkbox only if you need to identify potential miRNA binding sites in your sequence.</p>
+      </div>
+
+      <div class="info-box warning">
+        <strong>Performance Note:</strong> The miRNA target scan can take a few minutes depending on your input sequence length. 
+      </div>
+     
+    </section>
+
+    <!-- Tutorial Section 5 -->
+    <section id="result-interpretation">
+    <h2>5. Interpreting Results</h2>
+    <br>
+    <p>Your results are organized into expandable sections with a tabular styled output for easier interpretation. Click on any section header to view its contents. Each section contains different types of analysis:</p>
+    <br>
+    <h3>Structural Information Section</h3>
+    <p>This section provides overall sequence statistics and structural analysis:</p>
+    <ul style="margin-left: 2rem;">
+        <li><strong>Length:</strong> Total sequence length in nucleotides</li>
+        <li><strong>Energy:</strong> Predicted folding energy (kcal/mol) - more negative values indicate more stable structures</li>
+        <li><strong>Stems:</strong> Number of identified stem-loop structures</li>
+        <li><strong>Hairpins:</strong> Number of terminal hairpin structures detected</li>
+        <li><strong>Comment:</strong> SimpleiInterpretation of structural complexity</li>
+        <li><strong>Stem GG pairs:</strong> Special GG base pairs that may indicate specific structural motifs</li>
+    </ul>
+    <br>
+    <h3>Individual Motif Scan Results</h3>
+    
+    <br>
+        <p><strong>Trans-Splicing Analysis:</strong> Searches for trans-splicing signals in Schistosoma and C. elegans patterns</p>
+    <br>
+        <p><strong>Iron Response Elements (IRE):</strong> Identifies iron-responsive regulatory elements</p>
+    <br>
+        <p><strong>Au-rich regions (ARE):</strong> Finds AU-rich elements that affect mRNA stability, showing sequence, position, and number of mismatches</p>
+    <br>
+        <p><strong>Catalytic RNA sites:</strong> Detects snRNP motifs and putative Sm-sites involved in splicing. Quality scores (+ or ++) indicate prediction confidence</p>
+    <br>
+        <p><strong>RNA Motif Scan:</strong> Uses Rfam database matching to identify known RNA families. Each hit includes:</p>
+        <ul style="margin-left: 2rem;">
+        <li>Rfam family ID with direct links to database</li>
+        <li>Start/end positions and E-values</li>
+        <li><strong>Interactive structure viewer:</strong> Click "View Structure" to view RNA structure visualization</li>
+        </ul>
+    
+    <h3>RNA Type Scans:</h3>
+    <br>
+        <p><strong>tRNA Scan:</strong> Identifies transfer RNA sequences using tRNAscan-SE</p>
+    <br>
+        <p><strong>RNA Binding Protein Motifs:</strong> Finds binding sites for specific proteins like PTBP1, NOVA2, etc. Shows:</p>
+        <ul style="margin-left: 2rem;">
+        <li>Protein name and motif type (e.g., RRMx4, KHx3)</li>
+        <li>Position, score, and p-value</li>
+        <li>Exact matched sequence</li>
+        </ul>
+
+    <br>
+        <p><strong>miRNA Scan:</strong> Detects microRNA precursors with links to miRBase database entries</p>
+    <br>
+    
+    <h3>Optional Analysis Results (if enabled)</h3>
+    
+    <br>
+        <p><strong>Gene Prediction Analysis:</strong> When Augustus is enabled, shows predicted exons with:</p>
+        <ul style="margin-left: 2rem;">
+        <li>Exon boundaries and types (coding vs. noncoding)</li>
+        <li>Transcript structure information</li>
+        <li>Predicted protein sequence</li>
+        </ul>
+    
+    <br>
+        <p><strong>UTR Prediction:</strong> Identifies 5' and 3' untranslated regions showing:</p>
+        <ul style="margin-left: 2rem;">
+        <li>UTR boundaries and length</li>
+        <li>Secondary structure information (stems, energy)</li>
+        <li>Regulatory motifs (Shine-Dalgarno, polyA signals)</li>
+        </ul>
+    <br>
+    
+        <p><strong>miRNA Target Prediction:</strong> If enabled, shows potential miRNA binding sites in 3' UTRs with binding energy and score</p>
+    <br>
+    
+    <h3>Interactive RNA Structure Visualization</h3>
+    <p>We also provide a comprehensive RNA structure visualization at the bottom:</p>
+    
+    <div class="info-box info">
+        <strong>Interactive Features:</strong>
+        <ul style="margin-left: 1.5rem;">
+        <li><strong>Pan and Zoom:</strong> Drag to pan around the structure, scroll to zoom in/out</li>
+        <li><strong>Color-coded annotations:</strong> Different RNA features are highlighted in different colors with legends below</li>
+        <li><strong>Downloadable formats:</strong> Users can download SVG or PostScript of the RNA folding structure</li>
+        </ul>
+    </div>
+    
+    <h3>Color Legend for Structure Visualization</h3>
+    <ul style="margin-left: 2rem;">
+        <li><span style="color: red;">■</span> <strong>Red:</strong> General motifs</li>
+        <li><span style="color: lightblue;">■</span> <strong>Light Blue:</strong> UTRs (untranslated regions)</li>
+        <li><span style="color: green;">■</span> <strong>Green:</strong> Exons (coding sequences)</li>
+        <li><span style="color: orange;">■</span> <strong>Orange:</strong> tRNA structures</li>
+        <li><span style="color: gold;">■</span> <strong>Yellow:</strong> miRNA sequences</li>
+        <li><span style="color: magenta;">■</span> <strong>Purple:</strong> Sm-sites and snRNP motifs</li>
+        <li><span style="color: cyan;">■</span> <strong>Cyan:</strong> Trans-splicing elements</li>
+        <li><span style="color: lime;">■</span> <strong>Lime:</strong> PolyA signals and tails</li>
+        <li><span style="color: pink;">■</span> <strong>Pink:</strong> Protein binding sites</li>
+    </ul>
+    <br>
+    <h3>Feature Summary Table</h3>
+    <p>At the bottom, you'll find a comprehensive table summarizing features with their coordinates. This table is useful for:</p>
+    <ul style="margin-left: 2rem;">
+        <li>Getting precise coordinates for downstream analysis</li>
+        <li>Seeing all features at a glance</li>
+        <li>Identifying overlapping or nearby features</li>
+    </ul>
+    
+    <div class="info-box warning">
+        <strong>Note about Structure Loading:</strong> Due to embeded javascript plugin, it might take a few seconds for the strcuture visualization to load when the input sequence is bigger than 2000nt.
+    </div>
+    </section>
+
+    <!-- Tutorial Section 6 -->
+    <section id="troubleshooting">
+      <h2>6. Troubleshooting</h2>
+      <br>
+      <h3>Common Issues</h3>
+      
+      <div class="info-box warning">
+        <strong>Error: "Please paste a sequence OR upload a FASTA file"</strong><br>
+        Make sure you've provided input using one of the two methods: either paste your sequence in the text area or upload a FASTA file.
+      </div>
+      
+      <div class="info-box warning">
+        <strong>Error: "File is too large"</strong><br>
+        Your FASTA file exceeds the 1 MB size limit. Try splitting your sequences into smaller files or use the direct paste method for shorter sequences.
+      </div>
+      
+      <div class="info-box warning">
+        <strong>Long processing times</strong><br>
+        Some analyses (like miRNA target scan) can take more time based on sequenc length. Be patient and don't refresh the page.
+      </div>
+    </section>
+
+    <!-- Navigation buttons -->
+    <div class="nav-buttons">
+      <a href="examples.html" class="nav-btn">View Examples</a>
+      <a href="server.html" class="nav-btn">Start Analysis</a>
+    </div>
+
+    <section class="links">
+      <div class="bottom-container">
+        <div class="bottom-left">
+          <div class="text-group">
+            <p><strong>Help</strong></p>
+            <a href="about.html">About</a>
+            <a href="contact.html">Contact</a>
+            <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Bioinfo Uni Wü</a>
+            <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo/computing" target="_blank">Our Other Apps</a>
+          </div>
+          <div class="text-group"> 
+            <p><strong>Important Databases</strong></p>
+            <a href="https://rfam.org/" target="_blank">Rfam</a>
+            <a href="https://www.mirbase.org" target="_blank">miRbase</a>
+            <a href="http://rna.tbi.univie.ac.at/cgi-bin/RNAWebSuite/RNAfold.cgi" target="_blank">RNAfold</a>
+            <a href="https://bioinf.uni-greifswald.de/augustus" target="_blank">Augustus</a>
+          </div>
+        </div>
+        <div class="divider"></div>
+        <div class="bottom-logos">
+          <a href="https://www.uni-wuerzburg.de" target="_blank"><img src="images/uni_logo.png" alt="University Logo" /></a>
+          <a href="https://www.biozentrum.uni-wuerzburg.de" target="_blank"><img src="images/biozentrum_logo.jpg" alt="Institute Logo" /></a>
+        </div>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

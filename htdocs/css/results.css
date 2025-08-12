@@ -125,7 +125,7 @@ h2 {
 
 .box-content i {
   color: #6c757d;
-  font-style: italic;
+  /* font-style: italic; */
 }
 
 pre {
@@ -302,6 +302,37 @@ a:hover {
     align-items: flex-start;
   }
 }
+
+.info-warning {
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  border-left: 4px solid;
+  background-color: #fff3cd;
+  border-color: #ffc107;
+  color: #856404;
+  }
+
+.info-info {
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  border-left: 4px solid;
+  background-color: #d1ecf1;
+  border-color: #17a2b8;
+  color: #0c5460;
+}
+
+.info-tip {
+  padding: 1rem;
+  margin: 1rem 0;
+  border-radius: 4px;
+  border-left: 4px solid;
+  background-color: #d4edda;
+  border-color: #28a745;
+  color: #155724;
+}
+
 
 /* @media (max-width: 480px) {
   .header-text h1 {

@@ -88,10 +88,12 @@ select $out;  # Redirect STDOUT to file
 # We print into one html which can be accessed again or bookmarked 
 
 # setting up the html headers and links 
+print "<!DOCTYPE html>";
+print "<html lang='en'>";
 print "<html>";
 print "<head>";
 print "  <title>Batch Results</title>";
-print "  <link rel='stylesheet' href='/css/newresults.css'>";
+print "  <link rel='stylesheet' href='/css/results.css'>";
 print "</head><body>";
 print "<header>";
 print "    <a href='http://localhost'>";    # change after putting on server
@@ -136,13 +138,22 @@ sub startproggi {
     our @mirna_loc;
     our @trna_loc;
 
-    
-    print $cgi->h3("Here are the results for JOB ID: $job with sequence name: ". CGI::escapeHTML($SEQNAMECHECKED));
-    if ($SEQUENCELENGTH >= 2500){
-            print "<i>\ti.    Structure visualization can take a few seconds to load due to sequence length.</i>\n";
-        }
-    # running analysis
+    print "<div class='info-tip'>";
+    print "<b>JOB ID:</b> $job";
     print "<br>";
+    print "<b>Sequence Name:</b> ". CGI::escapeHTML($SEQNAMECHECKED);
+    print "</div>";
+    
+    
+    if ($SEQUENCELENGTH >= 2500){
+            print "<div class='info-warning'>";
+            print "<i>\ti.    Structure visualization can take a few seconds to load due to sequence length.</i>\n";
+            print "</div>";
+        }
+    
+    print "<br>";
+    
+        # running analysis
     &analysis;
 }
 
@@ -150,7 +161,7 @@ sub startproggi {
 sub analysis {
     chdir $TEMPDIR;
 
-    print "<pre>";
+    # print "<pre>";
 
     print "<div class='box'>";
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Structural information</div>";
@@ -161,7 +172,9 @@ sub analysis {
         &stemggpairs;
     } else {
         print "<br><b>Length:</b>\t$SEQUENCELENGTH";
+        print "<div class='info-warning'>";
         print "     *some information is only available up to $MAXFOLDINGLEN nt\n" if ($SEQUENCELENGTH > $MAXFOLDINGLEN);
+        print "</div>";
     }
     print "</div>";
     print "</div>";
@@ -303,18 +316,19 @@ sub analysis {
 
     # &drawcoloredsequence;
 
-    print "</pre>";
+    # print "</pre>";
 }
 
 sub TRANS{
 	#this checkes the ciona-consensus !		
 			@transcionareturnvalues=RNASERVER::TRANS2::ciona($SEQUENCECHECKED); ## Ist das der CIONA ??? Auf jeden Fall aber SCHISOTSOMA
-			print "<div class='box-header' onclick='toggleBoxContent(this)'>Trans-Splicing:</div>";
+			print "<div class='box-header' onclick='toggleBoxContent(this)'>Trans-Splicing Analysis:</div>";
 			#print "<b> <big>Putative trans-splicing Schistosoma-consensus</b></big> search:";
             print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
-				#print "No hit detected<br>";
+				print "<div class='info-warning'>";
 				print "<b>Schistosoma:</b>\tNone<br>";
+                print "</div>";
 			}
 			else {
 				$hits=pop @transcionareturnvalues;
@@ -349,7 +363,9 @@ sub TRANS{
 			@transcelegansvalues=RNASERVER::TRANS2::celegans($SEQUENCECHECKED);	
 			if (@transcelegansvalues==1){
 				#print "No hit detected<br>";
+                print "<div class='info-warning'>";
 				print "<b>C. elegans:</b>\tNone";
+                print "</div>";
 			}
 			else {
 				$hits=pop @transcelegansvalues;
@@ -396,7 +412,7 @@ sub TRANS{
 sub IRE {
     @irereturnvalues = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
     $irelineprintout = 0;
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Elements</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Element(s):</div>";
     print "<div class='box-content'>";
     
     if (@irereturnvalues > 1) {
@@ -446,7 +462,9 @@ sub IRE {
         $irelineprintout = 1;
         
     } else {
-        print "<h3><b>Iron-resp Ele.:</b> None</h3>";
+        print "<div class='info-warning'>";
+        print "<b>Iron-resp Ele.:</b> None";
+        print "</div>";
     }
     
     print "</div>";
@@ -461,7 +479,7 @@ sub csfce {
     my @element1=("a","u","g","c","g","u","u","c","c","u","c","g","u","c","c");
     my $putativeCVfound=0;
     #Now we will try to detect those elements Thomas wrote from
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>CstF Motif Scan</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>CstF Motif Scan:</div>";
     print "<div class='box-content'>";
 
     ELEMENT1: for ($count1=0;$count1<@seq-14;$count1++) {
@@ -562,13 +580,15 @@ sub csfce {
 
     @seq=();
     print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
+    print "<div class='info-warning'>";
     print "<i>No CstF Motif found.<i><br>";
+    print "</div>";
 
     print "</div>";
 }
 
 sub stemggpairs {
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Stem GG pairs</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Stem GG pairs:</div>";
     print "<div class=box-content>";
     my @sequ=split('',$SEQUENCECHECKED);
     my $str=join ('',@structure);
@@ -629,7 +649,7 @@ sub stemggpairs {
 
 
 sub rbp {
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif Scan</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif(s) Scan:</div>";
     print "<div class='box-content'>";
 
     my $fimo_outfile = "$TEMPDIR/fimo.txt";
@@ -747,7 +767,9 @@ sub ARE {
     }
 
     if ($arepresent==0) {
+        print "<div class='info-warning'>";
         print "No Au-rich region found.";   #     *(AU-rich region of at least 30 nt)<br>";
+        print "</div>";
     }
     print "</div>";
 }
@@ -756,7 +778,7 @@ sub ARE {
 sub tRNA {
     # Looking for tRNAs using tRNAscan-SE
 
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>tRNA Scan</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>tRNA Scan:</div>";
     print "<div class='box-content'>";
     my $trnascan_output = "$TEMPDIR/$job.trnascanout";
     # my $trnascan_out    = "$TEMPDIR/$job.trnascanlog";
@@ -834,7 +856,9 @@ sub tRNA {
 
         print "</table>";
     } else {
+        print "<div class='info-warning'>";
         print "<b>No region matching a tRNA was found.</b>";
+        print "</div>";
     }
     
     print "</div>";
@@ -843,7 +867,7 @@ sub tRNA {
 
 
 sub smsite {
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Catalytic RNA site scan</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Catalytic RNA site(s) scan:</div>";
     print "<div class='box-content'>";
     $smlength=-1;
     $smpos=-1;
@@ -878,7 +902,7 @@ sub smsite {
         print "</table>\n";
     }
     
-    print "<h3>No snRNP-motifs found.</h3>" if ($leadlineprinted==0);
+    print "<div class='info-warning'><b>No snRNP-motifs found.</b></div>" if ($leadlineprinted==0);
     
     ##### OUTPUT if Seq is RNA has no cds but smsite --> structured perhaps catalytic RNA !
 
@@ -1056,7 +1080,7 @@ sub checkstems {
     print "<tr><th>Stems</th><td>$stem_count stem structure(s)</td></tr>\n";
     print "<tr><th>Hairpins</th><td>$hairpin_count hairpin(s)</td></tr>\n";
     
-    
+    print "</table>";
     # Prediction logic
     my $structure_length = scalar @structure;
     my $avg_spacing = $structure_length / ($stem_count || 1);
@@ -1070,8 +1094,8 @@ sub checkstems {
     } else {
         $comment = "Minimal secondary structure\n";
     }
-    print "<tr><th>Comment</th><td>$comment</td></tr>\n";
-    print "</table>";
+    print "<div class='info-info'>$comment</div>";
+    
     if ($hairpin_count > 0 && $stem_count > 0 && $hairpin_count / $stem_count > 0.7) {
         print "\t\tHigh hairpin content — characteristic of miRNA precursors\n";
     }
@@ -1195,7 +1219,7 @@ sub checkstemsonly {
 
 sub predprotein {
 	# $predprotforAnDom=0;
-	print "<div class='box-header' onclick='toggleBoxContent(this)'>Predicted Protein Sequence</div>";
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>Predicted Protein Sequence:</div>";
     print "<div class='box-content'>";
     if (defined $cpc){
         print "<i>Protein is predicted from CPC2 output.</i><br>";
@@ -1210,7 +1234,9 @@ sub predprotein {
 	}
 	else {
         # print "<br>";
+        print "<div class='info-warning'>";
 		print "<b>No predicted protein</b>";
+        print "</div>";
 	}
 
     print "</div>";
@@ -1236,7 +1262,7 @@ sub RNAMOTIF {
     print "<script src='/js/d3.v3.min.js'></script>";
     print "<script src='/js/fornac.js'></script>";
 
-	print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA motif Scan</div>";
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA motif(s) Scan:</div>";
     print "<div class='box-content'>";
 	
 	open my $fh_tbl, '<', $tblout_file or die "Cannot open RNAmotif scan file: $!";
@@ -1363,7 +1389,7 @@ sub CPC2 {
     	print "CPC2 execution failed with exit code: $exit_code\n";
 	}
 
-	print "<div class='box-header' onclick='toggleBoxContent(this)'>Coding potential</div>";
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>Coding potential Analysis:</div>";
     print "<div class='box-content'>";
 
 	open(my $fh_cpc2, "<", "$cpc_output.txt") or die "Cannot open CPC2 result $cpc_output: $!";
@@ -1439,7 +1465,9 @@ sub CPC2 {
         print "</table>"
 
     } else {
+        print "<div class='info-warning'>";
         print "No result in CPC2 output\n";
+        print "</div>";
     }
     
     if (defined $label && $label eq 'coding' && $orf_start > 0 && $peptide_length > 0) {
@@ -1472,8 +1500,9 @@ sub CPC2 {
         protein   => $protein_seq,
     };
     } else {
+        print "<div class='info-info'>";
         print "<i>Transcript predicted to be noncoding. Running structural region scan instead.</i>\n";
-        print "<br>";
+        print "</div>";
         print "<div class='box'>";
         &scan_structured_regions;
         print "</div>";
@@ -1492,7 +1521,7 @@ sub microRNA {
 
 		system($mirna_search);
 
-        print "<div class='box-header' onclick='toggleBoxContent(this)'>miRNA scan:</div>";
+        print "<div class='box-header' onclick='toggleBoxContent(this)'>miRNA(s) scan:</div>";
         print "<div class='box-content'>";
 
 		my @results;
@@ -1571,10 +1600,12 @@ sub microRNA {
                 print "</tr>";           
             }
             print "</table>";
-			print "<b>Total microRNA hits found:</b> $total\n";
+			print "<div class='info-warning'>Total microRNA hits found:</b> $total</div>";
 		} else {
+            print "<div class='info-warning'>";
 			print "No regions matching a mircroRNA was found.\n";
-		}
+            print "</div>";
+        }
 
 		print "</div>";
 
@@ -1596,7 +1627,7 @@ sub miRNAtarget {
     $seq =~ tr/uU/tT/;
 
 
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>miRNA target prediction</div>\n";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>miRNA target prediction(s):</div>\n";
     print "<div class='box-content'>";
 
     # 1. Create UTR3 FASTA file (or fallback)
@@ -1623,11 +1654,12 @@ sub miRNAtarget {
     }
 
 
-    print "<i>Extracted $found_valid valid 3' UTR regions for target prediction.</i><br>";
+    print "<div class='info-info'>Extracted $found_valid valid 3' UTR regions for target prediction.</i></div>";
 
     # no valid UTRs 
     if (!$found_valid) {
-        print "<i>No valid 3' UTRs found. Scanning full sequence instead.</i><br>";
+        print "<div class='info-warning'>";
+        print "<i>No valid 3' UTRs found. Scanning full sequence instead.</i></div>";
         print $fa_out ">full_sequence\n$seq\n";
     }
 
@@ -1706,7 +1738,7 @@ sub miRNAtarget {
 
 sub AUGUSTUS {
 
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Gene Prediction</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Gene Prediction Analysis:</div>";
     print "<div class='box-content'>";
     my ($species) = @_;
     $species ||= "human";
@@ -1773,7 +1805,8 @@ sub AUGUSTUS {
     my $i = 1;
     my $j = 1;
     if (keys %transcripts == 0) {
-        print "No gene predictions were found.<br>";
+        print "<div class='info-warning'>";
+        print "No gene predictions were found.</div>";
     } else {
     foreach my $tid (sort keys %transcripts) {
         my $model = $transcripts{$tid};
@@ -1864,7 +1897,7 @@ sub predict_utrs {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>UTR(s) Prediction:</div>";
     print "<div class='box-content'>";
 
-    print "<i>UTR prediction source: $source</i><br>";
+    print "<div class='info-info'>UTR prediction source: $source</i></div>";
 
     if ($source eq 'augustus' && (defined $tss_pos || defined $tts_pos)) {
         print "<i>Using AUGUSTUS-predicted TSS/TTS boundaries.</i><br>";
@@ -2001,7 +2034,8 @@ sub predict_utrs {
         }
         print "</table>";
     } else {
-        print "<i>No valid UTRs inferred.</i><br>" unless @utr;
+        print "<div class='info-warning'>";
+        print "No valid UTRs inferred.</div>" unless @utr;
     }
     print "</div>";
     return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr, \@polyasignal, \@polyatail);
@@ -2030,7 +2064,9 @@ sub refineUTRwithPolyA {
             $signal_motif = $motif;
             my $signal_end = $signal_pos + length($motif) - 1;
             push @polyasignal, $signal_pos, $signal_end;
+            print "<div class='info-info'>";
             print "PolyA signal ($motif) detected at $signal_pos<br>";
+            print "</div>";
             last;
         }
     }
@@ -2043,7 +2079,9 @@ sub refineUTRwithPolyA {
             $tail_pos  = $match_start + 1;
             my $tail_end = $match_end + 1;
             push @polyatail, $tail_pos, $tail_end;
+            print "<div class='info-info'>";
             print "PolyA tail detected near $tail_pos<br>";
+            print "</div>";
             last;
         }
     }
@@ -2056,9 +2094,13 @@ sub refineUTRwithPolyA {
         push @utrprintout, 3, $utr_start, $utr_end;
         push @utr, $utr_start, $utr_end;
 
+        print "<div class='info-info'>";
         print "Inferred 3' UTR based on polyA: $utr_start - $utr_end<br>";
+        print "</div>";
     } else {
+        print "<div class='info-warning'>";
         print "No strong polyA signal/tail detected in 3' region.<br>";
+        print "</div>";
     }
 
     return (\@new3primeutr, \@polyasignal, \@polyatail);
@@ -2137,7 +2179,7 @@ sub scan_structured_regions {
         last if $count + 150 >= $len;
         $count += 150;
     }
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Structured region scan</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Structured region(s) scan:</div>";
     print "<div class='box-content'>";
     if ($printout) {
         my $i = 1;
@@ -2156,9 +2198,11 @@ sub scan_structured_regions {
             $i++;
         }
         print "</table>";
-        print "<br><i>*Highly structured regions found. Consider tRNA, rRNA, or ncRNA elements.</i><br>";
+        print "<div class='info-info'>Highly structured regions found. Consider tRNA, rRNA, or ncRNA elements.</div>";
     } else {
-        print "<i>No regions with significant RNA structure detected.</i><br>";
+        print "<div class='info-warning'>";
+        print "No regions with significant RNA structure detected.";
+        print "</div>";
     }
     print "<br>";
     print "</div>";

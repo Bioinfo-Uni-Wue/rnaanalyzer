@@ -71,8 +71,26 @@ form {
     flex-direction: column;
 }
   
+/* Enhanced Form Sections */
 section {
-    margin-bottom: 1.5rem;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    border-radius: 15px;
+    background: rgba(248, 250, 252, 0.7);
+    border: 1px solid rgba(226, 232, 240, 0.5);
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+/* section:hover {
+    background: rgba(248, 250, 252, 0.9);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+} */
+
+section:first-of-type {
+    background: #0042881f;
+    border: 1px solid #667eea33;
 }
   
 label {
@@ -90,13 +108,51 @@ textarea {
     border-radius: 4px;
     font-size: 1rem;
 }
+
+textarea:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        background: white;
+        transform: scale(1.01);
+    }
+
+input[type="file"] {
+        padding: 0.75rem;
+        border: 2px dashed #cbd5e0;
+        border-radius: 12px;
+        background: rgba(247, 250, 252, 0.8);
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+
+    input[type="file"]:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.05);
+    }
   
+select {
+    padding: 0.5rem 0.5rem;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    background: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+select:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
 input[type="submit"],
-input[type="reset"] {
+input[type="reset"]{
     background-color: #0154ace3;
     color: #fff;
-    min-width: 50px;        /* Prevents buttons from becoming too small */
-    width: auto;             /* Allows natural size based on content */
+    min-width: 50px;        
+    width: 120px;             
     border: none;
     padding: 0.6rem 1.5rem;
     margin: 0.25rem;
@@ -104,19 +160,38 @@ input[type="reset"] {
     cursor: pointer;
     font-size: 1rem;
     transition: background-color 0.3s ease;
-    box-sizing: border-box;  /* Ensures padding doesn't affect layout badly */
+    box-sizing: border-box; 
 
 }
   
-  input[type="submit"]:hover,
-  input[type="reset"]:hover {
-    background-color: #0079fa;
+input[type="submit"]:hover,
+input[type="reset"]:hover {
+  background-color: #0079fa;
 }
 
 input[type="reset"] {
   background-color: #6c757d;
   color: white;
   margin-top: 0.5rem;
+}
+
+input[type="button"] {
+    background-color: #0e633ccc;
+    color: #fff;
+    min-width: 50px;        
+    width: 120px;             
+    border: none;
+    padding: 0.6rem 1.5rem;
+    margin: 0.25rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+    box-sizing: border-box; 
+}
+
+input[type="button"]:hover {
+    background-color: #14b369;
 }
 
 a {
@@ -175,13 +250,13 @@ hr {
     text-decoration: underline;
   }
 
-  .links {
+  /* .links {
     margin-top: 3rem;
     padding-top: 1.5rem;
     border-top: 1px solid #ccc;
     font-size: 0.9rem;
         
-  }
+  } */
   
   .bottom-container {
     display: flex;
@@ -259,4 +334,159 @@ hr {
   .inline-form input[type="submit"] {
     padding: 0.4em 1em;
   }
-  
+
+.tutorial-nav {
+      background-color: #f8f9fa;
+      border: 1px solid #e9ecef;
+      border-radius: 8px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+  }
+
+  .tutorial-nav h2 {
+      color: #004188;
+      margin-bottom: 1rem;
+      font-size: 1.4rem;
+  }
+
+  .tutorial-nav ul {
+      list-style: none;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 0.5rem;
+  }
+
+  .tutorial-nav li {
+      margin-bottom: 0.3rem;
+  }
+
+  /* Tutorial sections - reuse section margins */
+  .tutorial-section h2 {
+      color: #004188;
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.5rem;
+      border-bottom: 2px solid #004188;
+  }
+
+  .tutorial-section h3 {
+      color: #0154ace3;
+      font-size: 1.3rem;
+      margin: 1.5rem 0 1rem 0;
+  }
+
+  /* Step boxes */
+  .step-box {
+      background-color: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+  }
+
+  .step-number {
+      background-color: #2196f3;
+      color: white;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      margin-right: 1rem;
+      float: left;
+  }
+
+  /* Code examples */
+  .code-example {
+      background-color: #f4f4f4;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9rem;
+      overflow-x: auto;
+  }
+
+  /* Info boxes */
+  .info-box {
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 4px;
+      border-left: 4px solid;
+  }
+
+  .info-box.warning {
+      background-color: #fff3cd;
+      border-color: #ffc107;
+      color: #856404;
+  }
+
+  .info-box.info {
+      background-color: #d1ecf1;
+      border-color: #17a2b8;
+      color: #0c5460;
+  }
+
+  .info-box.tip {
+      background-color: #d4edda;
+      border-color: #28a745;
+      color: #155724;
+  }
+
+  /* Images */
+  .tutorial-image {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin: 1rem 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+
+  .image-caption {
+      font-style: italic;
+      color: #666;
+      font-size: 0.9rem;
+      text-align: center;
+      margin-top: 0.5rem;
+  }
+
+  /* Navigation buttons - similar to existing submit buttons */
+  .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid #ccc;
+  }
+
+  .nav-btn {
+      background-color: #0154ace3;
+      color: white;
+      padding: 0.8rem 1.5rem;
+      border: none;
+      border-radius: 4px;
+      text-decoration: none;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+  }
+
+  .nav-btn:hover {
+      background-color: #0079fa;
+  }
+
+  .nav-btn.disabled {
+      background-color: #6c757d;
+      cursor: not-allowed;
+  }
+
+.sequence {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  white-space: normal;
+  width: 100%;
+}
