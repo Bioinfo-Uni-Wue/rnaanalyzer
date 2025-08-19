@@ -2462,6 +2462,8 @@ sub createfoldingpicture {
         print "  var container;\n";
 
         print "  window.addEventListener('load', function () {\n";
+        print "    var scrollY = window.scrollY;\n";  # prevent scrolling lock to forna
+        print "    \n";
         print "    container = new fornac.FornaContainer(\"#rna_ss\", {\n";
         print "      animation: false,\n";
         print "      labelInterval: 50,\n";
@@ -2477,6 +2479,7 @@ sub createfoldingpicture {
         print "    container.addRNA(options.structure, options);\n";
         print "    var colorText = \"$color_text\";\n";
         print "    container.addCustomColorsText(colorText);\n";
+        print "    window.scrollTo(0,scrollY);\n";   # prevent scrolling lock to forna
         print "  });\n";
         print "</script>\n";
 
