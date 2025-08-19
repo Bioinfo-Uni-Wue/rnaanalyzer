@@ -39,7 +39,7 @@ print <<'HTML';
       <img src="../images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
-      <h1>RNA Analyzer 2025</h1>
+      <h1>RNA Analyzer<sup>3</sup></h1>
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
@@ -107,7 +107,7 @@ sub read_pasted_fasta {
 
     # Add dummy header if missing
     unless ($text =~ /^>/m) {
-        $text = ">Your sequence\n$text";
+        $text = ">no_name\n$text";
     }
 
     my @blocks = split(/^>/m, $text);

@@ -13,23 +13,23 @@
       <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
-      <h1>RNA Analyzer 2025</h1>
+      <h1>RNA Analyzer<sup>3</sup></h1>
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="about.html" target="_blank">About</a> |
+      <a href="about.html" target="_blank">Help</a> |
       <a href="contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
 
   <main>
-  <h1>About</h1>
+  <h2>About</h2>
     <br>
     <p>With the increase in transcriptomic data, sequence analysis is getting more complex and requires a variety of tools to understand the function of a given sequence. 
-    To overcome this, we present RNAanalyzer (link to RNAanalyzer), which can be used to give an overview of user-provided RNA sequence(s). </p><br>
+    To overcome this, we present RNAanalyzer (http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de), which can be used to give an overview of user-provided RNA sequence(s). </p><br>
     
-    <p>We have created this tool with a focus on giving a rundown of the regulatory features present in any given sequence. RNAanalyzer has built-in several motif searches, including Rfam, which 
+    <p>We created this tool with a focus on giving a rundown of the regulatory features present in any given sequence. RNAanalyzer has built-in several motif searches, including Rfam, which 
     can identify regulatory motifs in a given sequence. RNAanalyzer also incorporates RNAfold from the ViennaRNA package to give the user structural information along 
     with a folding overview.  These, coupled with coding sequence potential analyis, can help annotate the nature of the sequence which can be regulatory or protein 
     coding. We achieve this using specific/well-known databases and tools built for specific predictions, all coupled in one web application. Furthermore, we also allow 
@@ -37,10 +37,54 @@
     
     <p>Apart from these, RNAanalyzer also has tRNA scan, iron responsive element (IRE) identification, UTR prediction, small molecule binding site identification, and can also scan for highly structured regions which are usually involved in regulatory functions. </p>
     <br>
-    <p><strong>For more information aboiut the working of RNAanalyzer, please check our publication:
-    
+    <p><strong>For more information about the working of RNAanalyzer, please check our publication:
+      <!-- publication link here -->
     </strong></p>
-</main>
+    <br>
+    <p><strong>A <a href="tutorial.html" target="_blank">helpful guide</a> is also present for users on how to use and check results.</strong></p>
+
+    <br>
+
+    <h2>Help</h2><br>
+    <h3>Structural Information:</h3>
+    <br>
+    <p>Several structural features like stems, loops, stem gg pairs are calculated using <a href="https://www.tbi.univie.ac.at/RNA/" target="_blank">ViennaRNA</a> tools which is also used to create the folding and then 
+      <a href="http://rna.tbi.univie.ac.at/forna/" target="_blank">FORNA</a> is used for annotation and interactive visualization.</p><br>
+    <h3>Motif Scans:</h3><br>
+    <ul style="margin-left: 2rem;">
+      <li><b>Trans-Splicing:</b> Trans-splicing involves the RNA splicing of separate precursors giving rise to one mature mRNA. More information about this can be <a href="TRANSinfo.html" target="_blank">found here.</a></li>
+      <li><b>IRE:</b> Iron-responsive elements in RNA are binding sites for iron-regulatory protein. More infomation about IRE can be <a href="IREinfo.html" target="_blank">found here.</a></li>
+      <li><b>ARE:</b> AU-rich regions in RNA are sequences with a high proportion of adenine (A) and uracil (U) nucleotides that often regulate mRNA stability and translation. </li>
+      <li><b>SMsite:</b> SM site (splicing motif site) is a short RNA sequence that serves as a recognition signal for the splicing machinery during pre-mRNA processing. </li>
+      <li><b>RNA Motif:</b> RNA motif is a sequence or structural pattern in RNA that plays a specific biological role, such as binding proteins, guiding RNA folding, or regulating processes like splicing, translation, or stability. We use <a href="https://rfam.org/" target="_blank">Rfam database</a> of RNA motifs combined with <a href="http://eddylab.org/infernal" target="_blank">infernal</a> for scanning user sequence(s).</li>
+      <li><b>Protein Binding Motifs:</b> RBP motifs are RNA sequence that RNA-binding proteins recognize and bind to in order to regulate RNA.</li>
+      <li><b>CstF Binding Motifs:</b> CstF binds GU-rich RNA to promote pre-mRNA cleavage and polyadenylation.</li>
+    </ul>
+    <br>
+    <h3>RNA type scanning</h3><br>
+    <ul style="margin-left: 2rem;">
+      <li><b>tRNA scan:</b> Detects and annotates transfer RNAs (tRNA) in the given sequence using <a href="http://trna.ucsc.edu/tRNAscan-SE" target="_blank">tRNAscan-SE.</a></li>
+      <li><b>miRNA scan:</b> Finds potential miRNA sequences in the given sequence using <a href="https://www.mirbase.org" target="_blank">miRBase database</a> with nhmmer from <a href="http://hmmer.org/">hmmer. </a></li>
+      </ul>
+    <br>
+    <h3>Coding Annotation:</h3>
+    <br>
+    <ul style="margin-left: 2rem;">
+      <li><b>Coding Potential:</b> Coding potential of the given sequnece is calculated using <a href="https://cpc2.gao-lab.org/" target="_blank">CPC2 package and is defualt behaviour.</a><br>
+      However users can also chose <a href="https://bioinf.uni-greifswald.de/augustus" target="_blank">augustus</a> for some model species for a indepth gene prediction.</li>
+      <li><b>UTR prediction:</b> If augustus does not predict UTRs, then the prediction is simply taken from coding sequence boundries. To further make the UTR scanning more biological relevent, the sequnce is also checked for polyA signals and then use it to interprt the 3' UTR. </li>
+    </ul>
+    <br>
+    <h3>miRNA target prediction:</h3><br>
+    <ul style="margin-left: 2rem;">
+      <li>Scans the sequence to find targets for known miRNA(s) from the <a href="https://www.mirbase.org" target="_blank">miRBase database</a> using a custom python wrapper over <a href="www.microrna.org" target="_blank">Miranda</a>. If 3' Utr is predicted then uses the 3' UTR sequence for scanning making it more biological relevent.</li>
+    </ul>
+    <br>
+    <h3>Structural Annotation</h3><br>
+    <ul style="margin-left: 2rem;">
+      <li>The structure of the sequence is then calculated using <a href="https://www.tbi.univie.ac.at/RNA/" target="_blank">RNAfold</a> and then annotated with the calculated features from RNAanalyzer and then displayed using <a href="http://rna.tbi.univie.ac.at/forna/" target="_blank">FORNA</a>.</li>
+    </ul>
+  </main>
 
 </body>
 </html>

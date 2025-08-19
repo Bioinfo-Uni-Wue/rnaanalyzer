@@ -13,25 +13,23 @@
       <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
-      <h1>RNA Analyzer 2025</h1>
+      <h1>RNA Analyzer<sup>3</sup></h1>
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="about.html" target="_blank">About</a> |
+      <a href="tutorial.html" target="_blank">Tutorial</a> |
+      <a href="about.html" target="_blank">Help</a> |
       <a href="contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
-  
 
   <main>
-
-
       <form action="../cgi-bin/batchsubmit.cgi" method="post" enctype="multipart/form-data" onsubmit="return validateForm(event)">
 
       <section>
-        <p>With this web application, you can search your RNA/DNA for several known RNA structures and retrieve some general information about your sequence.</p>
-        <p>Please choose which searches you would like to perform below!</p>
+        <p>With this web application, you can search your RNA/DNA for several known RNA structures and retrieve general information about your sequence.</p>
+        <p>Please have a look at our <a href="tutorial.html" target="_blank">tutorial</a> on how to use our webserver.</p>
       </section>
 
       <section>
@@ -42,23 +40,37 @@
       <section>
         OR Upload FASTA file:  <input type="file" name="fasta_file"><br><span style="font-weight: lighter; font-size: small;">Size limit: 1 mb</span>
       </section>
+      
+      <div id="submit">
+      <div id="button-group">
+        &nbsp;&nbsp;&nbsp;
+        <input type="submit" value="Submit">
+        <input type="reset" value="Reset">
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="button" value="Example" onclick="insertEx()"> 
+        &nbsp;&nbsp;&nbsp;
+        <a href="examples.html" target="_blank">More examples</a>  
+      </div>
+      </div>
+      <br>
 
       <section>
         <div class="checkbox-group">
         <p><b>Motif Scans:</b></p>
-        <label><input type="checkbox" name="IRE" value="ON" checked />
-        <a href="IREinfo.html" target="_blank">IRE</a></label>
-        <label><input type="checkbox" name="trna" value="ON" checked />
-        tRNA scan</a></label>
-        <label><input type="checkbox" name="mirna" value="ON" checked />
-        miRNA scan</a></label>
-        <label><input type="checkbox" name="RNAmotif" value="ON" checked />
-        RNA motif scan</a></label>
-        <label><input type="checkbox" name="RBP" value="ON" checked />
-        Protein Binding motif scan</a></label>
-        <label><input type="checkbox" name="TRANS" value="ON" checked />
-        <a href="TRANSinfo.html" target="_blank">Trans-splicing structure</a></label>
+        <label title="Check for Iron-responsive elements"><input type="checkbox" name="IRE" value="ON" checked />
+        IRE</label>
+        <label title="Check for transfer RNAs in the given sequence"><input type="checkbox" name="trna" value="ON" checked />
+        tRNA scan</label>
+        <label title="Check for micro RNAs in the given sequence"><input type="checkbox" name="mirna" value="ON" checked />
+        miRNA scan</label>
+        <label title="Check for RNA motifs"><input type="checkbox" name="RNAmotif" value="ON" checked />
+        RNA motif scan</label>
+        <label title="Check for protein binding motifs"><input type="checkbox" name="RBP" value="ON" checked />
+        Protein Binding motif scan</label>
+        <label title="Check for Trans-splicing motifs for C. elegans and S. mansoni"><input type="checkbox" name="TRANS" value="ON" checked />
+        Trans-splicing structure</label>
       </div>
+      <div class ="info-box info">Check our <a href="about.html" target="_blank">Help page</a> for more information on the motif scans.</div>
       </section>  
       
       <section>
@@ -80,25 +92,12 @@
       </div>
       <div class ="info-box info">When Augustus is not chosen, coding potenial of the given sequence will be calculated by CPC2.</div>
       </section>
-      <br>
       <section>
       <label><input type="checkbox" name="mirna_target" value="ON" unchecked />
         miRNA Target scan
       </label>
       <div class ="info-box warning">can take a few minutes based on input sequence length</div>
-      </section>
-
-      <div id="submit">
-        <div id="button-group">
-          <input type="submit" value="Submit">
-          <input type="reset" value="Reset">
-          <br>
-          <input type="button" value="Example" onclick="insertEx()"> 
-          <a href="examples.html" target="_blank">More examples</a>  
-
-        </div>
-        <br>
-        
+      </section> 
       </div>
     </form>
 
@@ -148,7 +147,7 @@
       function insertEx() {
         let inputField = document.getElementById("SEQUENCE");
         let standardText = "gagcagcgccttggaggtcccgtggatctgtgtcttgcttcaacagtgtttgaacggaacagacccggggattcccactgtactcgcttccagccgcctttacaagtctctccagtcgcagcctccgggaccatctcctcgctgccttcagctcctaggaccagtctgcaccgtctcttcgcggttagctcctactccggatcagccatgacctctcagattcgtcagaattattccaccgaggtggaagctgccgtgaaccgcctggtcaacttgcacctgcgggcctcctacacctacctctctctgggcttcttttttgatcgggatgacgtggctctggagggcgtaggccactt";
-        inputField.value = standardText; // Replace existing text
+        inputField.value = standardText; 
       }
       </script>
 
@@ -156,8 +155,8 @@
     <div class="bottom-container">
       <div class="bottom-left">
       <div class="text-group">
-        <p><strong>Help</strong></p>
-        <a href="about.html">About</a>
+        <p><strong>About</strong></p>
+        <a href="about.html">Help</a>
         <a href="tutorial.html">Tutorial</a>
         <a href="contact.html">Contact</a>
         

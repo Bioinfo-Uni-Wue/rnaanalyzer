@@ -99,7 +99,7 @@ print "    <a href='http://localhost'>";    # change after putting on server
 print "      <img src='http://localhost/images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
 print "    </a>";
 print "    <div class='header-text'>";
-print "      <h1>RNA Analyzer 2025</h1>";
+print "      <h1>RNA Analyzer<sup>3</sup></h1>";
 print "      <p>Webserver for RNA Sequence Overview</p>";
 print "    </div>";
 print "    <div class='header-links'>";
@@ -326,7 +326,7 @@ sub TRANS{
             print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
 				print "<div class='info-warning'>";
-				print "<b>Schistosoma:</b>\tNone<br>";
+				print "<b>Schistosoma:</b>\tNo Trans-splicing element found.<br>";
                 print "</div>";
 			}
 			else {
@@ -363,7 +363,7 @@ sub TRANS{
 			if (@transcelegansvalues==1){
 				#print "No hit detected<br>";
                 print "<div class='info-warning'>";
-				print "<b>C. elegans:</b>\tNone";
+				print "<b>C. elegans:</b>\tNo Trans-splicing element found.";
                 print "</div>";
 			}
 			else {
@@ -580,7 +580,7 @@ sub csfce {
     @seq=();
     print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
     print "<div class='info-warning'>";
-    print "<i>No CstF Motif found.<i><br>";
+    print "No CstF Motif found.";
     print "</div>";
 
     print "</div>";
@@ -646,7 +646,6 @@ sub stemggpairs {
     print "</div>";
 }
 
-
 sub rbp {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif(s) Scan:</div>";
     print "<div class='box-content'>";
@@ -680,8 +679,6 @@ sub rbp {
                 $motif_name = '';
             }
 
-            push @rbp_locs, $start, $stop;
-
             push @fimo_results, {
                 motif_id     => $motif_id,
                 alt_id       => $alt_id || $motif_id,
@@ -699,14 +696,34 @@ sub rbp {
         close $fh;
     }
 
-    # Display results
-    my $total = scalar @fimo_results;
+    # remove reduntant hits for each protein+domain combination
+    my %best_hits;
+    
+    foreach my $hit (@fimo_results) {
+        my $combination = $hit->{protein} . "\t" . $hit->{motif};
+        
+        if (!exists $best_hits{$combination} || $hit->{score} > $best_hits{$combination}->{score}) {
+            $best_hits{$combination} = $hit;
+        }
+    }
+    
+    my @filtered_results = sort { $a->{start} <=> $b->{start} } values %best_hits;
+    
+    # return locations for annoation
+    @rbp_locs = ();
+    foreach my $hit (@filtered_results) {
+        push @rbp_locs, $hit->{start}, $hit->{end};
+    }
+
+
+    # print results
+    my $total = scalar  @filtered_results;
 
     if ($total > 0) {
         print "<table class='table-result'>\n";
         print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
 
-        foreach my $hit (@fimo_results) {
+        foreach my $hit (@filtered_results) {
             print "<tr>";
             print "<td>$hit->{protein}</td>";
             print "<td>$hit->{motif}</td>";
@@ -726,7 +743,6 @@ sub rbp {
 
     print "</div>";
 }
-
 
 sub ARE {
     $arepresent=0;
@@ -772,7 +788,6 @@ sub ARE {
     }
     print "</div>";
 }
-
 
 sub tRNA {
     # Looking for tRNAs using tRNAscan-SE
@@ -856,14 +871,13 @@ sub tRNA {
         print "</table>";
     } else {
         print "<div class='info-warning'>";
-        print "<b>No region matching a tRNA was found.</b>";
+        print "No region matching a tRNA was found.";
         print "</div>";
     }
     
     print "</div>";
     # print "DEBUG: @trna_loc" if @trna_loc;
 }
-
 
 sub smsite {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Catalytic RNA site(s) scan:</div>";
@@ -932,9 +946,38 @@ sub createfolding {
         @structure = split('', $1);
         $structure = $1;
         $energy = $2;
+
+
+        my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
+
+        # Make sure RNAplot output is ready
+        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
+
+        # Read SVG file content
+        open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
+        my $svg_content = do { local $/; <$svgfh> };
+        close($svgfh);
+
+        # Add ID to <svg> tag if not present
+        $svg_content =~ s/<svg /<svg id="static_rna_ss" width="auto" height="600" style="background:white;" /;
+
+        # Output
+        print "<h3>RNA Structure (Annotated Structure Below):</h3>\n";
+        print "$svg_content\n";
+        print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
+
+        # Add svg-pan-zoom script
+        print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
+        print "<script>\n";
+        print "  svgPanZoom('#static_rna_ss', {\n";
+        print "    zoomEnabled: true,\n";
+        print "    controlIconsEnabled: true,\n";
+        print "    fit: true,\n";
+        print "    center: true\n";
+        print "  });\n";
+        print "</script>\n";
 		
 }
-
 
 sub checkstems {
 
@@ -1105,7 +1148,6 @@ sub checkstems {
     return ($stem_count, $hairpin_count);
 }
 
-
 sub checkstemsonly {
     # revamped checkstemsonly based on the logic of the new checkstems
     my $inseq = $_[0];
@@ -1234,7 +1276,7 @@ sub predprotein {
 	else {
         # print "<br>";
         print "<div class='info-warning'>";
-		print "<b>No predicted protein</b>";
+		print "No protein sequence was predicted. Check coding potential of the sequence above.";
         print "</div>";
 	}
 
@@ -2249,8 +2291,6 @@ sub createfoldingpicture {
 
 	# if ($SEQUENCELENGTH <= $MAXFOLDINGLEN && $SEQUENCELENGTH > $MAXFORNALENGTH) {
     #     my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
-    #     my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
-    #     my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
 
     #     # Make sure RNAplot output is ready
     #     system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
@@ -2267,9 +2307,6 @@ sub createfoldingpicture {
     #     print "<h3>RNA Structure Visualization:</h3>\n";
     #     print "$svg_content\n";
     #     print "<p style='font-size: 0.9em; color: gray;'> Drag to pan, scroll to zoom</p>\n";
-    #     print "<b>Download As: </b>\n";
-    #     print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
-    #     print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
 
     #     # Add svg-pan-zoom script
     #     print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
@@ -2291,8 +2328,8 @@ sub createfoldingpicture {
         my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
         my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
 
-        # Make sure RNAplot output is ready
-        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
+        # # Make sure RNAplot output is ready
+        # system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
 
         # Read sequence and structure from RNAfold output
         open(my $fh, '<', $foldout_file) or die "Cannot open foldout file: $!";
@@ -2547,14 +2584,6 @@ print "    } else {";
 print "      content.style.display = 'none';";
 print "    }";
 print "  }";
-
-print "  window.onload = function() {";
-print "    const contents = document.querySelectorAll('.box-content');";
-print "    contents.forEach(function(content) {";
-print "      content.style.display = 'none';";
-print "    });";
-print "     setTimeout(() => window.scrollTo(0, 0), 50);";
-print "  };";
 print "</script>";
 
 
