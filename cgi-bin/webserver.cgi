@@ -32,6 +32,7 @@ $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
 $FIMO=abs_path('../bin/meme-5.5.8/bin'); #fimo rbp scan
 $RBPDB=abs_path('../databases/rbpdb/rbpdb.meme');
+$RIBOSWDB=abs_path('../databases/riboswitches/riboswitch.cm'); #riboswitch location 
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
 $MAXFORNALENGTH=5000;
@@ -74,10 +75,12 @@ my $do_TRANS            = $params->{TRANS};
 my $species             = $params->{species};
 my $do_mirnatarget      = $params->{mirna_target};
 my $do_rbp              = $params->{RBP};
-my $dnarna              = $params->{dnarna};
+my $do_ribo             = $params->{ribo};
+# my $dnarna              = $params->{dnarna};
 my $SEQNAMECHECKED      = $params->{sequence_name};
 my $SEQUENCECHECKED     = $params->{sequence_clean};
 my $SEQUENCELENGTH      = $params->{sequence_length};
+
 
 my $html_file = "$TEMPDIR/result.html";
 
@@ -187,6 +190,12 @@ sub analysis {
     if ($do_IRE) {
     print "<div class='box'>";	
 	&IRE;
+    print "</div>";
+    }
+
+    if ($do_ribo) {
+    print "<div class='box'>";	
+	&riboswitch;
     print "</div>";
     }
 
@@ -1414,7 +1423,9 @@ sub RNAMOTIF {
         print "</table>";
 
 	} else {
+        print "<div class='info-warning'>";
 		print "No RNA motif recognized\n";
+        print "</div>";
     }
     print "</div>";
 }
@@ -1653,6 +1664,83 @@ sub microRNA {
 
 }
 
+sub riboswitch {
+    my $ribosw_tblout = "$TEMPDIR/$job.ribo.tblout";  # Table format output
+	my $ribosw_out = "$TEMPDIR/$job.ribo";     # Full verbose output
+
+	my $cmd = "$CMSCAN/cmscan -E 1e-5 --tblout $ribosw_tblout -o $ribosw_out $RIBOSWDB $TEMPDIR/$job.seq > /dev/null 2>&1";
+	system($cmd);
+
+    @ribosw =();
+    my @results;
+    my $found = 0;
+    my $i = 0;
+
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>Riboswitch Scan:</div>";
+    print "<div class='box-content'>";
+	
+	open my $fh_tbl, '<', $ribosw_tblout or die "Cannot open Riboswitch out file: $!";
+	while (my $line = <$fh_tbl>) {
+		next if $line =~ /^#/;  # Skip comments
+		chomp $line;
+		my @columns = split(/\s+/, $line, 18);
+		next unless @columns >= 16;
+
+		my ($match, $family, $from, $to, $score, $e_value, $description) = ($columns[0], $columns[1], $columns[7], $columns[8], $columns[14], $columns[15], $columns[17]);
+
+        push @ribosw, $from, $to;
+
+       	my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
+
+        # push @results, $row . $forna_html;
+        push @results, {
+            match       => $match,
+            family      => $family_link,
+            from        => $from,
+            to          => $to,
+            score       => $score,
+            evalue      => $e_value,
+            description => $description,
+        };
+
+		$found = 1;
+        $i++;
+	}
+	
+	close $fh_tbl;
+
+	
+	if ($found) {
+		# # Print header only if results exist
+		# printf $format, "Match", "Family", "From", "To", "Score", "E-Value", "Description";
+		# print "-" x 80, "\n";  # Simple separator
+
+		# # Print stored results
+		# print @results;
+        print "<table class='table-result'>";
+        print "<tr><th>Match</th><th>Family</th><th>From</th><th>To</th><th>Score</th><th>E-value</th><th>Description</th></tr>\n";
+
+        foreach my $hit (@results) {
+            print "<tr>";
+            print "<td>$hit->{match}</td>";
+            print "<td>$hit->{family}</td>";
+            print "<td>$hit->{from}</td>";
+            print "<td>$hit->{to}</td>";
+            print "<td>$hit->{score}</td>";
+            print "<td>$hit->{evalue}</td>";
+            print "<td>$hit->{description}</td>";
+            print "</tr>";
+        }
+        
+        print "</table>";
+
+	} else {
+        print "<div class='info-warning'>";
+		print "No Riboswitch sequence recognized\n";
+        print "</div>";
+    }
+    print "</div>";
+}
 # microRNA scan using miRanda
 # slow, takes over 2 minutes to scan
 
@@ -2371,7 +2459,29 @@ sub createfoldingpicture {
                 $color_text .= "$i:green ";
             }
         }
-        
+
+        #polya signals
+        for (my $j = 0; $j < @polyasignal; $j += 2) {
+            my ($from, $to) = @polyasignal[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:lime ";
+            }
+        }
+
+        for (my $j = 0; $j < @polyatail; $j += 2) {
+            my ($from, $to) = @polyatail[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:lime ";
+            }
+        }
+
+
         # process motif
         for (my $j = 0; $j < @rna_motif; $j += 2) {
             my ($from, $to) = @rna_motif[$j, $j + 1];
@@ -2414,6 +2524,18 @@ sub createfoldingpicture {
             }
         }
 
+        #riboswitches
+        for (my $j = 0; $j < @ribosw; $j += 2) {
+            my ($from, $to) = @ribosw[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:royalblue ";
+            }
+        }
+
+        #trans-splciing
         for (my $j = 0; $j < @transsplicing; $j += 2) {
             my ($from, $to) = @transsplicing[$j, $j + 1];
 
@@ -2424,26 +2546,7 @@ sub createfoldingpicture {
             }
         }
 
-        for (my $j = 0; $j < @polyasignal; $j += 2) {
-            my ($from, $to) = @polyasignal[$j, $j + 1];
-
-            ($from, $to) = ($to, $from) if $from > $to;
-
-            for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:lime ";
-            }
-        }
-
-        for (my $j = 0; $j < @polyatail; $j += 2) {
-            my ($from, $to) = @polyatail[$j, $j + 1];
-
-            ($from, $to) = ($to, $from) if $from > $to;
-
-            for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:lime ";
-            }
-        }
-
+        #protein binding motifs
         for (my $j = 0; $j < @rbp_locs; $j += 2) {
             my ($from, $to) = @rbp_locs[$j, $j + 1];
 
@@ -2453,6 +2556,7 @@ sub createfoldingpicture {
                 $color_text .= "$i:pink ";
             }
         }
+
 
         $color_text =~ s/\s+$//;  # Trim trailing space
 
@@ -2493,6 +2597,7 @@ sub createfoldingpicture {
         print "<span style='display: inline-block; width: 12px; height: 12px; background: orange; margin-left: 10px;'></span> TRNA\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 10px;'></span> MiRNA\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 10px;'></span> SM-site/snRNP-motif\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: royalblue; margin-left: 10px;'></span> Riboswitches(s)";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 10px;'></span> TRANS-splicing\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 10px;'></span> PolyA Signal/PolyA Tail\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: pink; margin-left: 10px;'></span> Protein Binding Site(s)";
@@ -2553,6 +2658,12 @@ sub location_table {
         my $mirna_str = format_flat_ranges(@mirna_loc);
         print "<tr><th>miRNA(s)</th><td>$mirna_str</td></tr>\n";
     }
+
+    if (@ribosw) {
+        my $ribosw_str = format_flat_ranges(@ribosw);
+        print "<tr><th>Riboswitch(s)</th><td>$ribosw_str</td></tr>\n";
+    }
+
 
     if (@transsplicing) {
         my $trans_str = format_flat_ranges(@transsplicing);

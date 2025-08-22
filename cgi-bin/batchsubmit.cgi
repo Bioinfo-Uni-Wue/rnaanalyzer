@@ -65,6 +65,7 @@ my $coding    = $q->param("run_coding") // '';
 my $species   = $q->param("species") // '';
 my $mirna_target    =  $q->param("mirna_target") // '';
 my $rbp       = $q->param("RBP") // '';
+my $ribo      = $q->param("RIBO") // '';
 
 
 my @job_ids = $q->multi_param('job_ids');
@@ -150,6 +151,7 @@ unless ($is_refresh) {
             species         => $species,
             mirna_target    => $mirna_target,
             RBP             => $rbp,
+            ribo            => $ribo,
             dnarna          => $sanitized->{type},
             sequence_name   => $sanitized->{name},
             sequence_clean  => $sanitized->{cleaned_seq},
@@ -158,7 +160,7 @@ unless ($is_refresh) {
         );
 
         write_file("$job_dir/params.json", encode_json(\%params));
-        system("perl ./webserver_AA.cgi $job_id > /dev/null 2>&1 &");
+        system("perl ./webserver.cgi $job_id > /dev/null 2>&1 &");
 
       push @job_ids, $job_id;
 
@@ -187,7 +189,6 @@ unless ($is_refresh) {
 
 }
 
-
 sub sanitize_sequence {
     my ($fasta_block) = @_;
     $fasta_block =~ s/\r//g;  # Remove carriage returns from windows or older systems 
@@ -206,13 +207,13 @@ sub sanitize_sequence {
         $header   = $1 || "Your sequence";
         $seq_body = $2 || "";
     } else {
-        die "$fasta_block";
+        # die "$fasta_block";
         $header   = "Your sequence";
         $seq_body = $fasta_block;
     }
 
     # sanitize header to remove any shell-injection risk or path traversal
-    $header =~ s/[^ a-zA-Z0-9><;+\-_.]/_/g;   # allow only safe characters
+    $header =~ s/[^a-zA-Z0-9>+\-_.]/_/g;   # allow only safe characters
     $header =~ s/\.\.//g;                    # prevent "../" path tricks
     $header = substr($header, 0, 20);       # truncate excessively long names
 
@@ -241,20 +242,22 @@ sub sanitize_sequence {
     my $length = length($cleaned_seq);
 
     # Determine RNA or DNA
-    my $ucount = ($cleaned_seq =~ tr/u//);
-    my $tcount = ($cleaned_seq =~ tr/t//);  # Should be 0, but included for safety
-    my $type = 'unknown';
-    if ($ucount > $tcount) {
-        $type = 'RNA';
-    } elsif ($tcount > $ucount) {
-        $type = 'DNA';
-    }
-    $type = 'unknown' if ($ucount > 20 && $tcount > 20);
+    # my $ucount = ($cleaned_seq =~ tr/u//);
+    # my $tcount = ($cleaned_seq =~ tr/t//);  # Should be 0, but included for safety
+    # my $type = 'unknown';
+    # if ($ucount > $tcount) {
+    #     $type = 'RNA';
+    # } elsif ($tcount > $ucount) {
+    #     $type = 'DNA';
+    # }
+    # $type = 'unknown' if ($ucount > 20 && $tcount > 20);
+
+
 
     return {
         name        => $header,
         cleaned_seq => $cleaned_seq,
-        type        => $type,
+        # type        => $type,
         length      => length($cleaned_seq),
         valid       => $valid,
     };
@@ -278,7 +281,7 @@ print "<table>";
 my $elapsed = $q->param('elapsed_time') || 0;
 print "<div class='timing-info'>\n";
 print "<div class='elapsed'>Elapsed time: <span id='timer'>$elapsed</span> seconds</div>\n" unless $all_done;
-print "<div class='estimated'>Max. Estimated Run Time: > $formatted_time minutes</div>\n" unless $all_done;
+print "<div class='estimated'>Max. Estimated Run Time: < $formatted_time minutes</div>\n" unless $all_done;
 print "</div>\n";
 print "<br>";
 
