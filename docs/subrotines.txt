@@ -1,0 +1,23 @@
+Key Subroutines
+startproggi – Likely initializes the script, setting up environment variables or configurations.
+mainrun – Probably the main execution routine, orchestrating the script’s workflow.
+errors – Handles error reporting and debugging messages.
+readandcheckinput – Reads and validates input from the CGI request, ensuring correctness before processing.
+oppositestrand – Possibly processes the reverse complement of a given RNA/DNA sequence.
+additionalinformation – Retrieves additional metadata or results relevant to the analysis.
+jobnumber – Manages job identifiers, possibly for handling multiple requests.
+csfce – Unclear without context, but could relate to sequence feature extraction.
+stemggpairs – Likely involved in RNA secondary structure analysis (stems, base pairs).
+drawcoloredsequence – Handles visualization of sequences, possibly for web display.
+calcUTR – Computes untranslated regions (UTRs) in RNA sequences.
+protA1bisite – Could relate to protein-binding site prediction.
+promotor – Likely scans for promoter sequences in the input.
+polyAsignal – Detects polyadenylation signals in RNA sequences.
+ARE & ARE_old – Related to AU-rich elements (ARE), which influence mRNA stability.
+tRNA – Likely detects or analyzes tRNA sequences.
+smsite – Could be related to splice sites or small RNA motifs.
+exons – Analyzes exon structures in the input sequence.
+createpicture – Generates graphical representations, likely of RNA structures.
+checkstems & checkstemsonly – Further RNA structure analysis, possibly validating predicted stems.
+predprotein – Predicts protein sequences from RNA or genomic data.
+drawcoloredstructure – Generates colored graphical representations of RNA/protein structures.
