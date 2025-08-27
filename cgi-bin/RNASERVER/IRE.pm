@@ -1,7 +1,6 @@
 package RNASERVER::IRE;
 
 use strict;
-<<<<<<< HEAD
 use lib "/home/ama55id/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl";
 use lib "/usr/local/lib/perl5/site_perl/5.18.2"; #perl library path
 use lib "/home/ama55id/rnaanalyzer/cgi-bin/";
@@ -9,14 +8,6 @@ use RNA;
 $RNA::noLonelyPairs=1;	#important for correct use of the RNA-module!
 
 
-=======
-use lib "/usr/local/lib/perl5/site_perl/5.18.2"; #perl library path
-use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/interfaces/Perl";
-use lib "/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/cgi-bin/";
-use RNA;
-$RNA::noLonelyPairs=1;	#important for correct use of the RNA-module!
-
->>>>>>> origin/master
 sub findire {
 
     my $SEQUENCE=$_[0];
@@ -50,11 +41,7 @@ sub findire {
             $length = length($string);
                     #printf("length = %d\n", $length); #if ($istty);                 
             $structure=$string; # wierd way to allocate space     UUGCUUUCCAACUUCAGCUACAGUGUUAGCUAAGUUUGGA
-<<<<<<< HEAD
             ($structure, $min_en) = RNA::fold($string);
-=======
-            $min_en = RNA::fold($string, $structure);
->>>>>>> origin/master
           
                     ###########################################UUGCUUUCCAACUUCAGCUACAGUGUUAGCUAAGUUUGGA#################
                     ############# Jetzt wird das Motif beschrieben #############
@@ -133,11 +120,7 @@ sub suboptimalfindire {
 	my $hitbeforecdscutoff=200;
 	my $hitaftercdscutoff=2000;
 	#energycutoff=??;
-<<<<<<< HEAD
 	my $pathtornasuboptandrnafold='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt'; #Please locate your version of RNAfold / RNAsubopt
-=======
-	my $pathtornasuboptandrnafold='/var/www/rnaanalyzer/bin/ViennaRNA-1.5/Progs/RNAsubopt'; #Please locate your version of RNAfold / RNAsubopt
->>>>>>> origin/master
 
 	###########################################
 
