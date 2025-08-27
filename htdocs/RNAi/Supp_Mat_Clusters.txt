@@ -1,0 +1,563 @@
+Supplementary material
+Peter Bengert and Thomas Dandekar
+Current efforts in the analysis of RNAi and RNAi target genes
+Briefings in Bioinformatcs
+
+Promising miRNA candidate clusters named in the text
+
+
+REMARKS:
+Members of each cluster are separated by lines. Sometimes there is more than 1 hit between the lines,
+that means that there were more than one hit in a certain amount of nucleotides or in the same stem-loop structure. 
+Here it's unlikely that there's more than one hit, so they are seen as one hit.
+
+
+
+Clusters on 	gi|18581153|ref|NT_009850.8|Hs13_10007
+(New identifier	gi|42406300|ref|NC_000013.8|NC_000013) (whole chromosome 13)
+
+--> 2 Clusters, 1 cluster with 9 putative members and 1 cluster with 7 putative members,
+the clusters are separated by approx 600nts.
+
+-------------------- Cluster 1 Member 1 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665779/7195537
+Hit-Nr: 21046 Points: 3.22714681538504/3 Pos: 4529758/7195537 Min_en:-42.2000007629395
+gi|18581153|ref|NT: Klammer1:17  Us: 25 ratioU: 0.28735632183908 ratioA: 0.28735632183908 ratioC: 0.218390804597701 ratioG: 0.206896551724138
+Klammer2firstclosed: 61 || Klammer2lastclosed 99 || Klammer2firstopen: 8
+........((((..(((((.((((((((((((((..((.(((((.........(((.....)))))))).))..))))))))).))))))))))..))))
+auaucaaaggggguugcacaccuccugugauauuugucguaauauuauccucucccaaccuggguauuaggaacaauaucacagggaggguguacacccc
+ 
+-------------------- Cluster 1 Member 2 --------------------                                                               uauuaggaacaauaucacagg
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665594/7195537
+Hit-Nr: 21048 Points: 4.12333333433333/4 Pos: 4529943/7195537 Min_en:-28.6900005340576
+gi|18581153|ref|NT: Klammer1:15  Us: 23 ratioU: 0.25 ratioA: 0.326086956521739 ratioC: 0.228260869565217 ratioG: 0.195652173913043
+Klammer2firstopen: 0 || Klammer2lastopen 37 || Klammer2lastclosed: 91
+(((.((((((...(((.((.(((((((....(((((((................)))))))....))))))).))..)))...)))))))))........
+gggcaauguacaacccgugcgauauugggaguaauaucauccucuucccaacuggauauuaaaaacaauaucacggagggauauacauucccuuugauau
+               cgugcgauauugggaguaaua
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665557/7195537
+Hit-Nr: 21049 Points: 3.6625/3.5 Pos: 4529980/7195537 Min_en:-26.1299991607666
+gi|18581153|ref|NT: Klammer1:15  Us: 29 ratioU: 0.308510638297872 ratioA: 0.308510638297872 ratioC: 0.234042553191489 ratioG: 0.148936170212766
+Klammer2firstopen: 1 || Klammer2lastopen 43 || Klammer2lastclosed: 94
+.((((............(((((((....((((((((..((((((.......))))))))))))))....)))))))...............)))).....
+cauccucuucccaacuggauauuaaaaacaauaucacggagggauauacauucccuuugauauugggaguaauaucauccucuucccaacuggauauuaa
+               uggauauuaaaaacaauauca
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665475/7195537
+Hit-Nr: 21052 Points: 3.16897507011634/3 Pos: 4530062/7195537 Min_en:-32.6300010681152
+gi|18581153|ref|NT: Klammer1:15  Us: 22 ratioU: 0.305555555555556 ratioA: 0.305555555555556 ratioC: 0.222222222222222 ratioG: 0.166666666666667
+Klammer2firstclosed: 59 || Klammer2lastclosed 99 || Klammer2firstopen: 4
+....(((((((.......((((((((((((((....(((((((................)))))))....))))))))..)))))).......)))))))
+ucacggagggauauacauucccuuugauauugggaguaauaucauccucuucccaacuggauauuaaaaacaauaucacggagggauauacauucccuuc
+                                                                uaaaaacaauaucacggaggg
+
+-------------------- Cluster 1 Member 3 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665357/7195537
+Hit-Nr: 21053 Points: 3.6725/3.5 Pos: 4530180/7195537 Min_en:-31.5
+gi|18581153|ref|NT: Klammer1:15  Us: 22 ratioU: 0.239130434782609 ratioA: 0.260869565217391 ratioC: 0.239130434782609 ratioG: 0.260869565217391
+Klammer2firstopen: 3 || Klammer2lastopen 46 || Klammer2lastclosed: 94
+...((.(((....(((.((..(((..(((.((((((((...((((((......))))))..)))))))).))).)))..))))).....))).)).....
+accccugugauaugggaguaauauuauccccuccuccccuggauauuaggaacaauaucacgggaggggaggacguacaaccccugcgauauuggaagua
+               gaguaauauuauccccuccuc
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665354/7195537
+Hit-Nr: 21054 Points: 3.5025/3.5 Pos: 4530183/7195537 Min_en:-31.2000007629395
+gi|18581153|ref|NT: Klammer1:15  Us: 22 ratioU: 0.239130434782609 ratioA: 0.260869565217391 ratioC: 0.239130434782609 ratioG: 0.260869565217391
+Klammer2firstopen: 0 || Klammer2lastopen 43 || Klammer2lastclosed: 91
+((.(((....(((.((..(((..(((.((((((((...((((((......))))))..)))))))).))).)))..))))).....))).))........
+ccugugauaugggaguaauauuauccccuccuccccuggauauuaggaacaauaucacgggaggggaggacguacaaccccugcgauauuggaaguaaua
+               uaauauuauccccuccucccc
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665317/7195537
+Hit-Nr: 21055 Points: 3.59279778564543/3 Pos: 4530220/7195537 Min_en:-30.8999996185303
+gi|18581153|ref|NT: Klammer1:16  Us: 21 ratioU: 0.214285714285714 ratioA: 0.336734693877551 ratioC: 0.224489795918367 ratioG: 0.224489795918367
+Klammer2firstopen: 1 || Klammer2lastopen 53 || Klammer2lastclosed: 98
+.((((((......((((((..(((.((((((..(((...........(((((((....))))))))))..)))))).))).))))))......)))))).
+ggauauuaggaacaauaucacgggaggggaggacguacaaccccugcgauauuggaaguaauaucaugcucuccccaccccgauauuaggaaaaauauca
+               uaucacgggaggggaggacgu
+               
+-------------------- Cluster 1 Member 4 --------------------               
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2665123/7195537
+Hit-Nr: 21056 Points: 3.7525/3.5 Pos: 4530414/7195537 Min_en:-27
+gi|18581153|ref|NT: Klammer1:16  Us: 25 ratioU: 0.271739130434783 ratioA: 0.315217391304348 ratioC: 0.195652173913043 ratioG: 0.217391304347826
+Klammer2firstopen: 4 || Klammer2lastopen 42 || Klammer2lastclosed: 95
+....(((((((.......((.((((((((((((.(((.(((((........)))))))).))))))..........)))))).))....)))))))....
+uugcgauauugacagcaacauuaucgucuccuccuguagauaugaaaagcaauaucacaagagggguguauccccugcgauauugggaguaauaucaucc
+               caacauuaucgucuccuccug
+               
+-------------------- Cluster 1 Member 5 --------------------               
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664998/7195537
+Hit-Nr: 21057 Points: 3.16343490516343/3 Pos: 4530539/7195537 Min_en:-40.7000007629395
+gi|18581153|ref|NT: Klammer1:19  Us: 24 ratioU: 0.266666666666667 ratioA: 0.277777777777778 ratioC: 0.211111111111111 ratioG: 0.244444444444444
+Klammer2firstopen: 9 || Klammer2lastopen 54 || Klammer2lastclosed: 98
+.........(((.(((((((((((((((((((((....(((((........((((....)))))))))....))))))))))))))..))))))).))).
+aucauacaagggcuguacacccccugugauauuggaagugauagcauucucuccacuauuggauauuaggaacaaugucauaggggaaguguacaacccc
+               uacacccccugugauauugga
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664991/7195537
+Hit-Nr: 21058 Points: 4.06777777822222/4 Pos: 4530546/7195537 Min_en:-40.7000007629395
+gi|18581153|ref|NT: Klammer1:17  Us: 24 ratioU: 0.266666666666667 ratioA: 0.277777777777778 ratioC: 0.211111111111111 ratioG: 0.244444444444444
+Klammer2firstopen: 2 || Klammer2lastopen 47 || Klammer2lastclosed: 91
+..(((.(((((((((((((((((((((....(((((........((((....)))))))))....))))))))))))))..))))))).)))........
+aagggcuguacacccccugugauauuggaagugauagcauucucuccacuauuggauauuaggaacaaugucauaggggaaguguacaaccccugcgaua
+               ccugugauauuggaagugaua
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664989/7195537
+Hit-Nr: 21059 Points: 3.56786703777839/3 Pos: 4530548/7195537 Min_en:-40.5
+gi|18581153|ref|NT: Klammer1:15  Us: 24 ratioU: 0.266666666666667 ratioA: 0.277777777777778 ratioC: 0.211111111111111 ratioG: 0.244444444444444
+Klammer2firstopen: 0 || Klammer2lastopen 45 || Klammer2lastclosed: 89
+(((.(((((((((((((((((((((....(((((........((((....)))))))))....))))))))))))))..))))))).)))..........
+gggcuguacacccccugugauauuggaagugauagcauucucuccacuauuggauauuaggaacaaugucauaggggaaguguacaaccccugcgauacu
+               ugugauauuggaagugauagc
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664954/7195537
+Hit-Nr: 21060 Points: 3.5025/3.5 Pos: 4530583/7195537 Min_en:-33.7999992370605
+gi|18581153|ref|NT: Klammer1:17  Us: 12 ratioU: 0.260869565217391 ratioA: 0.304347826086957 ratioC: 0.217391304347826 ratioG: 0.217391304347826
+Klammer2firstclosed: 64 || Klammer2lastclosed 98 || Klammer2firstopen: 19
+...................((((((((((((((((((((....(((((........((((....)))))))))....))))))))))))))..)))))).
+acaauaucauacaagggcuguacacccccugugauauuggaagugauagcauucucuccacuauuggauauuaggaacaaugucauaggggaaguguaca
+                                                                uggauauuaggaacaauguca
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664950/7195537
+Hit-Nr: 21061 Points: 3.556786705241/3 Pos: 4530587/7195537 Min_en:-39.9000015258789
+gi|18581153|ref|NT: Klammer1:17  Us: 20 ratioU: 0.285714285714286 ratioA: 0.285714285714286 ratioC: 0.214285714285714 ratioG: 0.214285714285714
+Klammer2firstclosed: 60 || Klammer2lastclosed 99 || Klammer2firstopen: 10
+..........(((.(((((((((((((((((((((....(((((........((((....)))))))))....))))))))))))))..))))))).)))
+uaucauacaagggcuguacacccccugugauauuggaagugauagcauucucuccacuauuggauauuaggaacaaugucauaggggaaguguacaaccc
+                                                                uauuaggaacaaugucauagg
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664947/7195537
+Hit-Nr: 21062 Points: 3.25207756335734/3 Pos: 4530590/7195537 Min_en:-41.2000007629395
+gi|18581153|ref|NT: Klammer1:16  Us: 19 ratioU: 0.271428571428571 ratioA: 0.3 ratioC: 0.214285714285714 ratioG: 0.214285714285714
+Klammer2firstclosed: 57 || Klammer2lastclosed 99 || Klammer2firstopen: 4
+....((.(((.(((((((((((((((((((((....(((((........((((....)))))))))....))))))))))))))..))))))).))).))
+cauacaagggcuguacacccccugugauauuggaagugauagcauucucuccacuauuggauauuaggaacaaugucauaggggaaguguacaaccccug
+                                                                uaggaacaaugucauagggga
+
+-------------------- Cluster1 Member 6 --------------------
+
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664846/7195537
+Hit-Nr: 21064 Points: 3.01662050043767/3 Pos: 4530691/7195537 Min_en:-37.2200012207031
+gi|18581153|ref|NT: Klammer1:17  Us: 25 ratioU: 0.274725274725275 ratioA: 0.230769230769231 ratioC: 0.252747252747253 ratioG: 0.241758241758242
+Klammer2firstopen: 9 || Klammer2lastopen 45 || Klammer2lastclosed: 99
+.........(((((((((((.(((((.(((((((...(((((((((.............)).)))))))...))))))).))..))).))))))).))))
+aucacagcgggguuguacacgcccugcgauauugggacuaacaucauucucucccuuccugaauguuaggaacaguaucacaacggggguguacaugccu
+               uacacgcccugcgauauuggg
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664795/7195537
+Hit-Nr: 21065 Points: 3.03878116403878/3 Pos: 4530742/7195537 Min_en:-37.7200012207031
+gi|18581153|ref|NT: Klammer1:15  Us: 27 ratioU: 0.296703296703297 ratioA: 0.230769230769231 ratioC: 0.252747252747253 ratioG: 0.21978021978022
+Klammer2firstclosed: 57 || Klammer2lastclosed 98 || Klammer2firstopen: 6
+......((((((((((((.(((((.(((((((...(((((((((.............)).)))))))...))))))).))..))).))))))).))))).
+cacagcgggguuguacacgcccugcgauauugggacuaacaucauucucucccuuccugaauguuaggaacaguaucacaacggggguguacaugccuuu
+                                                                uaggaacaguaucacaacggg
+
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664772/7195537
+Hit-Nr: 21068 Points: 3.7525/3.5 Pos: 4530765/7195537 Min_en:-30.6599998474121
+gi|18581153|ref|NT: Klammer1:17  Us: 27 ratioU: 0.306818181818182 ratioA: 0.272727272727273 ratioC: 0.215909090909091 ratioG: 0.204545454545455
+Klammer2firstopen: 10 || Klammer2lastopen 45 || Klammer2lastclosed: 97
+..........(((((((((((..(((..((((((((....((((((...............))))))....)))))))).)))....)))))))))))..
+guaucacaacggggguguacaugccuuuugauauuggaaguaauauccucuccccaccuguauauuaagaacaguaucacaggagauuguauaccuccug
+               uguacaugccuuuugauauug
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664770/7195537
+Hit-Nr: 21069 Points: 3.5525/3.5 Pos: 4530767/7195537 Min_en:-30.6599998474121
+gi|18581153|ref|NT: Klammer1:15  Us: 27 ratioU: 0.306818181818182 ratioA: 0.272727272727273 ratioC: 0.215909090909091 ratioG: 0.204545454545455
+Klammer2firstopen: 8 || Klammer2lastopen 43 || Klammer2lastclosed: 95
+........(((((((((((..(((..((((((((....((((((...............))))))....)))))))).)))....)))))))))))....
+aucacaacggggguguacaugccuuuugauauuggaaguaauauccucuccccaccuguauauuaagaacaguaucacaggagauuguauaccuccugca
+               uacaugccuuuugauauugga
+
+-------------------- Cluster 1 Member 7 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664725/7195537
+Hit-Nr: 21070 Points: 3.10249307552355/3 Pos: 4530812/7195537 Min_en:-29.4599990844727
+gi|18581153|ref|NT: Klammer1:16  Us: 26 ratioU: 0.295454545454545 ratioA: 0.295454545454545 ratioC: 0.204545454545455 ratioG: 0.204545454545455
+Klammer2firstclosed: 63 || Klammer2lastclosed 99 || Klammer2firstopen: 12
+............(((((((((((..(((..((((((((....((((((...............))))))....)))))))).)))....)))))))))))
+caguaucacaacggggguguacaugccuuuugauauuggaaguaauauccucuccccaccuguauauuaagaacaguaucacaggagauuguauaccucc
+                                                                uauuaagaacaguaucacagg
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664717/7195537
+Hit-Nr: 21071 Points: 4.34555555611111/4 Pos: 4530820/7195537 Min_en:-30.6599998474121
+gi|18581153|ref|NT: Klammer1:15  Us: 28 ratioU: 0.318181818181818 ratioA: 0.284090909090909 ratioC: 0.227272727272727 ratioG: 0.170454545454545
+Klammer2firstclosed: 55 || Klammer2lastclosed 91 || Klammer2firstopen: 4
+....(((((((((((..(((..((((((((....((((((...............))))))....)))))))).)))....)))))))))))........
+caacggggguguacaugccuuuugauauuggaaguaauauccucuccccaccuguauauuaagaacaguaucacaggagauuguauaccuccugcauauu
+                                                                acaguaucacaggagauugua
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664713/7195537
+Hit-Nr: 21072 Points: 3.65927978013296/3 Pos: 4530824/7195537 Min_en:-30.3600006103516
+gi|18581153|ref|NT: Klammer1:16  Us: 29 ratioU: 0.329545454545455 ratioA: 0.295454545454545 ratioC: 0.227272727272727 ratioG: 0.147727272727273
+Klammer2firstclosed: 51 || Klammer2lastclosed 87 || Klammer2firstopen: 0
+(((((((((((..(((..((((((((....((((((...............))))))....)))))))).)))....)))))))))))............
+ggggguguacaugccuuuugauauuggaaguaauauccucuccccaccuguauauuaagaacaguaucacaggagauuguauaccuccugcauauuggaa
+                                                                uaucacaggagauuguauacc
+                                                                
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664685/7195537
+Hit-Nr: 21073 Points: 3.10526315978947/3 Pos: 4530852/7195537 Min_en:-22.0900001525879
+gi|18581153|ref|NT: Klammer1:18  Us: 30 ratioU: 0.32967032967033 ratioA: 0.318681318681319 ratioC: 0.175824175824176 ratioG: 0.175824175824176
+Klammer2firstopen: 7 || Klammer2lastopen 46 || Klammer2lastclosed: 97
+.......((((((.((((((.(((((((..(((((((.......(((.........))).........)))))))..))))).)).))))))))))))..
+uguauaccuccugcauauuggaaaaaauaucauccucuccccucuguauauuaggaacaaaaucauauggggauguaauuuuauugcaauauugggagua
+               uauuggaaaaaauaucauccu
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664633/7195537
+Hit-Nr: 21074 Points: 3.7825/3.5 Pos: 4530904/7195537 Min_en:-22.0900001525879
+gi|18581153|ref|NT: Klammer1:16  Us: 30 ratioU: 0.32967032967033 ratioA: 0.340659340659341 ratioC: 0.153846153846154 ratioG: 0.175824175824176
+Klammer2firstclosed: 53 || Klammer2lastclosed 94 || Klammer2firstopen: 4
+....((((((.((((((.(((((((..(((((((.......(((.........))).........)))))))..))))).)).)))))))))))).....
+auaccuccugcauauuggaaaaaauaucauccucuccccucuguauauuaggaacaaaaucauauggggauguaauuuuauugcaauauugggaguaaua
+                                                                uggggauguaauuuuauugca
+
+-------------------- Cluster1 Member 8 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664541/7195537
+Hit-Nr: 21075 Points: 3.6725/3.5 Pos: 4530996/7195537 Min_en:-23.0100002288818
+gi|18581153|ref|NT: Klammer1:15  Us: 27 ratioU: 0.296703296703297 ratioA: 0.274725274725275 ratioC: 0.263736263736264 ratioG: 0.164835164835165
+Klammer2firstclosed: 57 || Klammer2lastclosed 97 || Klammer2firstopen: 10
+..........((((..........(((((((......((((((((((...(((....)))..))))))))))......))))))).........))))..
+gaguaauaucguccucuccccuuugaauauuaggaacaauaucacagagagguguacacccccugugauauuaagagcaauauucucucucccuggauau
+                                                                gugauauuaagagcaauauuc
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664496/7195537
+Hit-Nr: 21076 Points: 3.27700831238227/3 Pos: 4531041/7195537 Min_en:-30.1100006103516
+gi|18581153|ref|NT: Klammer1:15  Us: 25 ratioU: 0.274725274725275 ratioA: 0.285714285714286 ratioC: 0.241758241758242 ratioG: 0.197802197802198
+Klammer2firstclosed: 49 || Klammer2lastclosed 92 || Klammer2firstopen: 2
+..((.((((((((((((((((.(((........(((((((.........)))))))...........))).))))))))..))))).))).)).......
+agagagguguacacccccugugauauuaagagcaauauucucucucccuggauauuaaaaacaauauuauggcggggggaguguacaaccccugccauau
+                                                                uauuauggcggggggagugua
+                                                                
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664470/7195537
+Hit-Nr: 21077 Points: 4.01222222344444/4 Pos: 4531067/7195537 Min_en:-31.2999992370605
+gi|18581153|ref|NT: Klammer1:16  Us: 28 ratioU: 0.297872340425532 ratioA: 0.25531914893617 ratioC: 0.212765957446809 ratioG: 0.234042553191489
+Klammer2firstopen: 0 || Klammer2lastopen 41 || Klammer2lastclosed: 93
+((((.(((((((.((((((..((.(((((..(((((...(((...........))))))))..))))).))..))))))...))))))))).))......
+ggggaguguacaaccccugccauauugguaguaauauuuuccugucccuuuuuggauauuagaaucaaaaucacaggggagguguacacccgcugcaaua
+               ccugccauauugguaguaaua
+
+-------------------- Cluster 1 Member 9 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2664426/7195537
+Hit-Nr: 21078 Points: 3.13573407281994/3 Pos: 4531111/7195537 Min_en:-34.7000007629395
+gi|18581153|ref|NT: Klammer1:15  Us: 27 ratioU: 0.287234042553192 ratioA: 0.25531914893617 ratioC: 0.191489361702128 ratioG: 0.265957446808511
+Klammer2firstclosed: 58 || Klammer2lastclosed 98 || Klammer2firstopen: 0
+((((((.....((((((.((((((..((.(((((..(((((...(((...........))))))))..))))).))..))))))...)))))))))))).
+ggcggggggaguguacaaccccugccauauugguaguaauauuuuccugucccuuuuuggauauuagaaucaaaaucacaggggagguguacacccgcug
+                                                                uagaaucaaaaucacagggga
+
+-------------------- End of Cluster 1 --------------------
+----------------------------------------------------------
+----------------------------------------------------------
+
+-------------------- Cluster 2 Member 1 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663810/7195537
+Hit-Nr: 21079 Points: 3.50138504297507/3 Pos: 4531727/7195537 Min_en:-32.2900009155273
+gi|18581153|ref|NT: Klammer1:16  Us: 19 ratioU: 0.351851851851852 ratioA: 0.203703703703704 ratioC: 0.240740740740741 ratioG: 0.203703703703704
+Klammer2firstclosed: 55 || Klammer2lastclosed 95 || Klammer2firstopen: 0
+((((.((..(((((((.(((((((((((....(((.(((................))).)))....)))))))))))))...)))))..)).))))....
+ggggagguguacacccgcugugauauugggaguaacaucauucucucucuuucucgauauuagguacaauaucacagggagaguguaacccccuccagca
+                                                                uacaauaucacagggagagug
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663805/7195537
+Hit-Nr: 21080 Points: 4.01108033485319/3 Pos: 4531732/7195537 Min_en:-27.6000003814697
+gi|18581153|ref|NT: Klammer1:17  Us: 20 ratioU: 0.37037037037037 ratioA: 0.222222222222222 ratioC: 0.240740740740741 ratioG: 0.166666666666667
+Klammer2firstclosed: 62 || Klammer2lastclosed 93 || Klammer2firstopen: 11
+(((....))).((((.((....(((.((.(((.....((((((((.....((((((......))))))..))))))))))).)).)))))))))......
+gguguacacccgcugugauauugggaguaacaucauucucucucuuucucgauauuagguacaauaucacagggagaguguaacccccuccagcaauaau
+                                                                uaucacagggagaguguaacc
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663797/7195537
+Hit-Nr: 21081 Points: 3.5425/3.5 Pos: 4531740/7195537 Min_en:-26
+gi|18581153|ref|NT: Klammer1:19  Us: 21 ratioU: 0.388888888888889 ratioA: 0.259259259259259 ratioC: 0.185185185185185 ratioG: 0.166666666666667
+Klammer2firstclosed: 54 || Klammer2lastclosed 85 || Klammer2firstopen: 3
+...((((.((....(((.((.(((.....((((((((.....((((((......))))))..))))))))))).)).)))))))))..............
+cccgcugugauauugggaguaacaucauucucucucuuucucgauauuagguacaauaucacagggagaguguaacccccuccagcaauaaugaaaguaa
+                                                                ggagaguguaacccccuccag
+                                                                
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663746/7195537
+Hit-Nr: 21082 Points: 3.7025/3.5 Pos: 4531791/7195537 Min_en:-24.7000007629395
+gi|18581153|ref|NT: Klammer1:15  Us: 18 ratioU: 0.264705882352941 ratioA: 0.338235294117647 ratioC: 0.205882352941176 ratioG: 0.191176470588235
+Klammer2firstopen: 14 || Klammer2lastopen 45 || Klammer2lastclosed: 81
+..............((((((((...((..((((((...((((((((....))))))))))))))....))...)).)))))).((......)).......
+uauaaccuucccccguggauauuagacacaauaucacugugggguguacacacccugcgauauuaaaaguaauaucauccacaccugcguuggauauuag
+               uggauauuagacacaauauca
+               
+-------------------- Cluster 2 Member 2 --------------------
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663561/7195537
+Hit-Nr: 21083 Points: 3.1440443234072/3 Pos: 4531976/7195537 Min_en:-33.3899993896484
+gi|18581153|ref|NT: Klammer1:16  Us: 20 ratioU: 0.246913580246914 ratioA: 0.296296296296296 ratioC: 0.234567901234568 ratioG: 0.222222222222222
+Klammer2firstopen: 12 || Klammer2lastopen 44 || Klammer2lastclosed: 92
+............((((((((((((.((..(((((...(((.((((................)))).)))...)))))..)))))))))))))).......
+uaucacacaaggguguacacccccugugauauugggaguaauaucauccucucacccuguggauaauacaaacaauaagacggggguguacacacagggu
+               uacacccccugugauauuggg
+               
+-------------------- Cluster 2 Member 3 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663513/7195537
+Hit-Nr: 21084 Points: 3.54293628854294/3 Pos: 4532024/7195537 Min_en:-33.3899993896484
+gi|18581153|ref|NT: Klammer1:15  Us: 20 ratioU: 0.246913580246914 ratioA: 0.296296296296296 ratioC: 0.222222222222222 ratioG: 0.234567901234568
+Klammer2firstclosed: 62 || Klammer2lastclosed 93 || Klammer2firstopen: 13
+.............((((((((((((.((..(((((...(((.((((................)))).)))...)))))..))))))))))))))......
+guaucacacaaggguguacacccccugugauauugggaguaauaucauccucucacccuguggauaauacaaacaauaagacggggguguacacacaggg
+                                                                uaauacaaacaauaagacggg
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663510/7195537
+Hit-Nr: 21085 Points: 3.16620498700831/3 Pos: 4532027/7195537 Min_en:-37.2900009155273
+gi|18581153|ref|NT: Klammer1:16  Us: 19 ratioU: 0.234567901234568 ratioA: 0.308641975308642 ratioC: 0.246913580246914 ratioG: 0.209876543209877
+Klammer2firstclosed: 59 || Klammer2lastclosed 99 || Klammer2firstopen: 2
+..((((....((((((((((((.((..(((((...(((.((((................)))).)))...)))))..)))))))))))))).....))))
+ucacacaaggguguacacccccugugauauugggaguaauaucauccucucacccuguggauaauacaaacaauaagacggggguguacacacagggugu
+                                                                uacaaacaauaagacgggggu
+                                                                
+-------------------- Cluster 2 Member 4 --------------------
+                                                                
+                                                                
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663331/7195537
+Hit-Nr: 21086 Points: 3.07202216259834/3 Pos: 4532206/7195537 Min_en:-47.0900001525879
+gi|18581153|ref|NT: Klammer1:18  Us: 26 ratioU: 0.279569892473118 ratioA: 0.225806451612903 ratioC: 0.247311827956989 ratioG: 0.247311827956989
+Klammer2firstopen: 5 || Klammer2lastopen 43 || Klammer2lastclosed: 97
+.....(((..(((((((((((((((((((((.((..((((((((................))))))))...))))))))))))).)))))))))))))..
+caucacagaaggguguacaccccugugauauugggaguaauaucguuuucucacccucuggauauuacggacuauaucacggggcguguacaccccugca
+               uacaccccugugauauuggga
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663323/7195537
+Hit-Nr: 21087 Points: 3.37673130437673/3 Pos: 4532214/7195537 Min_en:-45.9900016784668
+gi|18581153|ref|NT: Klammer1:18  Us: 25 ratioU: 0.294117647058824 ratioA: 0.211764705882353 ratioC: 0.247058823529412 ratioG: 0.247058823529412
+Klammer2firstopen: 2 || Klammer2lastopen 35 || Klammer2lastclosed: 86
+..(((((((((((((((((((((.((..((((((((................))))))))...))))))))))))).))))))))))..((((...))))
+aaggguguacaccccugugauauugggaguaauaucguuuucucacccucuggauauuacggacuauaucacggggcguguacaccccugcaauacuugc
+               ugugauauugggaguaauauc
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663284/7195537
+Hit-Nr: 21088 Points: 3.55124653902493/3 Pos: 4532253/7195537 Min_en:-46.689998626709
+gi|18581153|ref|NT: Klammer1:18  Us: 24 ratioU: 0.282352941176471 ratioA: 0.247058823529412 ratioC: 0.235294117647059 ratioG: 0.235294117647059
+Klammer2firstclosed: 62 || Klammer2lastclosed 99 || Klammer2firstopen: 7
+.......(((..(((((((((((((((((((((.((..((((((((................))))))))...))))))))))))).)))))))))))))
+aacaucacagaaggguguacaccccugugauauugggaguaauaucguuuucucacccucuggauauuacggacuauaucacggggcguguacaccccug
+                                                                uauuacggacuauaucacggg
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663274/7195537
+Hit-Nr: 21089 Points: 3.11080332600554/3 Pos: 4532263/7195537 Min_en:-45.9900016784668
+gi|18581153|ref|NT: Klammer1:20  Us: 25 ratioU: 0.294117647058824 ratioA: 0.211764705882353 ratioC: 0.247058823529412 ratioG: 0.247058823529412
+Klammer2firstclosed: 52 || Klammer2lastclosed 86 || Klammer2firstopen: 2
+..(((((((((((((((((((((.((..((((((((................))))))))...))))))))))))).))))))))))..((((...))))
+aaggguguacaccccugugauauugggaguaauaucguuuucucacccucuggauauuacggacuauaucacggggcguguacaccccugcaauacuugc
+                                                                uauaucacggggcguguacac
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663272/7195537
+Hit-Nr: 21090 Points: 3.5207756258892/3 Pos: 4532265/7195537 Min_en:-47.8899993896484
+gi|18581153|ref|NT: Klammer1:20  Us: 26 ratioU: 0.305882352941176 ratioA: 0.211764705882353 ratioC: 0.258823529411765 ratioG: 0.223529411764706
+Klammer2firstclosed: 50 || Klammer2lastclosed 84 || Klammer2firstopen: 0
+(((((((((((((((((((((.((..((((((((................))))))))...))))))))))))).)))))))))).(((((...))))).
+ggguguacaccccugugauauugggaguaauaucguuuucucacccucuggauauuacggacuauaucacggggcguguacaccccugcaauacuugcac
+                                                                uaucacggggcguguacaccc
+                                                                
+-------------------- Cluster 2 Member 5 --------------------
+                                                                
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663212/7195537
+Hit-Nr: 21091 Points: 3.03878116530194/3 Pos: 4532325/7195537 Min_en:-27
+gi|18581153|ref|NT: Klammer1:15  Us: 16 ratioU: 0.271186440677966 ratioA: 0.355932203389831 ratioC: 0.152542372881356 ratioG: 0.220338983050847
+Klammer2firstopen: 13 || Klammer2lastopen 39 || Klammer2lastclosed: 71
+.............((((((((...(((((((...((((((....))))))....)))))))...))))))))....(((........)))..........
+ccucucuccccuggauguuacgaacaguauuacaggaguguguacacucccaggaauauugaaaguaauaucauuuuccuucucccuggauauuacgaac
+               uguuacgaacaguauuacagg
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663200/7195537
+Hit-Nr: 21092 Points: 3.29085872676454/3 Pos: 4532337/7195537 Min_en:-29.4099998474121
+gi|18581153|ref|NT: Klammer1:16  Us: 18 ratioU: 0.305084745762712 ratioA: 0.271186440677966 ratioC: 0.288135593220339 ratioG: 0.135593220338983
+Klammer2firstclosed: 49 || Klammer2lastclosed 86 || Klammer2firstopen: 0
+((.((((((((.((((.((((((...........(((((..........)))))........)))))).))))...)))))))).)).............
+ggcguguacaccccugcaauacuugcacuaauaucauccucucuccccuggauguuacgaacaguauuacaggaguguguacacucccaggaauauugaa
+                                                                uauuacaggaguguguacacu
+
+-------------------- Cluster 2 Member 6 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663056/7195537
+Hit-Nr: 21094 Points: 3.5425/3.5 Pos: 4532481/7195537 Min_en:-32.1599998474121
+gi|18581153|ref|NT: Klammer1:15  Us: 23 ratioU: 0.267441860465116 ratioA: 0.244186046511628 ratioC: 0.255813953488372 ratioG: 0.232558139534884
+Klammer2firstopen: 6 || Klammer2lastopen 43 || Klammer2lastclosed: 91
+......((((((.....((((((((...(((((((.(((((.((.....))))))).)))))))...))))))))..........))).)))........
+uccccaccaacgcuguggauauuacgaacaauaucacaggguguguacagccccugcgauauugggaguaauaucauucucccuccgucuggauauuagg
+               uggauauuacgaacaauauca
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2663019/7195537
+Hit-Nr: 21095 Points: 4.12333333433333/4 Pos: 4532518/7195537 Min_en:-29.5
+gi|18581153|ref|NT: Klammer1:17  Us: 11 ratioU: 0.211538461538462 ratioA: 0.288461538461538 ratioC: 0.307692307692308 ratioG: 0.192307692307692
+Klammer2firstclosed: 61 || Klammer2lastclosed 86 || Klammer2firstopen: 29
+.............................((((((((...(((((((.(((((.((.....))))))).)))))))...)))))))).............
+aucauccaccccuccccaccaacgcuguggauauuacgaacaauaucacaggguguguacagccccugcgauauugggaguaauaucauucucccuccgu
+                                                                ccugcgauauugggaguaaua
+                                                                
+-------------------- Cluster 2 Member 7 --------------------
+
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2662942/7195537
+Hit-Nr: 21097 Points: 3.08864266229917/3 Pos: 4532595/7195537 Min_en:-40.0999984741211
+gi|18581153|ref|NT: Klammer1:15  Us: 27 ratioU: 0.3 ratioA: 0.211111111111111 ratioC: 0.244444444444444 ratioG: 0.244444444444444
+Klammer2firstopen: 0 || Klammer2lastopen 38 || Klammer2lastclosed: 89
+(((((((((((((((((((((.(((...(((((..((((............)))))))))...))).)))))).))))))))))).))))..........
+gggguguacacuuccugugaucuugggaguaauuugaucuuccuccacccugauuauuacgaacaauaucacagggggguguacguccccugcgauauug
+               ugugaucuugggaguaauuug
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2662941/7195537
+Hit-Nr: 21098 Points: 3.6325/3.5 Pos: 4532596/7195537 Min_en:-36.4000015258789
+gi|18581153|ref|NT: Klammer1:15  Us: 27 ratioU: 0.306818181818182 ratioA: 0.215909090909091 ratioC: 0.238636363636364 ratioG: 0.238636363636364
+Klammer2firstopen: 0 || Klammer2lastopen 37 || Klammer2lastclosed: 87
+((((((((((((((((((((.(((...(((((..((((............)))))))))...))).)))))).))))))))))).)))............
+ggguguacacuuccugugaucuugggaguaauuugaucuuccuccacccugauuauuacgaacaauaucacagggggguguacguccccugcgauauugg
+               gugaucuugggaguaauuuga
+               
+MINUSSTRAND!!!!!!! Relative position to the Mainstrand: 2662903/7195537
+Hit-Nr: 21099 Points: 3.33518005659834/3 Pos: 4532634/7195537 Min_en:-30.2000007629395
+gi|18581153|ref|NT: Klammer1:17  Us: 14 ratioU: 0.254545454545455 ratioA: 0.290909090909091 ratioC: 0.181818181818182 ratioG: 0.272727272727273
+Klammer2firstopen: 15 || Klammer2lastopen 38 || Klammer2lastclosed: 69
+...............((((((...(((((((.(((((((.......))))))).)))))))...)))))).(((((..........))))).........
+uuccuccacccugauuauuacgaacaauaucacagggggguguacguccccugcgauauugggaguaauauuauccucuccccccuggauacuaugaaca
+               uauuacgaacaauaucacagg
+
+-------------------- End of Cluster 2 --------------------
+----------------------------------------------------------
+----------------------------------------------------------
+
+Cluster on 	gi|18581205|ref|NT_009866.8|Hs13_10023
+(New identifier	gi|42406300|ref|NC_000013.8|NC_000013) 
+
+-------------------- Member 1 --------------------
+Hit-Nr: 35763 Points: 3.5925/3.5 Pos: 5033242/6315744 Min_en:-22.6000003814697
+gi|18581205|ref|NT: Klammer1:16  Us: 31 ratioU: 0.369047619047619 ratioA: 0.273809523809524 ratioC: 0.19047619047619 ratioG: 0.166666666666667
+Klammer2firstopen: 13 || Klammer2lastopen 49 || Klammer2lastclosed: 96
+.............((((((..(((((((.(((.((..((((((....(((.......)))....)))))).....)).))).)))))))..))))))...
+auagauagcuguugaauggauuggagauuucuccuaaacaucauguuacaauucaacuguucuuugauguacugcaguagacauuuucaugccauucuua
+               auggauuggagauuucuccua
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35764 Points: 3.14404432330194/3 Pos: 5033247/6315744 Min_en:-22.6000003814697
+gi|18581205|ref|NT: Klammer1:16  Us: 31 ratioU: 0.369047619047619 ratioA: 0.273809523809524 ratioC: 0.19047619047619 ratioG: 0.166666666666667
+Klammer2firstopen: 8 || Klammer2lastopen 44 || Klammer2lastclosed: 91
+........((((((..(((((((.(((.((..((((((....(((.......)))....)))))).....)).))).)))))))..))))))........
+uagcuguugaauggauuggagauuucuccuaaacaucauguuacaauucaacuguucuuugauguacugcaguagacauuuucaugccauucuuaaauuu
+                    uuggagauuucuccuaaacau
+
+-------------------- Member 2 --------------------
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35765 Points: 3.5825/3.5 Pos: 5033300/6315744 Min_en:-22.6000003814697
+gi|18581205|ref|NT: Klammer1:15  Us: 32 ratioU: 0.380952380952381 ratioA: 0.273809523809524 ratioC: 0.19047619047619 ratioG: 0.154761904761905
+Klammer2firstclosed: 48 || Klammer2lastclosed 87 || Klammer2firstopen: 4
+....((((((..(((((((.(((.((..((((((....(((.......)))....)))))).....)).))).)))))))..))))))............
+uguugaauggauuggagauuucuccuaaacaucauguuacaauucaacuguucuuugauguacugcaguagacauuuucaugccauucuuaaauuucuca
+                                                                gcaguagacauuuucaugcca
+
+-------------------- Member 3 --------------------
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35766 Points: 4.04888888944444/4 Pos: 5033493/6315744 Min_en:-23.3099994659424
+gi|18581205|ref|NT: Klammer1:15  Us: 24 ratioU: 0.30379746835443 ratioA: 0.151898734177215 ratioC: 0.139240506329114 ratioG: 0.405063291139241
+Klammer2firstopen: 15 || Klammer2lastopen 55 || Klammer2lastclosed: 93
+...............((.(((....((((((((((.......(((((...((((((......))))))...)))))))))))))))..))).))......
+aaguaauauguaacgguggcaaugaauggcuggcuggggugggauagugguucuggucagcuccgggaacuuuguuggucggucauagugugauaaaaga
+               guggcaaugaauggcuggcug
+
+-------------------- Member 4 --------------------
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35767 Points: 3.5525/3.5 Pos: 5033544/6315744 Min_en:-23.3099994659424
+gi|18581205|ref|NT: Klammer1:17  Us: 23 ratioU: 0.291139240506329 ratioA: 0.177215189873418 ratioC: 0.139240506329114 ratioG: 0.392405063291139
+Klammer2firstclosed: 60 || Klammer2lastclosed 91 || Klammer2firstopen: 13
+.............((.(((....((((((((((.......(((((...((((((......))))))...)))))))))))))))..))).))........
+guaauauguaacgguggcaaugaauggcuggcuggggugggauagugguucuggucagcuccgggaacuuuguuggucggucauagugugauaaaagagu
+                                                                gaacuuuguuggucggucaua
+
+-------------------- Member 5 --------------------
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35768 Points: 3.7525/3.5 Pos: 5033663/6315744 Min_en:-27.2000007629395
+gi|18581205|ref|NT: Klammer1:16  Us: 33 ratioU: 0.379310344827586 ratioA: 0.218390804597701 ratioC: 0.183908045977011 ratioG: 0.218390804597701
+Klammer2firstopen: 13 || Klammer2lastopen 57 || Klammer2lastclosed: 99
+.............(((.((((((...((((((((.(((((........((((.(((((......)))))))))..))))).))))))))..)))))))))
+cuaccucaggaccgcaaucugucuuuuucacuuuuuggcuguuauguucuucaccaaaucacucuuugggaaguaagcugcagagugaacugauggaugu
+               aaucugucuuuuucacuuuuu
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35769 Points: 4.2725/3.5 Pos: 5033665/6315744 Min_en:-29
+gi|18581205|ref|NT: Klammer1:17  Us: 34 ratioU: 0.361702127659574 ratioA: 0.212765957446809 ratioC: 0.202127659574468 ratioG: 0.223404255319149
+Klammer2firstopen: 6 || Klammer2lastopen 55 || Klammer2lastclosed: 99
+......((((....(((((((...((((((((.(((((........((((.(((((......)))))))))..))))).))))))))..)))))))))))
+accucaggaccgcaaucugucuuuuucacuuuuuggcuguuauguucuucaccaaaucacucuuugggaaguaagcugcagagugaacugauggaugucu
+               ucugucuuuuucacuuuuugg
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35770 Points: 3.7025/3.5 Pos: 5033667/6315744 Min_en:-29.7000007629395
+gi|18581205|ref|NT: Klammer1:17  Us: 34 ratioU: 0.361702127659574 ratioA: 0.212765957446809 ratioC: 0.202127659574468 ratioG: 0.223404255319149
+Klammer2firstopen: 4 || Klammer2lastopen 53 || Klammer2lastclosed: 97
+  ....((((....(((((((...((((((((.(((((........((((.(((((......)))))))))..))))).))))))))..)))))))))))..
+  cucaggaccgcaaucugucuuuuucacuuuuuggcuguuauguucuucaccaaaucacucuuugggaaguaagcugcagagugaacugauggaugucuau
+                 ugucuuuuucacuuuuuggcu
+
+-------------------- Member 6 --------------------
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35771 Points: 4.29888889011111/4 Pos: 5033722/6315744 Min_en:-27.2999992370605
+gi|18581205|ref|NT: Klammer1:17  Us: 35 ratioU: 0.372340425531915 ratioA: 0.24468085106383 ratioC: 0.180851063829787 ratioG: 0.202127659574468
+Klammer2firstclosed: 54 || Klammer2lastclosed 89 || Klammer2firstopen: 3
+...(((.((((((...((((((((.(((((........((((.(((((......)))))))))..))))).))))))))..)))))))))..........
+accgcaaucugucuuuuucacuuuuuggcuguuauguucuucaccaaaucacucuuugggaaguaagcugcagagugaacugauggaugucuaugaaaau
+                                                                aagcugcagagugaacugaug
+
+-------------------- Member 7 --------------------
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35772 Points: 4.17888889144444/4 Pos: 5033832/6315744 Min_en:-22.5599994659424
+gi|18581205|ref|NT: Klammer1:18  Us: 19 ratioU: 0.226190476190476 ratioA: 0.369047619047619 ratioC: 0.154761904761905 ratioG: 0.25
+Klammer2firstopen: 14 || Klammer2lastopen 47 || Klammer2lastclosed: 97
+..............(((((((((((..((((((((....(((.(((((....))))))))....)))))))).............)))).))))).))..
+cagaugagucucaugucugcacagugagaauucauaaaaugaaguguuaaccaauacucagaaagugaguucagagggggaaauaacugcugcaguacug
+               ucugcacagugagaauucaua
+
+-------------------- Member 8 --------------------
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35773 Points: 3.5425/3.5 Pos: 5033962/6315744 Min_en:-22.5400009155273
+gi|18581205|ref|NT: Klammer1:16  Us: 18 ratioU: 0.310344827586207 ratioA: 0.310344827586207 ratioC: 0.137931034482759 ratioG: 0.241379310344828
+Klammer2firstclosed: 62 || Klammer2lastclosed 92 || Klammer2firstopen: 17
+....((((...))))..((((((((((.............(((((((.((((((.(((....))).))))))..)))).))).)))))))))).......
+aauaacugcugcaguacugugugugcuugauacacauuaugacagguagguaauuagaagagucuuguuacugcaucuaguuuagcauacauaaauacag
+                                                                uuguuacugcaucuaguuuag
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35774 Points: 3.6325/3.5 Pos: 5033963/6315744 Min_en:-23.1399993896484
+gi|18581205|ref|NT: Klammer1:16  Us: 18 ratioU: 0.310344827586207 ratioA: 0.293103448275862 ratioC: 0.137931034482759 ratioG: 0.258620689655172
+Klammer2firstclosed: 61 || Klammer2lastclosed 99 || Klammer2firstopen: 6
+......((((......((((((((((.............(((((((.((((((.(((....))).))))))..)))).))).))))))))))....))))
+auaacugcugcaguacugugugugcuugauacacauuaugacagguagguaauuagaagagucuuguuacugcaucuaguuuagcauacauaaauacagu
+                                                                uguuacugcaucuaguuuagc
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35775 Points: 4.2625/3.5 Pos: 5033969/6315744 Min_en:-23.6399993896484
+gi|18581205|ref|NT: Klammer1:17  Us: 19 ratioU: 0.327586206896552 ratioA: 0.275862068965517 ratioC: 0.137931034482759 ratioG: 0.258620689655172
+Klammer2firstclosed: 55 || Klammer2lastclosed 93 || Klammer2firstopen: 0
+      ((((......((((((((((.............(((((((.((((((.(((....))).))))))..)))).))).))))))))))....))))......
+      gcugcaguacugugugugcuugauacacauuaugacagguagguaauuagaagagucuuguuacugcaucuaguuuagcauacauaaauacaguaauuag
+                                                                      ugcaucuaguuuagcauacau
+
+PLUSSTRAND!!!!!!!!
+Hit-Nr: 35776 Points: 3.232686982759/3 Pos: 5033975/6315744 Min_en:-22.3400001525879
+gi|18581205|ref|NT: Klammer1:17  Us: 21 ratioU: 0.362068965517241 ratioA: 0.275862068965517 ratioC: 0.120689655172414 ratioG: 0.241379310344828
+Klammer2firstclosed: 49 || Klammer2lastclosed 84 || Klammer2firstopen: 0
+(((.((((((((((.............(((((((.((((((.(((....))).))))))..)))).))).))))))))))..)))...............
+guacugugugugcuugauacacauuaugacagguagguaauuagaagagucuuguuacugcaucuaguuuagcauacauaaauacaguaauuagguuguu
+                                                                uaguuuagcauacauaaauac
+                                                                
+-------------------- End of this Cluster --------------------
+-------------------------------------------------------------
+-------------------------------------------------------------

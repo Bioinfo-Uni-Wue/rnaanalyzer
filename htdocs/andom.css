@@ -1,0 +1,101 @@
+body {
+  background-color: white;
+  font-family:      Arial, sans-serif;
+}
+
+#alltext { 
+  position: relative;
+  top: 0px;
+  left: 0px;
+  margin-top:         0px;
+  margin-left:        100px;
+}
+
+#mainpage { 
+  margin-top:         195px;
+}
+
+a { 
+  text-decoration:   none;
+  color:             darkblue;
+  font:              normal normal Arial, sans-serif;
+}
+
+cite { 
+  font-style: normal;
+  font-size:  smaller;
+}
+
+
+/* Menue */
+#menu { 
+  position:         fixed;
+  top:                 0px;
+  left:                0px;
+  width:             100px;
+  background-image: url("http://andom.bioapps.biozentrum.uni-wuerzburg.de/images/BorderLeft.jpg"); 
+  background-repeat:repeat-y; 
+  font:             bold 22px Arial, sans-serif;
+  z-index: 10;
+}
+
+#menu a { 
+  text-decoration:   none;
+  color:             darkblue;
+  font:              normal normal 14px Arial, sans-serif;
+}
+
+#top { 
+  background-image: url("http://andom.bioapps.biozentrum.uni-wuerzburg.de/images/AnDom.png");
+  background-repeat: no-repeat;
+  height: 200px;
+  width: 800px;
+}
+
+#links { 
+  position: relative;
+}
+
+#colorcode { 
+  position:          relative;
+  display:           block;
+  z-index: 10;
+  height: 170px;
+  width:  50px;
+}
+
+#colorcode p { 
+  margin-top: 0px;
+  margin-bottom: -5px;
+}
+
+#colorcode a:hover {
+  border-right: 0px white;
+}
+
+
+#colorcode a span { 
+  display: none;
+}
+
+#colorcode a:hover span {
+  display: block;
+  position: absolute; 
+  top: 170px;
+  left: 0px; 
+  width: 70px; 
+  padding: 0px;
+  margin: 0px;
+  color: black;
+  background: white;
+  text-align: center;
+  font: normal normal 12px Arial, sans-serif;
+}
+
+#bottom { 
+  left:                0px;
+  width:             100px;
+  height:             65px;
+  background-image: url("http://andom.bioapps.biozentrum.uni-wuerzburg.de/images/bottom.jpg");
+}
+

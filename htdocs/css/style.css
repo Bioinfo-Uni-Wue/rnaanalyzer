@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /* Global reset and layout */
 * {
     margin: 0;
@@ -58,18 +59,75 @@ text-align: right;
   /* Main content box */
 main {
     width: 80%;
+=======
+/* Enhanced and Responsive Style.css */
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    align-items: stretch;
+    min-height: 100vh;
+    line-height: 1.6;
+}
+
+header, footer {
+    background-color: #0056b3;
+    color: white;
+    text-align: center;
+    padding: 1rem 0;
+}
+
+.container {
+    display: flex;
+    flex-direction: row;
+    flex: 1;
+    padding: 1rem;
+}
+
+#sidebar {
+    flex: 0 0 250px;
+    background-color: #f0f0f0;
+    padding: 1rem;
+    box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+    border-right: 1px solid #ddd;
+}
+
+.content {
+    flex: 1;
+    padding: 1.5rem;
+    background-color: #ffffff;
+}
+
+main {
+    flex: 1;
+    width: 100%;
+    max-width: 1200px;
+>>>>>>> origin/master
     margin: 2rem auto;
     padding: 2rem;
     background-color: #fff;
     border-radius: 8px;
+<<<<<<< HEAD
     box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
   
   /* Form layout */
+=======
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+>>>>>>> origin/master
 form {
     display: flex;
     flex-direction: column;
 }
+<<<<<<< HEAD
   
 /* Enhanced Form Sections */
 section {
@@ -490,3 +548,159 @@ hr {
   white-space: normal;
   width: 100%;
 }
+=======
+
+form section {
+    margin-bottom: 1.5rem;
+}
+
+section {
+    margin-bottom: 1.5rem;
+}
+
+label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+    color: #333;
+}
+
+input[type="text"], textarea {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 1rem;
+}
+
+input[type="submit"], input[type="reset"] {
+    background-color: #0056b3;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    cursor: pointer;
+    border-radius: 5px;
+    margin-top: 0.5rem;
+    font-size: 1rem;
+    transition: background-color 0.3s ease;
+}
+
+input[type="submit"]:hover, input[type="reset"]:hover {
+    background-color: #004494;
+}
+
+nav a {
+    display: block;
+    margin: 0.5rem 0;
+    padding: 0.75rem;
+    background-color: #e6e6e6;
+    color: #333;
+    text-decoration: none;
+    border-radius: 5px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+}
+
+nav a:hover {
+    background-color: #ddd;
+}
+
+a {
+    color: #0056b3;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+a:hover {
+    text-decoration: underline;
+    color: #004494;
+}
+
+.color-box {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border-radius: 3px;
+    margin-left: 5px;
+}
+
+hr {
+    border: 0;
+    height: 1px;
+    background: #ccc;
+    margin: 1.5rem 0;
+}
+
+p {
+    margin: 0 0 1.5rem 0;
+    font-size: 1rem;
+    line-height: 1.6;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1.5rem 0;
+}
+
+table, th, td {
+    border: 1px solid #ccc;
+    padding: 0.75rem;
+}
+
+th {
+    background-color: #f2f2f2;
+    font-weight: bold;
+    text-align: left;
+}
+
+iframe {
+    border: none;
+    width: 100%;
+    height: 100vh;
+}
+
+footer {
+    text-align: center;
+    background-color: #0056b3;
+    color: white;
+    padding: 1rem;
+    box-shadow: 0 -1px 5px rgba(0, 0, 0, 0.1);
+}
+
+footer address {
+    margin-top: 1rem;
+}
+
+.logo-image {
+    max-width: 100%;
+    height: auto;
+    border: none;
+}
+
+ul {
+    list-style-type: disc;
+    padding-left: 20px;
+}
+
+ul li {
+    margin: 0.5rem 0;
+}
+
+img {
+    border: none;
+    max-width: 100%;
+    height: auto;
+}
+
+.image-center {
+    text-align: center;
+    margin: 2rem 0;
+}
+
+.responsive-image {
+    max-width: 100%;
+    height: auto;
+}
+>>>>>>> origin/master

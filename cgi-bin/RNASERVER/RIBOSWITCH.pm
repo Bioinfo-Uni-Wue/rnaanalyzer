@@ -1,12 +1,19 @@
 package RNASERVER::RIBOSWITCH;
 
+<<<<<<< HEAD
 use Cwd qw(abs_path);
 
+=======
+>>>>>>> origin/master
 #Riboswitch.pm
 
 sub findRiboswitch {
     
+<<<<<<< HEAD
     $pathtornasuboptandrnafold=abs_path('../../bin/ViennaRNA-2.7.0/bin/RNAsubopt -s -e 0.75'); #Please locate your version of RNAfold / RNAsubopt
+=======
+    $pathtornasuboptandrnafold='/mnt/c/Users/ama55id/Nextcloud/RNA_analyzer/rnaanalyzer/bin/ViennaRNA-2.6.4/src/bin/RNAsubopt -s -e 0.75'; #Please locate your version of RNAfold / RNAsubopt
+>>>>>>> origin/master
     $searchsq=$_[0]; #import the Gensq
     $direction=$_[1];
     $consensustype=-1;
