@@ -1154,13 +1154,13 @@ sub checkstems {
     
     print "<br>";
     
-    return ($stem_count, $hairpin_count);
+    return ($stem_count, $hairpin_count, $energy);
 }
 
 sub checkstemsonly {
     # revamped checkstemsonly based on the logic of the new checkstems
     my $inseq = $_[0];
-    my $inwhattodo = $_[1];   # 0 means is structure, evaluate, 1--> sequence, please fold first!
+    my $inwhattodo = $_[1];   # check if structure given, 0 = strcuture, 1 = sequence which will be folded
     my $struct;
     my @structure;
     my $energy;
@@ -1189,6 +1189,7 @@ sub checkstemsonly {
     my $fldstemsauf = 0;
     my $fldstemszu = 0;
     
+    # pairng map creation
     for (my $i = 0; $i < @structure; $i++) {
         if ($structure[$i] eq '(') {
             push @stack, $i;
@@ -1205,14 +1206,14 @@ sub checkstemsonly {
     for (my $i = 0; $i < @structure; $i++) {
         next if $visited{$i};
         next unless defined $pairing[$i];
-        next if $pairing[$i] < $i;  # avoid counting the same pair twice
+        next if $pairing[$i] < $i;  # avoid recounting the same pair 
         
         my $left = $i;
         my $right = $pairing[$i];
         
         # BIOLOGICAL VALIDATION: Check minimum loop length
         my $loop_length = $right - $left - 1;
-        next if $loop_length < 3;  # Skip sterically impossible loops
+        next if $loop_length < 3;  # Skip biologicall imposiible loops
         
         my $count = 1;
         my @positions = ($left, $right);
@@ -1692,6 +1693,39 @@ sub riboswitch {
 
        	my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
 
+        ### Extract motif subsequence from full $seq
+        my $start = $from - 1;
+        my $length = $to - $from + 1;
+        my $ribosw_seq = substr($SEQUENCECHECKED, $start, $length);
+
+        #adding stem check
+        my @check_stem = checkstemsonly($ribosw_seq, 1);
+
+        my $stemsinfo;
+        if ($check_stem[0] != $check_stem[1]) {
+            $stemsinfo = "$check_stem[0]-$check_stem[1]";
+        } else {
+            $stemsinfo = "$check_stem[0]";
+        }
+
+        my $energy = ($check_stem[2] != 1) ? $check_stem[2] : "";
+
+        # adding biological context
+        my $bio_context = 'Metabolite sensing; gene regulation';  # default
+        if ($match =~ /TPP/i)      { $bio_context = 'Vitamin B1 metabolism; thiamine biosynthesis'; }
+        elsif ($match =~ /FMN/i)   { $bio_context = 'Riboflavin (B2) biosynthesis; flavin transport'; }
+        elsif ($match =~ /SAM/i)   { $bio_context = 'Methionine metabolism; methylation reactions'; }
+        elsif ($match =~ /AdoCbl/i){ $bio_context = 'Vitamin B12 metabolism; cobalamin transport'; }
+        elsif ($match =~ /Cobalamin/i){ $bio_context = 'Vitamin B12 metabolism; cobalamin transport'; }
+        elsif ($match =~ /Glycine/i){ $bio_context = 'Amino acid metabolism; glycine cleavage system'; }
+        elsif ($match =~ /Lysine/i) { $bio_context = 'Amino acid biosynthesis; lysine transport'; }
+        elsif ($match =~ /glmS/i)   { $bio_context = 'Cell wall synthesis; self-cleaving riboswitch'; }
+        elsif ($match =~ /purine/i) { $bio_context = 'Purine metabolism; adenine/guanine transport'; }
+        elsif ($match =~ /preQ1/i)  { $bio_context = 'Queuosine precursor; tRNA modification'; }
+        elsif ($match =~ /ykoK/i)   { $bio_context = 'Magnesium sensing; Mg2+ homeostasis'; }
+        elsif ($match =~ /yybP/i)   { $bio_context = 'Manganese homeostasis; metal ion transport'; }
+        elsif ($match =~ /c-di-GMP/i){ $bio_context = 'Cyclic diguanylate signaling; biofilm regulation'; }
+
         # push @results, $row . $forna_html;
         push @results, {
             match       => $match,
@@ -1701,6 +1735,9 @@ sub riboswitch {
             score       => $score,
             evalue      => $e_value,
             description => $description,
+            stems       => $stemsinfo,
+            energy      => $energy,
+            context     => $bio_context,
         };
 
 		$found = 1;
@@ -1718,7 +1755,7 @@ sub riboswitch {
 		# # Print stored results
 		# print @results;
         print "<table class='table-result'>";
-        print "<tr><th>Match</th><th>Family</th><th>From</th><th>To</th><th>Score</th><th>E-value</th><th>Description</th></tr>\n";
+        print "<tr><th>Match</th><th>Family</th><th>From</th><th>To</th><th>Score</th><th>E-value</th><th>Stems</th><th>Energy</th><th>Description</th><th>Function</th></tr>\n";
 
         foreach my $hit (@results) {
             print "<tr>";
@@ -1728,7 +1765,10 @@ sub riboswitch {
             print "<td>$hit->{to}</td>";
             print "<td>$hit->{score}</td>";
             print "<td>$hit->{evalue}</td>";
+            print "<td>$hit->{stems}</td>";
+            print "<td>$hit->{energy}</td>";
             print "<td>$hit->{description}</td>";
+            print "<td>$hit->{context}</td>";
             print "</tr>";
         }
         
@@ -1741,9 +1781,9 @@ sub riboswitch {
     }
     print "</div>";
 }
-# microRNA scan using miRanda
-# slow, takes over 2 minutes to scan
 
+# microRNA target scan using miRanda
+# slow, takes over 2 minutes to scan
 # trying to implement only 3' UTR scan so it less intesive but still biologically relevant with fallback.
 sub miRNAtarget {
     my ($transcripts_ref) = @_;
@@ -2098,7 +2138,7 @@ sub predict_utrs {
         if ($returnout[0] != $returnout[1]) {
             $stems_info = "$returnout[0]-$returnout[1]";
         } else {
-            $stems_info = "$returnout[0]"
+            $stems_info = "$returnout[0]";
         }
 
         my $energy = ($returnout[2] != 1) ? $returnout[2] : "";
