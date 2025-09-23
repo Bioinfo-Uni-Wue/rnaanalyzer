@@ -74,8 +74,7 @@ h2 {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   margin-bottom: 1.5rem;
-  overflow-x: auto;        /* for scrolling in narrow */
-  overflow-y: hidden;      /* Keep vertical overflow hidden if desired */
+  overflow: hidden;
   border: 1px solid #e9ecef;
 }
 
@@ -105,10 +104,7 @@ h2 {
   font-size: 0.85rem;
   line-height: 1.5;
   background: #fafbfc;
-  overflow-x: auto;        /* Enable horizontal scrolling */
-  overflow-y: hidden;      /* Keep vertical overflow hidden */
-  white-space: pre;        
-  display: block;
+  display: block; /* Show by default */
   transition: all 0.3s ease;
 }
 
@@ -118,10 +114,7 @@ h2 {
   font-size: 0.85rem;
   line-height: 1.5;
   background: #fafbfc;
-  overflow-x: auto;        /* Added horizontal scrolling */
-  overflow-y: hidden;      /* Added to match box-content */
-  white-space: pre;        
-  display: block;
+  display: block; /* Show by default */
   transition: all 0.3s ease;
 }
 
@@ -132,6 +125,7 @@ h2 {
 
 .box-content i {
   color: #6c757d;
+  font-style: italic;
 }
 
 pre {
@@ -308,47 +302,6 @@ a:hover {
     align-items: flex-start;
   }
 }
-
-.info-warning {
-  padding: 1rem;
-  margin: 1rem 0;
-  border-radius: 4px;
-  border-left: 4px solid;
-  background-color: #fff3cd;
-  border-color: #ffc107;
-  color: #856404;
-  }
-
-.info-info {
-  padding: 1rem;
-  margin: 1rem 0;
-  border-radius: 4px;
-  border-left: 4px solid;
-  background-color: #d1ecf1;
-  border-color: #17a2b8;
-  color: #0c5460;
-}
-
-.info-tip {
-  padding: 1rem;
-  margin: 1rem 0;
-  border-radius: 4px;
-  border-left: 4px solid;
-  background-color: #d4edda;
-  border-color: #28a745;
-  color: #155724;
-}
-
-.info-error {
-  padding: 1rem;
-  margin: 1rem 0;
-  border-radius: 4px;
-  border-left: 4px solid;
-  background-color: #edd4d4;
-  border-color: #cd2931;
-  color: #690e13;
-}
-
 
 /* @media (max-width: 480px) {
   .header-text h1 {

@@ -2,10 +2,9 @@ package RNASERVER::TRANS2;
 
 use Cwd qw(abs_path);
 use strict;
-use lib '/home/ama55id/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl';
-use lib './';
+use lib "/home/ama55id/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl";
 use RNA;
-use COMMON;
+use RNASERVER::COMMON;
 
 #Attention !! Often recivied an error "Process terminated with exit code 0" But only got this error while debugging with Komodo 1.2 (beta)
 # In normal use, this shouldn't happen. Maybe some return code ist missing, but once got "Indentifier too long" ?????

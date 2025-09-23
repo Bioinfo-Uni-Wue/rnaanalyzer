@@ -9,17 +9,19 @@
 <body>
 
   <header>
-    <a href=".">
+    <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de">
       <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
-      <h1>RNA Analyzer<sup>3</sup></h1>
+	    <h1>RNA Analyzer<sup>3<sup></h1>
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="tutorial.html" target="_blank">Tutorial</a> |
-      <a href="about.html" target="_blank">Help</a> |
-      <a href="contact.html" target="_blank">Contact</a> |
+      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/tutorial.html" target="_blank">Tutorial</a> |
+                
+      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/about.html" target="_blank">Help</a> |
+                
+      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
@@ -34,16 +36,18 @@
 
       <section>
         <textarea id="SEQUENCE" name="SEQUENCE" rows="10" placeholder="Enter your sequence here..."></textarea>
-        <div class="info-box tip"><strong>Tip: </strong>If your sequence is too long you can always divide it into several sequences as RNAanalyzer accepts upto 5 sequences at once.</div>
+		<div class="info-box tip"><strong>Tip 1: </strong>Press the Example button to fill a ready to submit example. </div>
+
+        <div class="info-box tip"><strong>Tip 2: </strong>If your sequence is too long you can always divide it into several sequences as RNAanalyzer accepts upto 5 sequences at once.</div>
       </section>
 
       <section>
         OR Upload FASTA file:  <input type="file" name="fasta_file"><br><span style="font-weight: lighter; font-size: small;">Size limit: 1 mb</span>
       </section>
-      
+
       <div id="submit">
       <div id="button-group">
-        &nbsp;&nbsp;&nbsp;
+	&nbsp;&nbsp;&nbsp;
         <input type="submit" value="Submit">
         <input type="reset" value="Reset">
         &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
@@ -54,7 +58,7 @@
       </div>
       <br>
 
-      <section>
+     <section>
         <div class="checkbox-group">
         <p><b>Motif Scans:</b></p>
         <label title="Check for Iron-responsive elements"><input type="checkbox" name="IRE" value="ON" checked />
@@ -69,12 +73,12 @@
         Protein Binding motif scan</label>
         <label title="Check for Trans-splicing motifs for C. elegans and S. mansoni"><input type="checkbox" name="TRANS" value="ON" checked />
         Trans-splicing structure</label>
-        <label title="Check for Riboswitches"><input type="checkbox" name="RIBO" value="ON" checked />
-        RiboSwitches</label>
+	<label title="Check for Riboswitches"><input type="checkbox" name="RIBO" value="ON" checked />
+        Riboswitches</label>
       </div>
       <div class ="info-box info">Check our <a href="about.html" target="_blank">Help page</a> for more information on the motif scans.</div>
-      </section>  
-      
+      </section>
+
       <section>
       <label>
         <input type="checkbox" id="run_coding" name="run_coding" value="yes" onchange="toggleSpeciesDropdown()">
@@ -158,9 +162,10 @@
       <div class="bottom-left">
       <div class="text-group">
         <p><strong>About</strong></p>
-        <a href="about.html">Help</a>
-        <a href="tutorial.html">Tutorial</a>
-        <a href="contact.html">Contact</a>
+        <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/about.html">Help</a>
+        <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/tutorial.html">Tutorial</a>
+        <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/contact.html">Contact</a>
+	<a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/license.html">Licenses & Attributions</a>
         
       </div>
       <div class="text-group"> 

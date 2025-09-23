@@ -65,8 +65,8 @@ my $is_refresh = scalar @job_ids > 0;
 unless ($is_refresh) {
 
 my $max_visits = 10;          # Maximum visits allowed
-my $time_frame = 60;          # Time frame in seconds (e.g., 60 seconds)
-my $log_file = "../tmp/ip_log.txt";  # Log file to store IP
+my $time_frame = 120;          # Time frame in seconds (e.g., 60 seconds)
+my $log_file = "/storage/srv/bioapps/rnaanalyzer/tmp/ip_log.txt";  # Log file to store IP
 
 # Get the visitor's IP address
 my $ip_address = remote_addr();
@@ -116,7 +116,7 @@ if (open(my $log_fh, '>', $log_file)) {
 use File::Find;
 use File::Path qw(remove_tree);
 use POSIX qw(strftime);
-my $jobdir="../tmp/jobs";
+my $jobdir="/storage/srv/bioapps/rnaanalyzer/tmp/jobs";
 my $time_threshold = time()-30*24*60*60; # Roughly 30 days
 
 sub wanted {
@@ -205,7 +205,7 @@ sub read_pasted_fasta {
 
 my $has_valid_input = 0;
 
-#  launch jobs
+# On first submission, launch jobs
 unless ($is_refresh) {
 
     my $max_length = 0;
@@ -359,18 +359,7 @@ foreach my $jid (@job_ids) {
     }
 }
 
-# if only one sequecen is submitted then forward it to result
 
-if ($all_done && scalar(@job_ids) == 1) {
-    my $single_job_id = $job_ids[0];
-    print <<JS_REDIRECT;
-    <script>
-    // Immediately replace current page in browser history
-    window.location.replace('../tmp/jobs/job_$single_job_id/result.html');
-    </script>
-JS_REDIRECT
-    exit;
-}
 
 # Table display
 print "<table>";
