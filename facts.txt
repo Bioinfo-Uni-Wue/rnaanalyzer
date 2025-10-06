@@ -1,5 +1,0 @@
-Highly structured RNA present; likely regulatory.
-IRE motif at position 34; potential IRE function.
-noncoding RNA.
-3 RNA-binding proteins detected.
-
