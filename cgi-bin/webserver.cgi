@@ -98,7 +98,7 @@ print "  <title>Batch Results</title>";
 print "  <link rel='stylesheet' href='/css/results.css'>";
 print "</head><body>";
 print "<header>";
-print "    <a href='hhttp://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de'>";    # change after putting on server
+print "    <a href='http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de'>";    # change after putting on server
 print "      <img src='http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
 print "    </a>";
 print "    <div class='header-text'>";
@@ -149,7 +149,7 @@ sub startproggi {
     
     if ($SEQUENCELENGTH >= 2500){
             print "<div class='info-warning'>";
-            print "<i>\ti.    Structure visualization can take a few seconds to load due to sequence length.</i>\n";
+            print "<i>\ti.    Annotated Structure visualization can take a few seconds to load due to sequence length.</i>\n";
             print "</div>";
         }
     
@@ -163,8 +163,7 @@ sub startproggi {
 sub analysis {
     chdir $TEMPDIR;
 
-    # print "<pre>";
-
+    # creates folding and does structural analysis like stems etc
     print "<div class='box'>";
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Structural information</div>";
     print "<div class='box-content-structure'>";
@@ -181,58 +180,69 @@ sub analysis {
     print "</div>";
     print "</div>";
 
+    # base composition analysis 
     &composition;
 
+    # trans-splicing analysis
     if ($do_TRANS) {
     print "<div class='box'>";
     &TRANS;
     print "</div>";
     }
 
+    # iron resposive element check
     if ($do_IRE) {
     print "<div class='box'>";	
 	&IRE;
     print "</div>";
     }
 
+    # check for riboswitches
     if ($do_ribo) {
     print "<div class='box'>";	
 	&riboswitch;
     print "</div>";
     }
 
+    # check for Au rich regions
     print "<div class='box'>";
     &ARE;
     print "</div>";
 
+    # check for catalytic RNA sites, including snRNP sites and sm Sites
     print "<div class='box'>";
     &smsite;
     print "</div>";
 
+    # RNA motif scan agaisnt Rfam database  
     if ($do_rnamotif) {
     print "<div class='box'>";
     &RNAMOTIF;
     print "</div>";
     }
 
+    # tRNA scan using tRNAscan-SE
     if ($do_trna) {
     print "<div class='box'>";
     &tRNA;
     print "</div>";
     }
 
+    # RNA binding Protein motif scan
     if ($do_rbp) {
     print "<div class='box'>"; 
     &rbp;
     print "</div>";
     }
 
+    # microRNA scan 
     if ($do_mirna) {
     print "<div class='box'>";
     &microRNA;
     print "</div>";
     }
 
+    # coding potential analysis and UTR prediction
     # --- Capture transcript models ---
     print "<div class='box'>";
     my %transcripts;
@@ -300,10 +310,12 @@ sub analysis {
         \@structured_regions
     );
 
+    # outputs protein seq when coding transcript
     print "<div class='box'>";
     &predprotein;
     print "</div>";
 
+    # miRNA target scan using miranda
     if ($do_mirnatarget) {
     print "<div class='box'>";
     miRNAtarget(\%transcripts);
@@ -312,14 +324,17 @@ sub analysis {
     # Optional: enable if scan_rbs supports multi-transcript
     # scan_rbs(\%transcripts);
 
+    # Cstf motif scan
     print "<div class='box'>";
     &csfce;
     print "</div>";
 
+    # creates annotated folding picture using FORNA
     print "<div class='box'>";
     &createfoldingpicture;
     print "</div>";
 
+    # feature table
     print "<div class='table-container'>";
     &location_table;
     print "</div>";
@@ -554,7 +569,7 @@ sub IRE {
                 printf "<td>%.2f</td>", $struct->{energy};
                 print "<td>$quality_text</td>";
                 
-                # Add the view structure button in the last column
+                # adding structure visualization
                 print "<td>";
                 print "<button onclick=\"toggleStructure$structure_counter()\" style='padding: 5px 10px;'>View</button>";
                 print "<div id='$div_id' style='width: 250px; height: 250px; display: none; margin: 10px; overflow: hidden;'></div>\n";
@@ -1097,7 +1112,7 @@ sub createfolding {
         close($svgfh);
 
         # Add ID to <svg> tag if not present
-        $svg_content =~ s/<svg /<svg id="static_rna_ss" width="auto" height="600" style="background:white;" /;
+        $svg_content =~ s/<svg /<svg id="static_rna_ss" width="100%" height="600" style="background:white;" /;
 
         # Output
         print "<h3>RNA Structure (Annotated Structure Below):</h3>\n";
@@ -1277,7 +1292,7 @@ sub checkstems {
     print "<div class='info-info'>$comment</div>";
     
     if ($hairpin_count > 0 && $stem_count > 0 && $hairpin_count / $stem_count > 0.7) {
-        print "\t\tHigh hairpin content — characteristic of miRNA precursors\n";
+        print "\t\tHigh hairpin content â€” characteristic of miRNA precursors\n";
     }
     
     
@@ -1620,7 +1635,7 @@ sub CPC2 {
 
 	# my $format = "%-10s %-18s %-15s %-10s %-10s %-10s %-15s %-10s %-10s\n";
 
-    my ($orf_start, $peptide_length, $label);
+    my ($orf_start, $peptide_length, $label, $strand);
 
 	# Read file line by line
 	while (my $line = <$fh_cpc2>) {
@@ -1684,20 +1699,48 @@ sub CPC2 {
             print "<td>$hit->{label}</td>";
             print "</tr>";
         }
-        print "</table>"
+        print "</table>";
 
     } else {
         print "<div class='info-warning'>";
         print "No result in CPC2 output\n";
         print "</div>";
     }
-    
+
+    # Inline Kozak (checks only if we have a valid ORF start)
+    my $ok_kozak = 1;  # assume OK unless we detect a strong Kozak
+    if (defined $orf_start && $orf_start > 6 && ($orf_start + 3) <= length($SEQUENCECHECKED)) {
+        my $win = substr($SEQUENCECHECKED, $orf_start - 6, 10);  # extract 10 nt widnow for koyak check -6..+3 around AUG
+        $win = uc $win;
+
+        # flip to coding orientation if negative strand
+        if (defined $strand && $strand eq '-') {
+            $win =~ tr/ACGU/TGCA/; $win = reverse $win;
+        }
+
+        # indices in coding orientation: -3 = [3], +4 = [9]
+        my $minus3 = substr($win, 3, 1);
+        my $plus4  = substr($win, 9, 1);
+
+        my $strong_kozak = (($minus3 eq 'A' || $minus3 eq 'G') && $plus4 eq 'G') ? 1 : 0;
+        $ok_kozak = !$strong_kozak;  # block lncRNA if strong Kozak is present
+    }
+
+    # check for lncRNA
+    if (defined $label && $label eq 'noncoding' && $SEQUENCELENGTH > 200 && $peptide_length < 100 && $ok_kozak == 1) {
+        print "<div class='info-info' style='overflow: hidden; text-overflow: ellipsis;'>";
+        print "<p style='white-space: normal; word-break: break-word;'>Based on its non-coding potential, sequence length, small open reading frame (ORF) length, and the absence or weakness of a Kozak sequence, the given sequence may be classified as a long non-coding RNA (lncRNA).</p>";
+        # upper page shows the folding # to be added
+        print "</div>";
+    }
+
+    # Extract cds sequnece 
+    my $cds_nt = substr($SEQUENCECHECKED, $orf_start - 1, $peptide_length * 3);
+
     if (defined $label && $label eq 'coding' && $orf_start > 0 && $peptide_length > 0) {
 
     my $orf_end = $orf_start + ($peptide_length * 3) - 1;
-
-    # Extract forward-oriented sequence regardless of strand
-    my $cds_nt = substr($SEQUENCECHECKED, $orf_start - 1, $peptide_length * 3);
+    
 
     # Reverse complement if necessary
     if ($strand eq '-') {
@@ -1729,6 +1772,7 @@ sub CPC2 {
         &scan_structured_regions;
         print "</div>";
     }
+
     print "</div>";
     return \%transcripts;
     
@@ -2066,13 +2110,128 @@ sub miRNAtarget {
 
 ########################
 # augustus replacing the old genscan; need to check the whole sub for errors
-# Flag inferred UTRs as “low confidence” when:
+# Flag inferred UTRs as below confidence when:
 # ORF is very short
-# ORF start is <15 nt from sequence start (no room for 5′ UTR)
+# ORF start is <15 nt from sequence start (no room for 5' UTR)
 # Sequence ends shortly after ORF (truncated transcript)
 # Provide scoring or confidence per UTR:
-# E.g., "Predicted 5′ UTR: 37 bp (contains weak Shine-Dalgarno motif, ΔG = -3.2 kcal/mol)"
+# E.g., "Predicted 5' UTR: 37 bp (contains weak Shine-Dalgarno motif, deltaG = -3.2 kcal/mol)"
 # Refactored AUGUSTUS + UTR + PolyA logic to handle multiple transcripts
+
+# sub AUGUSTUS {
+
+#     print "<div class='box-header' onclick='toggleBoxContent(this)'>Gene Prediction Analysis:</div>";
+#     print "<div class='box-content'>";
+#     my ($species) = @_;
+#     $species ||= "human";
+#     my $utr_flag = ($species =~ /^(human|fly|zebrafish)$/i) ? "--UTR=on" : "";
+
+#     my $output_gff = "$TEMPDIR/$job.augustus";
+#     my $input_dna  = "$TEMPDIR/$job.dna";
+
+#     my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on $utr_flag --species=$species $input_dna > $output_gff 2>&1";
+#     system($augustus_cmd) == 0 or die "AUGUSTUS run failed: $!";
+
+#     open(my $GFF, '<', $output_gff) or die "Can't open AUGUSTUS output: $!";
+
+#     my %transcripts;
+#     my $current_tid;
+#     my @protein_lines;
+#     my $capturing_protein = 0;
+
+#     while (my $line = <$GFF>) {
+#         chomp $line;
+
+#         if ($line =~ /^# protein sequence = \[(.*)$/) {
+#             $capturing_protein = 1;
+#             push @protein_lines, $1;
+#             next;
+#         }
+#         if ($capturing_protein) {
+#             $line =~ s/^#\s?//;
+#             if ($line =~ /^(.*)\]$/) {
+#                 push @protein_lines, $1;
+#                 $capturing_protein = 0;
+#                 $transcripts{$current_tid}{protein} = join('', @protein_lines);
+#                 @protein_lines = ();
+#                 next;
+#             }
+#             push @protein_lines, $line;
+#             next;
+#         }
+
+#         next if $line =~ /^#/;
+#         my @fields = split("\t", $line);
+#         next unless @fields >= 9;
+
+#         my ($type, $start, $end, $strand, $attr) = @fields[2,3,4,6,8];
+#         my ($tid) = $attr =~ /transcript_id \"(.*?)\"/;
+#         $current_tid = $tid if defined $tid;
+#         next unless defined $tid;
+
+#         $transcripts{$tid}{strand} = $strand if $type eq 'gene';
+#         $transcripts{$tid}{tss} = $start if $type eq 'tss';
+#         $transcripts{$tid}{tts} = $end   if $type eq 'tts';
+#         if ($type eq 'CDS') {
+#             push @{ $transcripts{$tid}{cds} }, [$start, $end];
+#             $transcripts{$tid}{cds_start} //= $start;
+#             $transcripts{$tid}{cds_end} = $end;
+#         }
+#         if ($type eq 'exon') {
+#             push @{ $transcripts{$tid}{exons} }, [$start, $end];
+#         }
+#         $transcripts{$tid}{source} = 'augustus';
+#     }
+#     close $GFF;
+
+#     my $i = 1;
+#     my $j = 1;
+#     if (keys %transcripts == 0) {
+#         print "<div class='info-warning'>";
+#         print "No gene predictions were found.</div>";
+#     } else {
+#     foreach my $tid (sort keys %transcripts) {
+#         my $model = $transcripts{$tid};
+        
+#         my ($gene_id) = $tid =~ /^(g\d+)\./;
+#         print "<h3>Transcript $i (ID: $tid";
+#         print ", gene: $gene_id" if $gene_id;
+#         print ")</h3><br>";
+#         $i++;
+
+#         print "<table class='table-result'>";
+#         print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
+
+#         foreach my $exon (@{ $model->{exons} }) {
+#             my ($start, $end) = @$exon;
+#             my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
+#             foreach my $seg (@segments) {
+#                 my ($seg_start, $seg_end, $type) = @$seg;
+#                 print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
+#                 $j++;
+#             }
+#         }
+#         print "</table>";
+#         $model->{protein} =~ s/\s//g if exists $model->{protein};
+
+#         print "<br>";
+#         }
+#     }
+
+#     @predprot = ();              
+#     foreach my $tid (sort keys %transcripts) {
+#         if (my $protein_seq = $transcripts{$tid}{protein}) {
+#             $protein_seq =~ s/\s//g;
+#             my @residues = split('', $protein_seq);
+#             push @predprot, @residues;
+#             $predprotforAnDom .= $protein_seq;
+#         }
+#     }
+#     print "Parsed type=$type, tid=$tid, start=$start, end=$end<br>" if defined $tid;
+#     print "</div>";
+
+#     return \%transcripts;
+# }
 
 sub AUGUSTUS {
 
@@ -2142,35 +2301,97 @@ sub AUGUSTUS {
 
     my $i = 1;
     my $j = 1;
+    
     if (keys %transcripts == 0) {
         print "<div class='info-warning'>";
         print "No gene predictions were found.</div>";
-    } else {
-    foreach my $tid (sort keys %transcripts) {
-        my $model = $transcripts{$tid};
-        
-        my ($gene_id) = $tid =~ /^(g\d+)\./;
-        print "<h3>Transcript $i (ID: $tid";
-        print ", gene: $gene_id" if $gene_id;
-        print ")</h3><br>";
-        $i++;
 
-        print "<table class='table-result'>";
-        print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
-
-        foreach my $exon (@{ $model->{exons} }) {
-            my ($start, $end) = @$exon;
-            my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
-            foreach my $seg (@segments) {
-                my ($seg_start, $seg_end, $type) = @$seg;
-                print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
-                $j++;
-            }
+        # lncRNA check for noncoding transcript
+        if ($SEQUENCELENGTH > 200) {
+            print "<div class='info-info' style='word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>";
+            print "<p style='word-wrap: break-word;'>Based on its non-coding potential, and overall sequence length, the given sequence may be classified as a long non-coding RNA (lncRNA). Please check the folding of the sequence below.</p>";
+            print "</div>";
         }
-        print "</table>";
-        $model->{protein} =~ s/\s//g if exists $model->{protein};
+        
+    } else {
+        # Process each transcript
+        foreach my $tid (sort keys %transcripts) {
+            my $model = $transcripts{$tid};
+            
+            my ($gene_id) = $tid =~ /^(g\d+)\./;
+            print "<h3>Transcript $i (ID: $tid";
+            print ", gene: $gene_id" if $gene_id;
+            print ")</h3><br>";
+            
+            # Kozak check for this transcript
+            my $orf_start = $model->{cds_start};
+            my $strand = $model->{strand};
+            my $ok_kozak = 1;  # assume OK unless we detect a strong Kozak
+            
+            if (defined $orf_start && $orf_start > 6 && ($orf_start + 3) <= length($SEQUENCECHECKED)) {
+                my $win = substr($SEQUENCECHECKED, $orf_start - 6, 10);  # extract 10 nt widnows to check kozak -6..+3 around AUG (start codon)
+                $win = uc $win; 
+                
+                # check negative strand
+                if (defined $strand && $strand eq '-') {
+                    $win =~ tr/ACGU/UGCA/; 
+                    $win = reverse $win; 
+                }
+                
+                # Indices in coding orientation: -3 = [3], +4 = [9]
+                my $minus3 = substr($win, 3, 1);
+                my $plus4  = substr($win, 9, 1);
+                
+                my $strong_kozak = (($minus3 eq 'A' || $minus3 eq 'G') && $plus4 eq 'G') ? 1 : 0;
+                $ok_kozak = !$strong_kozak;  # flag is 1 if weak Kozak
+                
+                
+                # print "Kozak check = $ok_kozak / $strong_kozak" # debug
+            }
+            
+            $i++;
+            
+            # Check if transcript has CDS (coding) or not (noncoding)
+            my $has_cds = exists $model->{cds} && @{ $model->{cds} } > 0;
+            
+            # Calculate peptide length
+            my $peptide_length = 0;
+            if (exists $model->{protein}) {
+                my $prot = $model->{protein};
+                $prot =~ s/\s//g;
+                $peptide_length = length($prot);
+            }
 
-        print "<br>";
+            print "<table class='table-result'>";
+            print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
+
+            foreach my $exon (@{ $model->{exons} }) {
+                my ($start, $end) = @$exon;
+                my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
+                foreach my $seg (@segments) {
+                    my ($seg_start, $seg_end, $type) = @$seg;
+                    print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
+                    $j++;
+                }
+            }
+            print "</table>";
+            
+            # Check if noncoding (no CDS predicted) AND no protein sequence
+            if (!$has_cds && !exists $model->{protein} && $SEQUENCELENGTH > 200) {
+                print "<div class='info-info' style='word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>";
+                print "<p style='word-wrap: break-word;'><i>Based on its non-coding potential, and sequence length, the given sequence may be classified as a long non-coding RNA (lncRNA). Please check the folding of the sequence below.</i></p>";
+                print "</div>";
+                
+            } elsif ($has_cds && $peptide_length < 100 && $ok_kozak == 1 && $SEQUENCELENGTH > 200) {
+                # lncRNA check for coding transcript with short ORF and weak Kozak
+                print "<div class='info-info' style='word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>";
+                print "<p style='word-wrap: break-word;'>Based on its sequence length, small open reading frame (ORF) length, and the absence or weakness of the Kozak sequence, the given sequence may be classified as a long non-coding RNA (lncRNA) Please check the folding of the sequence below.</p>";
+                print "</div>";
+            }
+            
+            $model->{protein} =~ s/\s//g if exists $model->{protein};
+
+            print "<br>";
         }
     }
 
@@ -2183,7 +2404,7 @@ sub AUGUSTUS {
             $predprotforAnDom .= $protein_seq;
         }
     }
-    print "Parsed type=$type, tid=$tid, start=$start, end=$end<br>" if defined $tid;
+    
     print "</div>";
 
     return \%transcripts;
@@ -2805,7 +3026,7 @@ sub createfoldingpicture {
         print "    container.addCustomColorsText(colorText);\n";
         print "    window.scrollTo(0,scrollY);\n";   # prevent scrolling lock to forna
         print "  });\n";
-        print "</script>\n";
+        print "</script>";
 
         # creating legend for visual interpretation 
         print "<div class='legend'>";
@@ -2925,8 +3146,6 @@ print "      content.style.display = 'none';";
 print "    }";
 print "  }";
 print "</script>";
-
-
 
 
 write_file("$TEMPDIR/result.txt", "done\n");

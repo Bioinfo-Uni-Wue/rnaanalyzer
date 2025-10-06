@@ -32,6 +32,7 @@ $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
 $FIMO=abs_path('../bin/meme-5.5.8/bin'); #fimo rbp scan
 $RBPDB=abs_path('../databases/rbpdb/rbpdb.meme');
+$RIBOSWDB=abs_path('../databases/riboswitches/riboswitch.cm'); #riboswitch location 
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
 $MAXFORNALENGTH=5000;
@@ -74,10 +75,12 @@ my $do_TRANS            = $params->{TRANS};
 my $species             = $params->{species};
 my $do_mirnatarget      = $params->{mirna_target};
 my $do_rbp              = $params->{RBP};
-my $dnarna              = $params->{dnarna};
+my $do_ribo             = $params->{ribo};
+# my $dnarna              = $params->{dnarna};
 my $SEQNAMECHECKED      = $params->{sequence_name};
 my $SEQUENCECHECKED     = $params->{sequence_clean};
 my $SEQUENCELENGTH      = $params->{sequence_length};
+
 
 my $html_file = "$TEMPDIR/result.html";
 
@@ -95,17 +98,17 @@ print "  <title>Batch Results</title>";
 print "  <link rel='stylesheet' href='/css/results.css'>";
 print "</head><body>";
 print "<header>";
-print "    <a href='http://localhost'>";    # change after putting on server
-print "      <img src='http://localhost/images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
+print "    <a href='http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de'>";    # change after putting on server
+print "      <img src='http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
 print "    </a>";
 print "    <div class='header-text'>";
-print "      <h1>RNA Analyzer 2025</h1>";
+print "      <h1>RNA Analyzer<sup>3</sup></h1>";
 print "      <p>Webserver for RNA Sequence Overview</p>";
 print "    </div>";
 print "    <div class='header-links'>";
-print "      <a href='http://localhost/about.html' target='_blank'>About</a> |";
-print "      <a href='http://localhost/contact.html' target='_blank'>Contact</a> |";
-print "      <a href='https://www.biozentrum.uni-wuerzburg.de/bioinfo' target='_blank'>Dandekar Lab</a>";
+print "      <a href='http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/about.html' target='_blank'>About</a> |";
+print "      <a href='http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/contact.html' target='_blank'>Contact</a> |";
+print "      <a href='http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/bioinfo' target='_blank'>Dandekar Lab</a>";
 print "    </div>";
 print "  </header>";
 print "";
@@ -178,6 +181,8 @@ sub analysis {
     print "</div>";
     print "</div>";
 
+    &composition;
+
     if ($do_TRANS) {
     print "<div class='box'>";
     &TRANS;
@@ -187,6 +192,12 @@ sub analysis {
     if ($do_IRE) {
     print "<div class='box'>";	
 	&IRE;
+    print "</div>";
+    }
+
+    if ($do_ribo) {
+    print "<div class='box'>";	
+	&riboswitch;
     print "</div>";
     }
 
@@ -326,7 +337,7 @@ sub TRANS{
             print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
 				print "<div class='info-warning'>";
-				print "<b>Schistosoma:</b>\tNone<br>";
+				print "<b>Schistosoma:</b>\tNo Trans-splicing element found.<br>";
                 print "</div>";
 			}
 			else {
@@ -363,7 +374,7 @@ sub TRANS{
 			if (@transcelegansvalues==1){
 				#print "No hit detected<br>";
                 print "<div class='info-warning'>";
-				print "<b>C. elegans:</b>\tNone";
+				print "<b>C. elegans:</b>\tNo Trans-splicing element found.";
                 print "</div>";
 			}
 			else {
@@ -409,55 +420,119 @@ sub TRANS{
 }
 
 sub IRE {
-    @irereturnvalues = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
+    my @ire_return_values = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
     $irelineprintout = 0;
+    
+    print "<link rel='stylesheet' href='/css/fornac.css'>";
+    print "<script src='/js/d3.v3.min.js'></script>";
+    print "<script src='/js/fornac.js'></script>";
+
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Element(s):</div>";
     print "<div class='box-content'>";
     
-    if (@irereturnvalues > 1) {
+    if (@ire_return_values > 1) {
         # Group results by position
         my %positions;
-        for (my $count = 0; $count <= @irereturnvalues - 1; $count += 7) {
-            my $pos = $irereturnvalues[$count + 0];
+        for (my $count = 0; $count <= @ire_return_values - 1; $count += 7) {
+            my $pos = $ire_return_values[$count];
             push @{$positions{$pos}}, {
-                position => $irereturnvalues[$count + 0],
-                quality => $irereturnvalues[$count + 1],
-                sequence => $irereturnvalues[$count + 2],
-                structure => $irereturnvalues[$count + 3],
-                energy => $irereturnvalues[$count + 4]
+                position => $ire_return_values[$count],
+                quality => $ire_return_values[$count + 1],
+                sequence => $ire_return_values[$count + 2],
+                structure => $ire_return_values[$count + 3],
+                energy => $ire_return_values[$count + 4]
             };
         }
         
-        # Display each position with its structures
+        # Add summary info
+        my $total_positions = keys %positions;
+        my $total_structures = 0;
+        $total_structures += @{$positions{$_}} for keys %positions;
+        
+        print "<div class='info-info'>";
+        print "<strong>Found:</strong> $total_structures structure(s) at $total_positions position(s)";
+        print "</div>";
+        
+        # Create main results table
+        print "<table class='table-result'>\n";
+        print "<tr><th>Position</th><th>Sequence</th><th>Possible Structure(s)</th><th>Energy</th><th>Quality</th><th>View Structure</th></tr></thead>\n";
+        
+        my $position_counter = 1;
+        my $structure_counter = 0;  # for displaying strcutures
+
         foreach my $pos (sort {$a <=> $b} keys %positions) {
             my @structures = @{$positions{$pos}};
+            my $row_count = @structures;
             
-            print "<table class='table-result'>\n";
-            print "<tr><th>Position</th><td>$pos</td></tr>\n";
-            print "<tr><th>Sequence</th><td>$structures[0]->{sequence}</td></tr>\n";
+            push @ire, ($pos - 16, $pos + 22);
             
-            @ire = (@ire, $pos - 16, $pos + 22);
+            # Sort structures by energy (most stable first)
+            @structures = sort { $a->{energy} <=> $b->{energy} } @structures;
             
-            # Display all structures for this position
-            for (my $i = 0; $i < @structures; $i++) {
-                my $struct_num = $i + 1;
+            for my $i (0..$#structures) {
                 my $struct = $structures[$i];
+                my $quality_text = $struct->{quality} == 1 ? "Good" : "Marginal";
                 
-                print "<tr><th>Structure $struct_num</th><td>$struct->{structure}</td></tr>\n";
-                printf "<tr><th>Energy $struct_num</th><td>%.2f kcal/mol</td></tr>\n", $struct->{energy};
+                # adding forna visualization variables 
+                $structure_counter++;  # Increment for each structure
+                my $div_id = "rna_ss_$structure_counter";
+                my $sequence = $struct->{sequence};
+                my $structure = $struct->{structure};
+                # my $energy = $struct->{energy};
+
+                print "<tr>";
                 
-                my $quality_text = ($struct->{quality} == 1) ? "good" : "bad";
-                print "<tr><th>Quality $struct_num</th><td>$quality_text</td></tr>\n";
-                
-                # Add separator line between structures (except for the last one)
-                if ($i < @structures - 1) {
-                    print "<tr><td colspan='2' style='border-bottom: 1px dashed #ccc; padding: 5px;'></td></tr>\n";
+                # Position counter with rowspan for multiple structures
+                if ($i == 0) {
+                    # print "<td rowspan='$row_count'>$position_counter</td>";
+                    print "<td rowspan='$row_count'>$pos</td>";
+                    print "<td rowspan='$row_count'>$struct->{sequence}</td>";
                 }
+                
+                print "<td>$struct->{structure}</td>";
+                printf "<td>%.2f</td>", $struct->{energy};
+                print "<td>$quality_text</td>";
+                
+                # Add the view structure button in the last column
+                print "<td>";
+                print "<button onclick=\"toggleStructure$structure_counter()\" style='padding: 5px 10px;'>View</button>";
+                print "<div id='$div_id' style='width: 250px; height: 250px; display: none; margin: 10px; overflow: hidden;'></div>\n";
+                print "</td>";
+                
+                print "</tr>\n";
+                
+                # Add the JavaScript for this structure
+                print "<script>\n";
+                print "  function toggleStructure$structure_counter() {\n";
+                print "    var el = document.getElementById('$div_id');\n";
+                print "    if (el.style.display === 'none') {\n";
+                print "      el.style.display = 'block';\n";
+                print "      var container = new fornac.FornaContainer('#$div_id', {\n";
+                print "        animation: false,\n";
+                print "        applyForce: false,\n";
+                print "        labelInterval: 0,\n";
+                print "        allowPanningAndZooming: true,\n";
+                print "        structurePadding: 0,\n";
+                print "        drawBackground: false,\n";
+                print "        layout: 'naview'\n";
+                print "      });\n";
+                print "      var options = {\n";
+                print "        structure: '$structure',\n";
+                print "        sequence: '$sequence'\n";
+                print "      };\n";
+                print "      container.addRNA(options.structure, options);\n";
+                print "    } else {\n";
+                print "      el.innerHTML = '';\n";
+                print "      el.style.display = 'none';\n";
+                print "    }\n";
+                print "  }\n";
+                print "</script>\n";
             }
             
-            print "</table>";
+            $position_counter++;
         }
         
+        print "</table>\n";
         $irelineprintout = 1;
         
     } else {
@@ -580,7 +655,7 @@ sub csfce {
     @seq=();
     print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
     print "<div class='info-warning'>";
-    print "<i>No CstF Motif found.<i><br>";
+    print "No CstF Motif found.";
     print "</div>";
 
     print "</div>";
@@ -639,13 +714,12 @@ sub stemggpairs {
                         print "</table>\n";
                     }
 
-    print "<h3>No Stem GG Pair Found.</h3><br>" if ($stemggpairfound==0); 
+    print "<div class='info-warning'>No Stem GG Pair Found.</div>" if ($stemggpairfound==0); 
     @sequ=();
     $str='';
 
     print "</div>";
 }
-
 
 sub rbp {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif(s) Scan:</div>";
@@ -680,8 +754,6 @@ sub rbp {
                 $motif_name = '';
             }
 
-            push @rbp_locs, $start, $stop;
-
             push @fimo_results, {
                 motif_id     => $motif_id,
                 alt_id       => $alt_id || $motif_id,
@@ -699,14 +771,34 @@ sub rbp {
         close $fh;
     }
 
-    # Display results
-    my $total = scalar @fimo_results;
+    # remove reduntant hits for each protein+domain combination
+    my %best_hits;
+    
+    foreach my $hit (@fimo_results) {
+        my $combination = $hit->{protein} . "\t" . $hit->{motif};
+        
+        if (!exists $best_hits{$combination} || $hit->{score} > $best_hits{$combination}->{score}) {
+            $best_hits{$combination} = $hit;
+        }
+    }
+    
+    my @filtered_results = sort { $a->{start} <=> $b->{start} } values %best_hits;
+    
+    # return locations for annoation
+    @rbp_locs = ();
+    foreach my $hit (@filtered_results) {
+        push @rbp_locs, $hit->{start}, $hit->{end};
+    }
+
+
+    # print results
+    my $total = scalar  @filtered_results;
 
     if ($total > 0) {
         print "<table class='table-result'>\n";
         print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
 
-        foreach my $hit (@fimo_results) {
+        foreach my $hit (@filtered_results) {
             print "<tr>";
             print "<td>$hit->{protein}</td>";
             print "<td>$hit->{motif}</td>";
@@ -721,12 +813,13 @@ sub rbp {
 
         print "</table>";
     } else {
+		print "<div class='info-warning'>";
         print "<b>No Protein Binding Motif found above threshold.</b>\n";
-    }
+		print "</div>";
+	}
 
     print "</div>";
 }
-
 
 sub ARE {
     $arepresent=0;
@@ -772,7 +865,6 @@ sub ARE {
     }
     print "</div>";
 }
-
 
 sub tRNA {
     # Looking for tRNAs using tRNAscan-SE
@@ -856,14 +948,13 @@ sub tRNA {
         print "</table>";
     } else {
         print "<div class='info-warning'>";
-        print "<b>No region matching a tRNA was found.</b>";
+        print "No region matching a tRNA was found.";
         print "</div>";
     }
     
     print "</div>";
     # print "DEBUG: @trna_loc" if @trna_loc;
 }
-
 
 sub smsite {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Catalytic RNA site(s) scan:</div>";
@@ -914,6 +1005,7 @@ sub smsite {
 sub createfolding {
     # comment out by liang
     # new ViennaRNA does not have the old FOLD program but rather incorporated in the same program RNAfold AA
+
 		my $infile = "$TEMPDIR/$job.seq";
         my $outfile = "$TEMPDIR/$job.foldout";
 
@@ -932,9 +1024,38 @@ sub createfolding {
         @structure = split('', $1);
         $structure = $1;
         $energy = $2;
+
+
+        my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
+
+        # Make sure RNAplot output is ready
+        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
+
+        # Read SVG file content
+        open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
+        my $svg_content = do { local $/; <$svgfh> };
+        close($svgfh);
+
+        # Add ID to <svg> tag if not present
+        $svg_content =~ s/<svg /<svg id="static_rna_ss" width="100%" height="600" style="background:white;" /;
+
+        # Output
+        print "<h3>RNA Structure (Annotated Structure Below):</h3>\n";
+        print "$svg_content\n";
+        print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
+
+        # Add svg-pan-zoom script
+        print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
+        print "<script>\n";
+        print "  svgPanZoom('#static_rna_ss', {\n";
+        print "    zoomEnabled: true,\n";
+        print "    controlIconsEnabled: true,\n";
+        print "    fit: true,\n";
+        print "    center: true\n";
+        print "  });\n";
+        print "</script>\n";
 		
 }
-
 
 sub checkstems {
 
@@ -1102,14 +1223,53 @@ sub checkstems {
     
     print "<br>";
     
-    return ($stem_count, $hairpin_count);
+    return ($stem_count, $hairpin_count, $energy);
 }
 
+sub composition {
+    
+    print "<div class='box'>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Composition:</div>";
+    print "<div class=box-content>";
+    # Count bases
+    my $a_count = ($SEQUENCECHECKED =~ tr/a/a/);
+    my $u_count = ($SEQUENCECHECKED =~ tr/u/u/);
+    my $g_count = ($SEQUENCECHECKED =~ tr/g/g/);
+    my $c_count = ($SEQUENCECHECKED =~ tr/c/c/);
+    
+    # Calculate percentages
+    my $a_percent = $SEQUENCELENGTH > 0 ? sprintf("%.2f", ($a_count / $SEQUENCELENGTH) * 100) : 0;
+    my $u_percent = $SEQUENCELENGTH > 0 ? sprintf("%.2f", ($u_count / $SEQUENCELENGTH) * 100) : 0;
+    my $g_percent = $SEQUENCELENGTH > 0 ? sprintf("%.2f", ($g_count / $SEQUENCELENGTH) * 100) : 0;
+    my $c_percent = $SEQUENCELENGTH > 0 ? sprintf("%.2f", ($c_count / $SEQUENCELENGTH) * 100) : 0;
+    
+    # Calculate GC and AU content
+    my $gc_content = $SEQUENCELENGTH > 0 ? sprintf("%.2f", (($g_count + $c_count) / $SEQUENCELENGTH) * 100) : 0;
+    my $au_content = $SEQUENCELENGTH > 0 ? sprintf("%.2f", (($a_count + $u_count) / $SEQUENCELENGTH) * 100) : 0;
+
+    
+    
+    print "<table class='table-result'>\n";
+    print "<tr><th>Base</th><th>Adenine (A)</th><th>Uracil (U)</th><th>Guanine (G)</th><th>Cytosine (C)</th></tr>";
+    print "<tr><th>Count</th><td>$a_count</td><td>$u_count</td><td>$g_count</td><td>$c_count</td></tr>";
+    print "<tr><th>Percentage (%)</th><td>$a_percent%</td><td>$u_percent%</td><td>$g_percent%</td><td>$c_percent%</td></tr>";
+    print "</table>";
+
+    print "<br>";
+
+    print "<table class='table-result'>\n";
+    print "<tr><th>Content Type</th><th>GC Content</th><th>AU Content</th></tr>";
+    print "<tr><th>Percentage (%)</th><td style='color:green;'>$gc_content%</td><td style='color:red;'>$au_content%</td></tr>";
+    print "</table>";
+
+    print "</div>";
+    print "</div>";
+}
 
 sub checkstemsonly {
     # revamped checkstemsonly based on the logic of the new checkstems
     my $inseq = $_[0];
-    my $inwhattodo = $_[1];   # 0 means is structure, evaluate, 1--> sequence, please fold first!
+    my $inwhattodo = $_[1];   # check if structure given, 0 = strcuture, 1 = sequence which will be folded
     my $struct;
     my @structure;
     my $energy;
@@ -1138,6 +1298,7 @@ sub checkstemsonly {
     my $fldstemsauf = 0;
     my $fldstemszu = 0;
     
+    # pairng map creation
     for (my $i = 0; $i < @structure; $i++) {
         if ($structure[$i] eq '(') {
             push @stack, $i;
@@ -1154,14 +1315,14 @@ sub checkstemsonly {
     for (my $i = 0; $i < @structure; $i++) {
         next if $visited{$i};
         next unless defined $pairing[$i];
-        next if $pairing[$i] < $i;  # avoid counting the same pair twice
+        next if $pairing[$i] < $i;  # avoid recounting the same pair 
         
         my $left = $i;
         my $right = $pairing[$i];
         
         # BIOLOGICAL VALIDATION: Check minimum loop length
         my $loop_length = $right - $left - 1;
-        next if $loop_length < 3;  # Skip sterically impossible loops
+        next if $loop_length < 3;  # Skip biologicall imposiible loops
         
         my $count = 1;
         my @positions = ($left, $right);
@@ -1234,7 +1395,7 @@ sub predprotein {
 	else {
         # print "<br>";
         print "<div class='info-warning'>";
-		print "<b>No predicted protein</b>";
+		print "No protein sequence was predicted. Check coding potential of the sequence above.";
         print "</div>";
 	}
 
@@ -1284,7 +1445,7 @@ sub RNAMOTIF {
 
         ### Fold subsequence using RNAfold
         my $cmd = qq{echo "$motif_seq" | $VIENNARNAFOLDDIR/RNAfold --noPS 2>/dev/null};
-        my $foldout = `$cmd`;  # run it!
+        my $foldout = `$cmd`;  
         my @fold_lines = split("\n", $foldout);
 
         my $dot_bracket = '';
@@ -1372,7 +1533,9 @@ sub RNAMOTIF {
         print "</table>";
 
 	} else {
+        print "<div class='info-warning'>";
 		print "No RNA motif recognized\n";
+        print "</div>";
     }
     print "</div>";
 }
@@ -1611,9 +1774,125 @@ sub microRNA {
 
 }
 
-# microRNA scan using miRanda
-# slow, takes over 2 minutes to scan
+sub riboswitch {
+    my $ribosw_tblout = "$TEMPDIR/$job.ribo.tblout";  # Table format output
+	my $ribosw_out = "$TEMPDIR/$job.ribo";     # Full verbose output
 
+	my $cmd = "$CMSCAN/cmscan -E 1e-5 --tblout $ribosw_tblout -o $ribosw_out $RIBOSWDB $TEMPDIR/$job.seq > /dev/null 2>&1";
+	system($cmd);
+
+    @ribosw =();
+    my @results;
+    my $found = 0;
+    my $i = 0;
+
+	print "<div class='box-header' onclick='toggleBoxContent(this)'>Riboswitch Scan:</div>";
+    print "<div class='box-content'>";
+	
+	open my $fh_tbl, '<', $ribosw_tblout or die "Cannot open Riboswitch out file: $!";
+	while (my $line = <$fh_tbl>) {
+		next if $line =~ /^#/;  # Skip comments
+		chomp $line;
+		my @columns = split(/\s+/, $line, 18);
+		next unless @columns >= 16;
+
+		my ($match, $family, $from, $to, $score, $e_value, $description) = ($columns[0], $columns[1], $columns[7], $columns[8], $columns[14], $columns[15], $columns[17]);
+
+        push @ribosw, $from, $to;
+
+       	my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
+
+        ### Extract motif subsequence from full $seq
+        my $start = $from - 1;
+        my $length = $to - $from + 1;
+        my $ribosw_seq = substr($SEQUENCECHECKED, $start, $length);
+
+        #adding stem check
+        my @check_stem = checkstemsonly($ribosw_seq, 1);
+
+        my $stemsinfo;
+        if ($check_stem[0] != $check_stem[1]) {
+            $stemsinfo = "$check_stem[0]-$check_stem[1]";
+        } else {
+            $stemsinfo = "$check_stem[0]";
+        }
+
+        my $energy = ($check_stem[2] != 1) ? $check_stem[2] : "";
+
+        # adding biological context
+        my $bio_context = 'Metabolite sensing; gene regulation';  # default
+        if ($match =~ /TPP/i)      { $bio_context = 'Vitamin B1 metabolism; thiamine biosynthesis'; }
+        elsif ($match =~ /FMN/i)   { $bio_context = 'Riboflavin (B2) biosynthesis; flavin transport'; }
+        elsif ($match =~ /SAM/i)   { $bio_context = 'Methionine metabolism; methylation reactions'; }
+        elsif ($match =~ /AdoCbl/i){ $bio_context = 'Vitamin B12 metabolism; cobalamin transport'; }
+        elsif ($match =~ /Cobalamin/i){ $bio_context = 'Vitamin B12 metabolism; cobalamin transport'; }
+        elsif ($match =~ /Glycine/i){ $bio_context = 'Amino acid metabolism; glycine cleavage system'; }
+        elsif ($match =~ /Lysine/i) { $bio_context = 'Amino acid biosynthesis; lysine transport'; }
+        elsif ($match =~ /glmS/i)   { $bio_context = 'Cell wall synthesis; self-cleaving riboswitch'; }
+        elsif ($match =~ /purine/i) { $bio_context = 'Purine metabolism; adenine/guanine transport'; }
+        elsif ($match =~ /preQ1/i)  { $bio_context = 'Queuosine precursor; tRNA modification'; }
+        elsif ($match =~ /ykoK/i)   { $bio_context = 'Magnesium sensing; Mg2+ homeostasis'; }
+        elsif ($match =~ /yybP/i)   { $bio_context = 'Manganese homeostasis; metal ion transport'; }
+        elsif ($match =~ /c-di-GMP/i){ $bio_context = 'Cyclic diguanylate signaling; biofilm regulation'; }
+
+        # push @results, $row . $forna_html;
+        push @results, {
+            match       => $match,
+            family      => $family_link,
+            from        => $from,
+            to          => $to,
+            score       => $score,
+            evalue      => $e_value,
+            description => $description,
+            stems       => $stemsinfo,
+            energy      => $energy,
+            context     => $bio_context,
+        };
+
+		$found = 1;
+        $i++;
+	}
+	
+	close $fh_tbl;
+
+	
+	if ($found) {
+		# # Print header only if results exist
+		# printf $format, "Match", "Family", "From", "To", "Score", "E-Value", "Description";
+		# print "-" x 80, "\n";  # Simple separator
+
+		# # Print stored results
+		# print @results;
+        print "<table class='table-result'>";
+        print "<tr><th>Match</th><th>Family</th><th>From</th><th>To</th><th>Score</th><th>E-value</th><th>Stems</th><th>Energy</th><th>Description</th><th>Function</th></tr>\n";
+
+        foreach my $hit (@results) {
+            print "<tr>";
+            print "<td>$hit->{match}</td>";
+            print "<td>$hit->{family}</td>";
+            print "<td>$hit->{from}</td>";
+            print "<td>$hit->{to}</td>";
+            print "<td>$hit->{score}</td>";
+            print "<td>$hit->{evalue}</td>";
+            print "<td>$hit->{stems}</td>";
+            print "<td>$hit->{energy}</td>";
+            print "<td>$hit->{description}</td>";
+            print "<td>$hit->{context}</td>";
+            print "</tr>";
+        }
+        
+        print "</table>";
+
+	} else {
+        print "<div class='info-warning'>";
+		print "No Riboswitch sequence recognized\n";
+        print "</div>";
+    }
+    print "</div>";
+}
+
+# microRNA target scan using miRanda
+# slow, takes over 2 minutes to scan
 # trying to implement only 3' UTR scan so it less intesive but still biologically relevant with fallback.
 sub miRNAtarget {
     my ($transcripts_ref) = @_;
@@ -1968,7 +2247,7 @@ sub predict_utrs {
         if ($returnout[0] != $returnout[1]) {
             $stems_info = "$returnout[0]-$returnout[1]";
         } else {
-            $stems_info = "$returnout[0]"
+            $stems_info = "$returnout[0]";
         }
 
         my $energy = ($returnout[2] != 1) ? $returnout[2] : "";
@@ -2249,8 +2528,6 @@ sub createfoldingpicture {
 
 	# if ($SEQUENCELENGTH <= $MAXFOLDINGLEN && $SEQUENCELENGTH > $MAXFORNALENGTH) {
     #     my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
-    #     my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
-    #     my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
 
     #     # Make sure RNAplot output is ready
     #     system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
@@ -2267,9 +2544,6 @@ sub createfoldingpicture {
     #     print "<h3>RNA Structure Visualization:</h3>\n";
     #     print "$svg_content\n";
     #     print "<p style='font-size: 0.9em; color: gray;'> Drag to pan, scroll to zoom</p>\n";
-    #     print "<b>Download As: </b>\n";
-    #     print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
-    #     print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
 
     #     # Add svg-pan-zoom script
     #     print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
@@ -2291,8 +2565,8 @@ sub createfoldingpicture {
         my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
         my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
 
-        # Make sure RNAplot output is ready
-        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
+        # # Make sure RNAplot output is ready
+        # system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
 
         # Read sequence and structure from RNAfold output
         open(my $fh, '<', $foldout_file) or die "Cannot open foldout file: $!";
@@ -2334,7 +2608,29 @@ sub createfoldingpicture {
                 $color_text .= "$i:green ";
             }
         }
-        
+
+        #polya signals
+        for (my $j = 0; $j < @polyasignal; $j += 2) {
+            my ($from, $to) = @polyasignal[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:lime ";
+            }
+        }
+
+        for (my $j = 0; $j < @polyatail; $j += 2) {
+            my ($from, $to) = @polyatail[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:lime ";
+            }
+        }
+
+
         # process motif
         for (my $j = 0; $j < @rna_motif; $j += 2) {
             my ($from, $to) = @rna_motif[$j, $j + 1];
@@ -2377,6 +2673,18 @@ sub createfoldingpicture {
             }
         }
 
+        #riboswitches
+        for (my $j = 0; $j < @ribosw; $j += 2) {
+            my ($from, $to) = @ribosw[$j, $j + 1];
+
+            ($from, $to) = ($to, $from) if $from > $to;
+
+            for (my $i = $from; $i <= $to; $i++) {
+                $color_text .= "$i:royalblue ";
+            }
+        }
+
+        #trans-splciing
         for (my $j = 0; $j < @transsplicing; $j += 2) {
             my ($from, $to) = @transsplicing[$j, $j + 1];
 
@@ -2387,26 +2695,18 @@ sub createfoldingpicture {
             }
         }
 
-        for (my $j = 0; $j < @polyasignal; $j += 2) {
-            my ($from, $to) = @polyasignal[$j, $j + 1];
+		#ire
+		for (my $j = 0; $j < @ire; $j += 2) {
+            my ($from, $to) = @ire[$j, $j + 1];
 
             ($from, $to) = ($to, $from) if $from > $to;
 
             for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:lime ";
+                $color_text .= "$i:lightcoral ";
             }
         }
-
-        for (my $j = 0; $j < @polyatail; $j += 2) {
-            my ($from, $to) = @polyatail[$j, $j + 1];
-
-            ($from, $to) = ($to, $from) if $from > $to;
-
-            for (my $i = $from; $i <= $to; $i++) {
-                $color_text .= "$i:lime ";
-            }
-        }
-
+		
+        #protein binding motifs
         for (my $j = 0; $j < @rbp_locs; $j += 2) {
             my ($from, $to) = @rbp_locs[$j, $j + 1];
 
@@ -2417,6 +2717,7 @@ sub createfoldingpicture {
             }
         }
 
+
         $color_text =~ s/\s+$//;  # Trim trailing space
 
         # print "DEBUG: $color_text";
@@ -2425,6 +2726,8 @@ sub createfoldingpicture {
         print "  var container;\n";
 
         print "  window.addEventListener('load', function () {\n";
+        print "    var scrollY = window.scrollY;\n";  # prevent scrolling lock to forna
+        print "    \n";
         print "    container = new fornac.FornaContainer(\"#rna_ss\", {\n";
         print "      animation: false,\n";
         print "      labelInterval: 50,\n";
@@ -2440,6 +2743,7 @@ sub createfoldingpicture {
         print "    container.addRNA(options.structure, options);\n";
         print "    var colorText = \"$color_text\";\n";
         print "    container.addCustomColorsText(colorText);\n";
+        print "    window.scrollTo(0,scrollY);\n";   # prevent scrolling lock to forna
         print "  });\n";
         print "</script>\n";
 
@@ -2447,14 +2751,16 @@ sub createfoldingpicture {
         print "<div class='legend'>";
         print "<div class='legend-title'>Legend:</div>";
         print "<div class='legend-items'>";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: red; margin-left: 0px;'></span> Motifs\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: lightblue; margin-left: 10px;'></span> UTRs\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 10px;'></span> Exons\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 10px;'></span> CDS\t";
+		print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 10px;'></span> PolyA Signal/PolyA Tail\t";
+		print "<span style='display: inline-block; width: 12px; height: 12px; background: red; margin-left: 0px;'></span> RNA Motifs\t";
+		print "<span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 10px;'></span> MiRNA\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: orange; margin-left: 10px;'></span> TRNA\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 10px;'></span> MiRNA\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 10px;'></span> SM-site/snRNP-motif\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: royalblue; margin-left: 10px;'></span> Riboswitches(s)";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 10px;'></span> TRANS-splicing\t";
-        print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 10px;'></span> PolyA Signal/PolyA Tail\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: lightcoral; margin-left: 10px;'></span> IRE(s)\t";
         print "<span style='display: inline-block; width: 12px; height: 12px; background: pink; margin-left: 10px;'></span> Protein Binding Site(s)";
 
         print "</div>";
@@ -2487,7 +2793,7 @@ sub location_table {
     print "<h2>Feature table</h2>\n";
     print "<table class='table-loc'>";
 
-    print "<tr><th>Structure</th><td>Location(s)</td></tr>\n";
+    print "<tr><th>Structure</th><th>Location(s)</th></tr>\n";
 
     if (@rna_motif) {
         my $motif_str = format_flat_ranges(@rna_motif);
@@ -2514,11 +2820,22 @@ sub location_table {
         print "<tr><th>miRNA(s)</th><td>$mirna_str</td></tr>\n";
     }
 
+    if (@ribosw) {
+        my $ribosw_str = format_flat_ranges(@ribosw);
+        print "<tr><th>Riboswitch(s)</th><td>$ribosw_str</td></tr>\n";
+    }
+
+
     if (@transsplicing) {
         my $trans_str = format_flat_ranges(@transsplicing);
         print "<tr><th>tRNA(s)</th><td>$trans_str</td></tr>\n";
     }
-
+	
+	if (@ire) {
+        my $ire_str = format_flat_ranges(@ire);
+        print "<tr><th>IRE(s)</th><td>$ire_str</td></tr>\n";
+    }
+	
     if (@polyasignal) {
         my $polyasignal_str = format_flat_ranges(@polyasignal);
         print "<tr><th>PolyA motif(s)</th><td>$polyasignal_str</td></tr>\n";
@@ -2526,7 +2843,7 @@ sub location_table {
 
     if (@polyatail) {
         my $polyatail_str = format_flat_ranges(@polyatail);
-        print "<tr><th>PolyA motif(s)</th><td>$polyatail_str</td></tr>\n";
+        print "<tr><th>PolyA tail</th><td>$polyatail_str</td></tr>\n";
     }
 
     if (@rbp_locs) {
@@ -2547,14 +2864,6 @@ print "    } else {";
 print "      content.style.display = 'none';";
 print "    }";
 print "  }";
-
-print "  window.onload = function() {";
-print "    const contents = document.querySelectorAll('.box-content');";
-print "    contents.forEach(function(content) {";
-print "      content.style.display = 'none';";
-print "    });";
-print "     setTimeout(() => window.scrollTo(0, 0), 50);";
-print "  };";
 print "</script>";
 
 
