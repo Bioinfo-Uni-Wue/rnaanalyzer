@@ -906,12 +906,10 @@ sub ARE {
     my $are_table_opened = 0;
     my @all_ares = ();
     
-    # Check for AU-rich regions with modern classification
-    # Based on current standards: AUUUA core within U-rich sequences
     print "<div class='box-header' onclick='toggleBoxContent(this)'>AU-rich regions:</div>";
     print "<div class='box-content'>";
     
-    # Detection patterns based on current ARE research (RNA: U not T, W = A or U)
+    # check papers for patterns (cmyc fore xample)
     my %are_patterns = (
         'Class I'   => qr/([au]{0,3}u{2}au{3,5}a[au]{2}[au]{0,3})/i,              # Discontinuous UUAUUUAWW
         'Class II'  => qr/((?:u{2}au{3}a[au]{0,2}){2,})/i,                        # Overlapping AUUUA motifs
@@ -920,7 +918,7 @@ sub ARE {
         'Classic'   => qr/(auuua(auuua)+)/i                                        # Original pentamer repeats (strict AUUUA)
     );
     
-    # Scan for all ARE types
+    # scan ARE 
     foreach my $are_type (keys %are_patterns) {
         my $pattern = $are_patterns{$are_type};
         
@@ -929,7 +927,7 @@ sub ARE {
             $are_len = length($match);
             $are_pos = pos($SEQUENCECHECKED) - $are_len;
             
-            # Calculate AU content for validation
+            # Calculate AU content # validation
             my $au_count = ($match =~ tr/aAuU//);
             my $total_len = length($match);
             my $au_percent = ($au_count / $total_len) * 100;
@@ -947,12 +945,12 @@ sub ARE {
             }
             
             if ($passes_filter) {
-                # Check for overlapping regions to avoid duplicates
+                # overlapping regions to avoid duplicates
                 my $is_duplicate = 0;
                 foreach my $existing (@all_ares) {
                     my ($ex_start, $ex_end) = @{$existing}[1,2];
                     if (!(($are_pos + $are_len) < $ex_start || $are_pos > $ex_end)) {
-                        # Overlapping - keep the longer one
+                        # overlap found< - always keep the longer one
                         if ($are_len > ($ex_end - $ex_start)) {
                             @{$existing} = ($are_type, $are_pos, $are_pos + $are_len - 1, $match, $au_percent);
                         }
@@ -968,7 +966,7 @@ sub ARE {
         }
     }
     
-    # Sort AREs by position
+    # sort AREs by position
     @all_ares = sort { $a->[1] <=> $b->[1] } @all_ares;
     
     # Display results
