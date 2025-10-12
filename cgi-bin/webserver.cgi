@@ -897,7 +897,7 @@ sub rbp {
     print "</div>";
 }
 
-# new ARE routine
+# new ARE routine ti include all new classes of AREs (1,2,3 and core)
 # based on https://pubmed.ncbi.nlm.nih.gov/22242014/; https://pmc.ncbi.nlm.nih.gov/articles/PMC2682044; https://www.pnas.org/doi/10.1073/pnas.1808696116;
 # https://pmc.ncbi.nlm.nih.gov/articles/PMC8728028
 sub ARE {
