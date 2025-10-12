@@ -897,48 +897,129 @@ sub rbp {
     print "</div>";
 }
 
+# new ARE routine
+# based on https://pubmed.ncbi.nlm.nih.gov/22242014/; https://pmc.ncbi.nlm.nih.gov/articles/PMC2682044; https://www.pnas.org/doi/10.1073/pnas.1808696116;
+# https://pmc.ncbi.nlm.nih.gov/articles/PMC8728028
 sub ARE {
-    $arepresent=0;
-    $are_pos=1;
+    $arepresent = 0;
+    $are_pos = 1;
     my $are_table_opened = 0;
-    #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Au-rich regions:</div>";
-
+    my @all_ares = ();
+    
+    # Check for AU-rich regions with modern classification
+    # Based on current standards: AUUUA core within U-rich sequences
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>AU-rich regions:</div>";
     print "<div class='box-content'>";
-    while ($SEQUENCECHECKED=~/([ag]uuu[ag](uuu[ag])+)/g) {
-        $are_len=length($1);
-        $are_pos=pos($SEQUENCECHECKED)-$are_len;
-        if ($are_len >=9){
-            # Open table only once when first ARE is found
-            if ($are_table_opened == 0) {
-                print "<table class='table-result'>\n";
-                print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th></tr>\n";
-                $are_table_opened = 1;
+    
+    # Detection patterns based on current ARE research (RNA: U not T, W = A or U)
+    my %are_patterns = (
+        'Class I'   => qr/([au]{0,3}u{2}au{3,5}a[au]{2}[au]{0,3})/i,              # Discontinuous UUAUUUAWW
+        'Class II'  => qr/((?:u{2}au{3}a[au]{0,2}){2,})/i,                        # Overlapping AUUUA motifs
+        'Class III' => qr/(u{15,})/i,                                              # U-rich regions without AUUUA
+        'Core'      => qr/([au]{0,3}uau{3}au[au]{0,3})/i,                         # 13-bp consensus: WWWU(AUUUA)UWWW
+        'Classic'   => qr/(auuua(auuua)+)/i                                        # Original pentamer repeats (strict AUUUA)
+    );
+    
+    # Scan for all ARE types
+    foreach my $are_type (keys %are_patterns) {
+        my $pattern = $are_patterns{$are_type};
+        
+        while ($SEQUENCECHECKED =~ /$pattern/g) {
+            my $match = $1;
+            $are_len = length($match);
+            $are_pos = pos($SEQUENCECHECKED) - $are_len;
+            
+            # Calculate AU content for validation
+            my $au_count = ($match =~ tr/aAuU//);
+            my $total_len = length($match);
+            my $au_percent = ($au_count / $total_len) * 100;
+            
+            # Filter based on ARE type
+            my $passes_filter = 0;
+            if ($are_type eq 'Class III') {
+                # Class III: U-rich only, no AUUUA required, stricter U content
+                my $u_count = ($match =~ tr/uU//);
+                my $u_percent = ($u_count / $total_len) * 100;
+                $passes_filter = 1 if ($are_len >= 15 && $u_percent >= 70 && $match !~ /a[ut]{3}a/i);
+            } else {
+                # Other classes: minimum length of 9 nt and at least 60% AU content
+                $passes_filter = 1 if ($are_len >= 9 && $au_percent >= 60);
             }
             
-            $arepresent=1;
-            $mismatchinare=0;
-            @aretemp=split('',$1);
-            for ($arecount=0;$arecount<@aretemp;$arecount++){
-                $mismatchinare++ if ($aretemp[$arecount] eq 'g');
+            if ($passes_filter) {
+                # Check for overlapping regions to avoid duplicates
+                my $is_duplicate = 0;
+                foreach my $existing (@all_ares) {
+                    my ($ex_start, $ex_end) = @{$existing}[1,2];
+                    if (!(($are_pos + $are_len) < $ex_start || $are_pos > $ex_end)) {
+                        # Overlapping - keep the longer one
+                        if ($are_len > ($ex_end - $ex_start)) {
+                            @{$existing} = ($are_type, $are_pos, $are_pos + $are_len - 1, $match, $au_percent);
+                        }
+                        $is_duplicate = 1;
+                        last;
+                    }
+                }
+                
+                unless ($is_duplicate) {
+                    push @all_ares, [$are_type, $are_pos, $are_pos + $are_len - 1, $match, $au_percent];
+                }
             }
-            
-            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td></tr>\n",
-                   $are_pos, $are_pos+$are_len-1, $1, $mismatchinare;
-            @aurichregion=(@aurichregion,$are_pos+1,$are_pos+$are_len);
         }
     }
-
-    # Close table if it was opened
-    if ($are_table_opened == 1) {
+    
+    # Sort AREs by position
+    @all_ares = sort { $a->[1] <=> $b->[1] } @all_ares;
+    
+    # Display results
+    if (@all_ares > 0) {
+        print "<table class='table-result'>\n";
+        print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th><th>Score</th></tr>\n";
+        $are_table_opened = 1;
+        $arepresent = 1;
+        
+        foreach my $are (@all_ares) {
+            my ($are_type, $are_start, $are_end, $are_sequence, $are_au_percent) = @$are;
+            $are_len = $are_end - $are_start + 1;
+            
+            # Count mismatches (G and C in the sequence)
+            $mismatchinare = 0;
+            @aretemp = split('', $are_sequence);
+            for ($arecount = 0; $arecount < @aretemp; $arecount++) {
+                $mismatchinare++ if ($aretemp[$arecount] eq 'g' || $aretemp[$arecount] eq 'c');
+            }
+            
+            # Calculate ARE score (simplified version based on AREScore algorithm)
+            my $are_score = 0;
+            # Count AUUUA pentamers (core motif)
+            my $pentamer_count = () = $are_sequence =~ /auuua/gi;
+            $are_score += $pentamer_count * 3;
+            # Add points for AU content
+            $are_score += ($are_au_percent / 100) * 2;
+            # Bonus for U-rich flanking
+            $are_score += 1 if $are_sequence =~ /^u+/i;
+            $are_score += 1 if $are_sequence =~ /u+$/i;
+            # Penalty for G/C content
+            my $gc_count = ($are_sequence =~ tr/gGcC//);
+            $are_score -= $gc_count * 0.5;
+            $are_score = 0 if $are_score < 0;
+            
+            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td><td>%.2f</td></tr>\n",
+                   $are_start, $are_end, $are_sequence, $mismatchinare, $are_score;
+            
+            # Store for downstream analysis (using original variable names)
+            push @aurichregion, ($are_start + 1, $are_end + 1);
+        }
+        
         print "</table>\n";
     }
-
-    if ($arepresent==0) {
+    
+    if ($arepresent == 0) {
         print "<div class='info-warning'>";
-        print "No Au-rich region found.";   #     *(AU-rich region of at least 30 nt)<br>";
+        print "No AU-rich region found.";
         print "</div>";
     }
+    
     print "</div>";
 }
 
@@ -1729,7 +1810,7 @@ sub CPC2 {
     # check for lncRNA
     if (defined $label && $label eq 'noncoding' && $SEQUENCELENGTH > 200 && $peptide_length < 100 && $ok_kozak == 1) {
         print "<div class='info-info' style='overflow: hidden; text-overflow: ellipsis;'>";
-        print "<p style='white-space: normal; word-break: break-word;'>Based on its non-coding potential, sequence length, small open reading frame (ORF) length, and the absence or weakness of a Kozak sequence, the given sequence may be classified as a long non-coding RNA (lncRNA).</p>";
+        print "<p style='white-space: normal; word-break: break-word;'>Based on its non-coding potential, sequence length, small open reading frame (ORF) length, and the absence or weakness of a Kozak sequence, the given sequence may be classified as a long non-coding RNA (lncRNA). Please check the folding below.</p>";
         # upper page shows the folding # to be added
         print "</div>";
     }
