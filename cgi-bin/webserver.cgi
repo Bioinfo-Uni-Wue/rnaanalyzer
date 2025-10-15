@@ -730,9 +730,13 @@ sub csfce {
 
     @seq=();
     print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
-    print "<div class='info-warning'>";
-    print "No CstF Motif found.";
-    print "</div>";
+    
+    if ($putativeCVfound == 0) {
+        print "<div class='info-warning'>";
+        print "No CstF Motif found.";
+        print "</div>";
+    }
+
 
     print "</div>";
 }
@@ -972,7 +976,7 @@ sub ARE {
     # Display results
     if (@all_ares > 0) {
         print "<table class='table-result'>\n";
-        print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th><th>Score</th></tr>\n";
+        print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th><th>Score</th><th>Quality</th></tr>\n";
         $are_table_opened = 1;
         $arepresent = 1;
         
@@ -998,12 +1002,24 @@ sub ARE {
             $are_score += 1 if $are_sequence =~ /^u+/i;
             $are_score += 1 if $are_sequence =~ /u+$/i;
             # Penalty for G/C content
-            my $gc_count = ($are_sequence =~ tr/gGcC//);
+            my $gc_count = ($are_sequence =~ tr/gc//);
             $are_score -= $gc_count * 0.5;
             $are_score = 0 if $are_score < 0;
             
-            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td><td>%.2f</td></tr>\n",
-                   $are_start, $are_end, $are_sequence, $mismatchinare, $are_score;
+            # quality based on score
+            my $quality;
+            if ($are_score >= 13) {
+                $quality = "Excellent";
+            } elsif ($are_score >= 7) {
+                $quality = "Good";
+            } elsif ($are_score >= 4) {
+                $quality = "Moderate";
+            } else {
+                $quality = "Low";
+            }
+
+            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td><td>%.2f</td><td>%s</td></tr>\n",
+                   $are_start, $are_end, $are_sequence, $mismatchinare, $are_score, $quality;
             
             # Store for downstream analysis (using original variable names)
             push @aurichregion, ($are_start + 1, $are_end + 1);
