@@ -729,7 +729,7 @@ sub csfce {
     }
 
     @seq=();
-    print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
+    print "<div class='info-info'> These elements are an indication for a processing protein binding motif.</div><br>" if ($putativeCVfound==1);
     
     if ($putativeCVfound == 0) {
         print "<div class='info-warning'>";
