@@ -30,7 +30,6 @@ $MIRBASE=abs_path('../databases/mirbase'); #MirBASE database
 $MIRANDA=abs_path('../bin/miranda/bin'); #miRanda 
 $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus 
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
-# $FIMO=abs_path('../bin/meme-5.5.8/bin'); #fimo rbp scan
 $YAMTK=abs_path('../bin/yamtk'); #yamtk scan folder
 $RBPDB=abs_path('../databases/rbpdb/motifs.meme');
 $RIBOSWDB=abs_path('../databases/riboswitches/riboswitch.cm'); #riboswitch location 
@@ -801,106 +800,6 @@ sub stemggpairs {
 
     print "</div>";
 }
-
-# sub rbp {
-#     print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif(s) Scan:</div>";
-#     print "<div class='box-content'>";
-
-#     my $fimo_outfile = "$TEMPDIR/fimo.txt";
-#     my $input_seq = "$TEMPDIR/$job.seq";  
-
-#     # Run FIMO
-#     my $fimo_cmd = "$FIMO/fimo --text --thresh 1e-4 $RBPDB $input_seq > $fimo_outfile";
-#     system($fimo_cmd);
-
-#     my @fimo_results;
-#     @rbp_locs = ();  # global array to store start/end positions
-
-#     # Parse FIMO output
-#     if (-e $fimo_outfile) {
-#         open my $fh, '<', $fimo_outfile or die "Cannot open FIMO output: $!";
-#         while (my $line = <$fh>) {
-#             next if $. == 1;
-#             chomp $line;
-#             my ($motif_id, $alt_id, $seq_name, $start, $stop, $strand, $score, $pvalue, $qvalue, $matched_seq) = split /\t/, $line;
-
-#             my ($protein_name, $motif_name);
-
-#             if ($alt_id && index($alt_id, '_') != -1) {
-#                 ($protein_name, $motif_name) = split(/_/, $alt_id, 2);
-#             } elsif ($motif_id && index($motif_id, '_') != -1) {
-#                 ($protein_name, $motif_name) = split(/_/, $motif_id, 2);
-#             } else {
-#                 $protein_name = $alt_id || $motif_id;
-#                 $motif_name = '';
-#             }
-
-#             push @fimo_results, {
-#                 motif_id     => $motif_id,
-#                 alt_id       => $alt_id || $motif_id,
-#                 protein      => $protein_name,
-#                 motif        => $motif_name,
-#                 seq_name     => $seq_name,
-#                 start        => $start,
-#                 end          => $stop,
-#                 # strand       => $strand,
-#                 score        => $score,
-#                 pvalue       => $pvalue,
-#                 matched_seq  => $matched_seq,
-#             };
-#         }
-#         close $fh;
-#     }
-
-#     # remove reduntant hits for each protein+domain combination
-#     my %best_hits;
-    
-#     foreach my $hit (@fimo_results) {
-#         my $combination = $hit->{protein} . "\t" . $hit->{motif};
-        
-#         if (!exists $best_hits{$combination} || $hit->{score} > $best_hits{$combination}->{score}) {
-#             $best_hits{$combination} = $hit;
-#         }
-#     }
-    
-#     my @filtered_results = sort { $a->{start} <=> $b->{start} } values %best_hits;
-    
-#     # return locations for annoation
-#     @rbp_locs = ();
-#     foreach my $hit (@filtered_results) {
-#         push @rbp_locs, $hit->{start}, $hit->{end};
-#     }
-
-
-#     # print results
-#     my $total = scalar  @filtered_results;
-
-#     if ($total > 0) {
-#         print "<table class='table-result'>\n";
-#         print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
-
-#         foreach my $hit (@filtered_results) {
-#             print "<tr>";
-#             print "<td>$hit->{protein}</td>";
-#             print "<td>$hit->{motif}</td>";
-#             print "<td>$hit->{start}</td>";
-#             print "<td>$hit->{end}</td>";
-#             # print "<td>$hit->{strand}</td>";
-#             print "<td>$hit->{score}</td>";
-#             print "<td>$hit->{pvalue}</td>";
-#             print "<td><tt>$hit->{matched_seq}</tt></td>";
-#             print "</tr>";
-#         }
-
-#         print "</table>";
-#     } else {
-# 		print "<div class='info-warning'>";
-#         print "<b>No Protein Binding Motif found above threshold.</b>\n";
-# 		print "</div>";
-# 	}
-
-#     print "</div>";
-# }
 
 sub rbp {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif(s) Scan:</div>";
