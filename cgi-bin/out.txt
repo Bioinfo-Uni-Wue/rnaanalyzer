@@ -1,0 +1,18 @@
+##yamscan v2.0.0 [ -t 0.00005 -m ../databases/rbpdb/motifs.meme -s check.fa -o out.txt ]
+##MotifCount=71 MotifSize=618 SeqCount=1 SeqSize=3718 GC=51.43% Ns=0 MaxPossibleHits=526862
+##seq_name	start	end	strand	motif	pvalue	score	score_pct	match
+cathepsin	3375	3389	-	PTBP1_RRMx4	4.0024519e-05	10.284	72.9	agggaaagagugucu
+cathepsin	3554	3564	+	ZFP36_ZnfCCCHx2	5.24520874e-06	7.956	42.8	aaaaaaaaaag
+cathepsin	586	601	-	pum_PUMx1	1.73146836e-05	12.943	59.2	uuagaguauuuaaaug
+cathepsin	646	661	+	pum_PUMx1	2.09955033e-05	12.620	57.7	uguguaaauaauuugg
+cathepsin	3096	3111	+	pum_PUMx1	2.58190557e-05	12.266	56.1	cuuauaaauaacaaau
+cathepsin	817	837	-	Pum2_PUMx1_2	4.71289857e-05	9.987	40.4	aggaacaauccuguacuuaca
+cathepsin	1803	1814	-	Rna15_RRMx1_2	4.65512276e-05	-1.952	-8.4	ggaaaacaccca
+cathepsin	3551	3564	-	ELAVL2_RRMx3	1.60411e-05	12.978	71.8	agaaaaaaaaaaag
+cathepsin	1762	1770	-	ELAVL2_RRMx3_2	3.81469727e-05	12.243	77.4	aauauaaau
+cathepsin	1891	1901	-	SNRPA_RRMx2_5	2.50339508e-05	12.779	69.6	uugcagguacc
+cathepsin	576	584	-	ZFP36_ZnfCCCHx2_2	3.05175781e-05	12.681	81.4	guuaaauaa
+cathepsin	3005	3013	-	ZFP36_ZnfCCCHx2_2	3.43322754e-05	12.421	79.7	uauaaauaa
+cathepsin	3098	3106	-	ZFP36_ZnfCCCHx2_2	3.43322754e-05	12.421	79.7	uauaaauaa
+cathepsin	3669	3677	-	ZFP36_ZnfCCCHx2_2	4.19616699e-05	12.006	77.0	aauaaauag
+cathepsin	3579	3588	+	SFRS1_RRMx2_4	2.28881836e-05	13.058	81.2	aagacagaac
