@@ -1,16 +1,14 @@
 package RNASERVER::IRE;
 
 use strict;
-use lib "/home/ama55id/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl";
+use lib "../../bin/ViennaRNA-2.7.0/interfaces/Perl";
 use lib "/usr/lib/perl5/5.26.1";
-use lib "../cgi-bin/";
 use RNA;
 use warnings;
 
 $RNA::noLonelyPairs=1;	#important for correct use of the RNA-module!
 
 # uses RNAsubopt from viennaRNA 
-# $pathtornasuboptandrnafold='/storage/srv/bioapps/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt'; #Please locate your version of RNAfold / RNAsubopt
 # added more comments for better understanding for future updates
 
 sub suboptimalfindire {
@@ -28,8 +26,8 @@ sub suboptimalfindire {
     my $hit_before_cds_cutoff = 200;
     my $hit_after_cds_cutoff = 2000;
     
-    # Path to RNAsubopt executable
-    my $rnasubopt_path='/home/ama55id/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt';
+    # change path to RNAsubopt
+    my $rnasubopt_path='rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt';
     
     my @subopt_hits = ();
     
@@ -65,13 +63,14 @@ sub suboptimalfindire {
             }
         }
         
-        # adding a limit of max 3 alternate structures
+	# adding a limit of max 3 alternate structures
         my $max_structures = 3;
         if (@folding_structures > $max_structures) {
             @folding_structures = @folding_structures[0..$max_structures-1];
             @folding_energies = @folding_energies[0..$max_structures-1];
         }
 
+	
         # Analyze each suboptimal structure
         for my $structure_index (0 .. @folding_structures - 1) {
             

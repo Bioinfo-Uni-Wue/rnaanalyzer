@@ -30,8 +30,8 @@ $MIRBASE=abs_path('../databases/mirbase'); #MirBASE database
 $MIRANDA=abs_path('../bin/miranda/bin'); #miRanda 
 $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus 
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
-$YAMTK=abs_path('../bin/yamtk'); #yamtk scan folder
-$RBPDB=abs_path('../databases/rbpdb/motifs.meme');
+$FIMO=abs_path('../bin/meme-5.5.8/bin'); #fimo rbp scan
+$RBPDB=abs_path('../databases/rbpdb/rbpdb.meme');
 $RIBOSWDB=abs_path('../databases/riboswitches/riboswitch.cm'); #riboswitch location 
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
@@ -108,7 +108,7 @@ print "    </div>";
 print "    <div class='header-links'>";
 print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html' target='_blank'>About</a> |";
 print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html' target='_blank'>Contact</a> |";
-print "      <a href='https://www.biozentrum.uni-wuerzburg.de/bioinfo' target='_blank'>Dandekar Lab</a>";
+print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//bioinfo' target='_blank'>Dandekar Lab</a>";
 print "    </div>";
 print "  </header>";
 print "";
@@ -730,13 +730,9 @@ sub csfce {
 
     @seq=();
     print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
-    
-    if ($putativeCVfound == 0) {
-        print "<div class='info-warning'>";
-        print "No CstF Motif found.";
-        print "</div>";
-    }
-
+    print "<div class='info-warning'>";
+    print "No CstF Motif found.";
+    print "</div>";
 
     print "</div>";
 }
@@ -805,45 +801,44 @@ sub rbp {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif(s) Scan:</div>";
     print "<div class='box-content'>";
 
-    my $yamtk_outfile = "$TEMPDIR/rbp.txt";
-    my $input_seq = "$TEMPDIR/$job.seq";  
+    my $fimo_outfile = "$TEMPDIR/fimo.txt";
+    my $input_seq = "$TEMPDIR/$job.seq";  # path to your .meme file
 
-    # Run YAMTK
-    my $yamtk_cmd = "$YAMTK/yamtk scan -t 0.0001 -m $RBPDB -s $input_seq -o $yamtk_outfile";
-    system($yamtk_cmd);
+    # Run FIMO
+    my $fimo_cmd = "$FIMO/fimo --text --thresh 1e-4 $RBPDB $input_seq > $fimo_outfile";
+    system($fimo_cmd);
 
-    my @yamtk_results;
-    @rbp_locs = ();  #array to store start/end positions
+    my @fimo_results;
+    @rbp_locs = ();  # global array to store start/end positions
 
-    # Parse yamtk output
-    if (-e $yamtk_outfile) {
-        open my $fh, '<', $yamtk_outfile or die "Cannot open YAMTK output: $!";
+    # Parse FIMO output
+    if (-e $fimo_outfile) {
+        open my $fh, '<', $fimo_outfile or die "Cannot open FIMO output: $!";
         while (my $line = <$fh>) {
-            next if $line =~ /^#/;
-            # next if $. == 1;
+            next if $. == 1;
             chomp $line;
-            my ($seq_name, $start, $stop, $strand, $motif, $pvalue, $score, $score_pct, $matched_seq) = split /\t/, $line;
+            my ($motif_id, $alt_id, $seq_name, $start, $stop, $strand, $score, $pvalue, $qvalue, $matched_seq) = split /\t/, $line;
 
             my ($protein_name, $motif_name);
 
-            # extract protein and motif name
-            if ($motif && index($motif, '_') != -1) {
-                ($protein_name, $motif_name) = split(/_/, $motif, 2);
+            if ($alt_id && index($alt_id, '_') != -1) {
+                ($protein_name, $motif_name) = split(/_/, $alt_id, 2);
+            } elsif ($motif_id && index($motif_id, '_') != -1) {
+                ($protein_name, $motif_name) = split(/_/, $motif_id, 2);
             } else {
-                $protein_name = $motif_id;
-                $motif_name   = '';
+                $protein_name = $alt_id || $motif_id;
+                $motif_name = '';
             }
 
-            my $protein_link = "<a href=\"http://rbpdb.ccbr.utoronto.ca/proteins.php?search_term=$protein_name\" target=\"_blank\">$protein_name</a>";
-
-            push @yamtk_results, {
-                motif        => $motif,
-                protein      => $protein_link,
+            push @fimo_results, {
+                motif_id     => $motif_id,
+                alt_id       => $alt_id || $motif_id,
+                protein      => $protein_name,
                 motif        => $motif_name,
                 seq_name     => $seq_name,
                 start        => $start,
                 end          => $stop,
-                strand       => $strand,
+                # strand       => $strand,
                 score        => $score,
                 pvalue       => $pvalue,
                 matched_seq  => $matched_seq,
@@ -855,7 +850,7 @@ sub rbp {
     # remove reduntant hits for each protein+domain combination
     my %best_hits;
     
-    foreach my $hit (@yamtk_results) {
+    foreach my $hit (@fimo_results) {
         my $combination = $hit->{protein} . "\t" . $hit->{motif};
         
         if (!exists $best_hits{$combination} || $hit->{score} > $best_hits{$combination}->{score}) {
@@ -877,7 +872,7 @@ sub rbp {
 
     if ($total > 0) {
         print "<table class='table-result'>\n";
-        print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Strand</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
+        print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
 
         foreach my $hit (@filtered_results) {
             print "<tr>";
@@ -885,7 +880,7 @@ sub rbp {
             print "<td>$hit->{motif}</td>";
             print "<td>$hit->{start}</td>";
             print "<td>$hit->{end}</td>";
-            print "<td>$hit->{strand}</td>";
+            # print "<td>$hit->{strand}</td>";
             print "<td>$hit->{score}</td>";
             print "<td>$hit->{pvalue}</td>";
             print "<td><tt>$hit->{matched_seq}</tt></td>";
@@ -902,139 +897,48 @@ sub rbp {
     print "</div>";
 }
 
-# new ARE routine ti include all new classes of AREs (1,2,3 and core)
-# based on https://pubmed.ncbi.nlm.nih.gov/22242014/; https://pmc.ncbi.nlm.nih.gov/articles/PMC2682044; https://www.pnas.org/doi/10.1073/pnas.1808696116;
-# https://pmc.ncbi.nlm.nih.gov/articles/PMC8728028
 sub ARE {
-    $arepresent = 0;
-    $are_pos = 1;
+    $arepresent=0;
+    $are_pos=1;
     my $are_table_opened = 0;
-    my @all_ares = ();
-    
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>AU-rich regions:</div>";
+    #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Au-rich regions:</div>";
+
     print "<div class='box-content'>";
-    
-    # check papers for patterns (cmyc fore xample)
-    my %are_patterns = (
-        'Class I'   => qr/([au]{0,3}u{2}au{3,5}a[au]{2}[au]{0,3})/i,              # Discontinuous UUAUUUAWW
-        'Class II'  => qr/((?:u{2}au{3}a[au]{0,2}){2,})/i,                        # Overlapping AUUUA motifs
-        'Class III' => qr/(u{15,})/i,                                              # U-rich regions without AUUUA
-        'Core'      => qr/([au]{0,3}uau{3}au[au]{0,3})/i,                         # 13-bp consensus: WWWU(AUUUA)UWWW
-        'Classic'   => qr/(auuua(auuua)+)/i                                        # Original pentamer repeats (strict AUUUA)
-    );
-    
-    # scan ARE 
-    foreach my $are_type (keys %are_patterns) {
-        my $pattern = $are_patterns{$are_type};
-        
-        while ($SEQUENCECHECKED =~ /$pattern/g) {
-            my $match = $1;
-            $are_len = length($match);
-            $are_pos = pos($SEQUENCECHECKED) - $are_len;
-            
-            # Calculate AU content # validation
-            my $au_count = ($match =~ tr/aAuU//);
-            my $total_len = length($match);
-            my $au_percent = ($au_count / $total_len) * 100;
-            
-            # Filter based on ARE type
-            my $passes_filter = 0;
-            if ($are_type eq 'Class III') {
-                # Class III: U-rich only, no AUUUA required, stricter U content
-                my $u_count = ($match =~ tr/uU//);
-                my $u_percent = ($u_count / $total_len) * 100;
-                $passes_filter = 1 if ($are_len >= 15 && $u_percent >= 70 && $match !~ /a[ut]{3}a/i);
-            } else {
-                # Other classes: minimum length of 9 nt and at least 60% AU content
-                $passes_filter = 1 if ($are_len >= 9 && $au_percent >= 60);
+    while ($SEQUENCECHECKED=~/([ag]uuu[ag](uuu[ag])+)/g) {
+        $are_len=length($1);
+        $are_pos=pos($SEQUENCECHECKED)-$are_len;
+        if ($are_len >=9){
+            # Open table only once when first ARE is found
+            if ($are_table_opened == 0) {
+                print "<table class='table-result'>\n";
+                print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th></tr>\n";
+                $are_table_opened = 1;
             }
             
-            if ($passes_filter) {
-                # overlapping regions to avoid duplicates
-                my $is_duplicate = 0;
-                foreach my $existing (@all_ares) {
-                    my ($ex_start, $ex_end) = @{$existing}[1,2];
-                    if (!(($are_pos + $are_len) < $ex_start || $are_pos > $ex_end)) {
-                        # overlap found< - always keep the longer one
-                        if ($are_len > ($ex_end - $ex_start)) {
-                            @{$existing} = ($are_type, $are_pos, $are_pos + $are_len - 1, $match, $au_percent);
-                        }
-                        $is_duplicate = 1;
-                        last;
-                    }
-                }
-                
-                unless ($is_duplicate) {
-                    push @all_ares, [$are_type, $are_pos, $are_pos + $are_len - 1, $match, $au_percent];
-                }
+            $arepresent=1;
+            $mismatchinare=0;
+            @aretemp=split('',$1);
+            for ($arecount=0;$arecount<@aretemp;$arecount++){
+                $mismatchinare++ if ($aretemp[$arecount] eq 'g');
             }
+            
+            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td></tr>\n",
+                   $are_pos, $are_pos+$are_len-1, $1, $mismatchinare;
+            @aurichregion=(@aurichregion,$are_pos+1,$are_pos+$are_len);
         }
     }
-    
-    # sort AREs by position
-    @all_ares = sort { $a->[1] <=> $b->[1] } @all_ares;
-    
-    # Display results
-    if (@all_ares > 0) {
-        print "<table class='table-result'>\n";
-        print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th><th>Score</th><th>Quality</th></tr>\n";
-        $are_table_opened = 1;
-        $arepresent = 1;
-        
-        foreach my $are (@all_ares) {
-            my ($are_type, $are_start, $are_end, $are_sequence, $are_au_percent) = @$are;
-            $are_len = $are_end - $are_start + 1;
-            
-            # Count mismatches (G and C in the sequence)
-            $mismatchinare = 0;
-            @aretemp = split('', $are_sequence);
-            for ($arecount = 0; $arecount < @aretemp; $arecount++) {
-                $mismatchinare++ if ($aretemp[$arecount] eq 'g' || $aretemp[$arecount] eq 'c');
-            }
-            
-            # Calculate ARE score (simplified version based on AREScore algorithm)
-            my $are_score = 0;
-            # Count AUUUA pentamers (core motif)
-            my $pentamer_count = () = $are_sequence =~ /auuua/gi;
-            $are_score += $pentamer_count * 3;
-            # Add points for AU content
-            $are_score += ($are_au_percent / 100) * 2;
-            # Bonus for U-rich flanking
-            $are_score += 1 if $are_sequence =~ /^u+/i;
-            $are_score += 1 if $are_sequence =~ /u+$/i;
-            # Penalty for G/C content
-            my $gc_count = ($are_sequence =~ tr/gc//);
-            $are_score -= $gc_count * 0.5;
-            $are_score = 0 if $are_score < 0;
-            
-            # quality based on score
-            my $quality;
-            if ($are_score >= 13) {
-                $quality = "Excellent";
-            } elsif ($are_score >= 7) {
-                $quality = "Good";
-            } elsif ($are_score >= 4) {
-                $quality = "Moderate";
-            } else {
-                $quality = "Low";
-            }
 
-            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td><td>%.2f</td><td>%s</td></tr>\n",
-                   $are_start, $are_end, $are_sequence, $mismatchinare, $are_score, $quality;
-            
-            # Store for downstream analysis (using original variable names)
-            push @aurichregion, ($are_start + 1, $are_end + 1);
-        }
-        
+    # Close table if it was opened
+    if ($are_table_opened == 1) {
         print "</table>\n";
     }
-    
-    if ($arepresent == 0) {
+
+    if ($arepresent==0) {
         print "<div class='info-warning'>";
-        print "No AU-rich region found.";
+        print "No Au-rich region found.";   #     *(AU-rich region of at least 30 nt)<br>";
         print "</div>";
     }
-    
     print "</div>";
 }
 

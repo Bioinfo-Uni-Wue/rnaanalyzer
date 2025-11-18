@@ -35,7 +35,7 @@ print <<'HTML';
   <link rel="stylesheet" href="/css/batchresults.css">
 </head><body>
 <header>
-    <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/">    <!--- change after putting on server -->
+    <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//">    <!--- change after putting on server -->
       <img src="../images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
@@ -43,14 +43,14 @@ print <<'HTML';
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/about.html" target="_blank">Help</a> |
-      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/contact.html" target="_blank">Contact</a> |
+      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html" target="_blank">Help</a> |
+      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
 
 <div class="results-container">
-<h2>Results</h2>
+<h2>JOBS</h2>
 HTML
 
 # code written by liang 2025-09-17 ---------------
@@ -159,6 +159,7 @@ my $is_refresh = scalar @job_ids > 0;
 
 my @fasta_blocks;
 our $formatted_time = $q->param('formatted_time') || 0;
+our $count;
 
 if ($input =~ /\S/) {
     @fasta_blocks = read_pasted_fasta($input);
@@ -184,13 +185,21 @@ sub read_uploaded_fasta {
         my $seqstr = $seq->seq;
         push @blocks, ">$header\n$seqstr";
     }
-    return @blocks;
+
+
+    # Count all characters in the combined text
+    my $all_text = join("\n", @blocks);
+    $count = length($all_text);
+
+    return (@blocks, $count);
 }
 
 
 sub read_pasted_fasta {
     my ($text) = @_;
     $text =~ s/\r//g;
+
+    $count = length($text);
 
     # Add dummy header if missing
     unless ($text =~ /^>/m) {
@@ -253,18 +262,19 @@ unless ($is_refresh) {
       $max_length = $sanitized->{length} if $sanitized->{length} > $max_length;
   }
     unless ($has_valid_input) {
-        print "<p style='color:red;'>Error: No valid RNA/DNA sequence found in your input.</p>";
+        print "<p style='color:red;'>Error: Invalid characters found in the input sequence. Please check the sequence before submitting.</p>\n";
+		print "<button type='button' class='back-button' onclick='history.back()'>Back to submission</button>";               # added button to go back to input
         exit;
     }
 
     my $estimate_per_250nt = 5;  # estiamted
-    my $predicted_time = int(($max_length / 250) * $estimate_per_250nt);
+    my $predicted_time = int(($count / 250) * $estimate_per_250nt);
     $predicted_time = $predicted_time / 60.0;  #for minutes
 
-    #mirnatargetscan takes time so adding a min for this 
-    if ($mirna_target) {
-        $predicted_time += 1;
-    }
+    #    #mirnatargetscan takes time so adding a min for this 
+    #if ($mirna_target) {
+    #    $predicted_time += 1;
+    #}
 
     $predicted_time = 1 if $predicted_time < 1;
     if ($predicted_time == int($predicted_time)) {
@@ -319,12 +329,12 @@ sub sanitize_sequence {
     }
 
     # Only continue if it might be valid
-    # Clean and standardize sequence: replace invalids with 'n', convert t to u
-    $seq_body =~ s/[^acgtu]/n/g;
+    # Clean and standardize sequence: replace invalids with '', convert t to u
+    $seq_body =~ s/[^acgtu]//g;
     $seq_body =~ tr/t/u/;
 
     # Final cleaned sequence
-    my ($cleaned_seq) = ($seq_body =~ /([acgun]+)/);
+    my ($cleaned_seq) = ($seq_body =~ /([acgu]+)/);
     $cleaned_seq ||= '';
     my $length = length($cleaned_seq);
 
@@ -376,7 +386,7 @@ JS_REDIRECT
 print "<table>";
 my $elapsed = $q->param('elapsed_time') || 0;
 print "<div class='timing-info'>\n";
-print "<div class='elapsed'>Elapsed time: <span id='timer'>$elapsed</span> seconds</div>\n" unless $all_done;
+print "<span id='timer' style='display:none'>$elapsed</span>\n" unless $all_done;   # removed print statement to remove showing elapsed time (seconds) stored in $elapsed
 print "<div class='estimated'>Max. Estimated Run Time: < $formatted_time minutes</div>\n" unless $all_done;
 print "</div>\n";
 print "<br>";

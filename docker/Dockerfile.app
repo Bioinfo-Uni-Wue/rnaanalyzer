@@ -161,7 +161,7 @@ RUN find /var/www/rnaanalyzer/cgi-bin -type f \( -name "*.cgi" -or -name "*.pl" 
 
 ## Vienna: Update paths in the CGI scripts according to instructions
 RUN find /var/www/rnaanalyzer/cgi-bin -type f \( -name "*.cgi" -or -name "*.pl" \) \
-    -exec sed -i 's|/storage/srv/bioapps/rnaanalyzer|/var/www/rnaanalyzer|g' {} + && \
+    -exec sed -i 's|/path/to/rnaanalyzer|/var/www/rnaanalyzer|g' {} + && \
     find /var/www/rnaanalyzer/cgi-bin -type f \( -name "*.cgi" -or -name "*.pl" \) \
     -exec sed -i 's|/var/www/rnaanalyzer/bin/ViennaRNA-1.5/Progs|/var/www/rnaanalyzer/bin/ViennaRNA-2.4.18/src/bin/|g' {} + && \
     find /var/www/rnaanalyzer/cgi-bin -type f \( -name "*.cgi" -or -name "*.pl" \) \

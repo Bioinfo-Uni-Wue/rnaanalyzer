@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <!--  <meta name="viewport" content="width=device-width, initial-scale=1.0"/> -->
   <title>RNA Analyzer</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
   <header>
-    <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de">
+    <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de/">
       <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
@@ -17,11 +17,11 @@
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/tutorial.html" target="_blank">Tutorial</a> |
+      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//tutorial.html" target="_blank">Tutorial</a> |
                 
-      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/about.html" target="_blank">Help</a> |
+      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html" target="_blank">Help</a> |
                 
-      <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/contact.html" target="_blank">Contact</a> |
+      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
@@ -36,6 +36,8 @@
 
       <section>
         <textarea id="SEQUENCE" name="SEQUENCE" rows="10" placeholder="Enter your sequence here..."></textarea>
+		<div style="text-align: right;">Estimated time: <span id="time-estimate">0</span> minutes</div>
+
 		<div class="info-box tip"><strong>Tip 1: </strong>Press the Example button to fill a ready to submit example. </div>
 
         <div class="info-box tip"><strong>Tip 2: </strong>If your sequence is too long you can always divide it into several sequences as RNAanalyzer accepts upto 5 sequences at once.</div>
@@ -154,18 +156,61 @@
         let inputField = document.getElementById("SEQUENCE");
         let standardText = "gagcagcgccttggaggtcccgtggatctgtgtcttgcttcaacagtgtttgaacggaacagacccggggattcccactgtactcgcttccagccgcctttacaagtctctccagtcgcagcctccgggaccatctcctcgctgccttcagctcctaggaccagtctgcaccgtctcttcgcggttagctcctactccggatcagccatgacctctcagattcgtcagaattattccaccgaggtggaagctgccgtgaaccgcctggtcaacttgcacctgcgggcctcctacacctacctctctctgggcttcttttttgatcgggatgacgtggctctggagggcgtaggccactt";
         inputField.value = standardText; 
+		
+		// manually update the estimate
+		updateTimeEstimate();
       }
-      </script>
+	  
+	  // adding estiamte calcualtion for entered text in the input field. follows same logic as in batchsubmit.cgi
+	  
+	  const estimatePer250 = 5; // same as your $estimate_per_250nt (seconds per 250 chars)
+
+	  function updateTimeEstimate() {
+		const input = document.getElementById('SEQUENCE');
+		const out   = document.getElementById('time-estimate');
+
+		const maxLength = input.value.length;  // how many characters are currently typed
+		
+		if (maxLength === 0) {
+		  out.textContent = '0';
+		  return;
+		}
+		
+		
+		let predictedTimeSeconds = Math.floor((maxLength / 250) * estimatePer250);
+		let predictedTimeMinutes = predictedTimeSeconds / 60.0;
+
+		if (predictedTimeMinutes < 1) {
+		  predictedTimeMinutes = 1;
+		}
+
+		let formatted;
+		if (Number.isInteger(predictedTimeMinutes)) {
+		  formatted = String(predictedTimeMinutes);
+		} else {
+		  formatted = predictedTimeMinutes.toFixed(1);
+		}
+
+		out.textContent = '> ' + formatted;
+	  }
+
+	  // Update when user types
+	  document.getElementById('SEQUENCE').addEventListener('input', updateTimeEstimate);
+
+	  // Optional: run once at page load
+	  updateTimeEstimate();
+    
+	</script>
 
   <section class="links">
     <div class="bottom-container">
       <div class="bottom-left">
       <div class="text-group">
         <p><strong>About</strong></p>
-        <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/about.html">Help</a>
-        <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/tutorial.html">Tutorial</a>
-        <a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/contact.html">Contact</a>
-	<a href="http://rnaanalyzer.bioapps2.biozentrum.uni-wuerzburg.de/license.html">Licenses & Attributions</a>
+        <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html">Help</a>
+        <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//tutorial.html">Tutorial</a>
+        <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html">Contact</a>
+	<a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//license.html">Licenses & Attributions</a>
         
       </div>
       <div class="text-group"> 

@@ -30,8 +30,8 @@ $MIRBASE=abs_path('../databases/mirbase'); #MirBASE database
 $MIRANDA=abs_path('../bin/miranda/bin'); #miRanda 
 $AUGUSTUS=abs_path('../bin/Augustus/bin/augustus'); #augugtus 
 $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
-$YAMTK=abs_path('../bin/yamtk'); #yamtk scan folder
-$RBPDB=abs_path('../databases/rbpdb/motifs.meme');
+$FIMO=abs_path('../bin/meme-5.5.8/bin'); #fimo rbp scan
+$RBPDB=abs_path('../databases/rbpdb/rbpdb.meme');
 $RIBOSWDB=abs_path('../databases/riboswitches/riboswitch.cm'); #riboswitch location 
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
@@ -108,7 +108,7 @@ print "    </div>";
 print "    <div class='header-links'>";
 print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html' target='_blank'>About</a> |";
 print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html' target='_blank'>Contact</a> |";
-print "      <a href='https://www.biozentrum.uni-wuerzburg.de/bioinfo' target='_blank'>Dandekar Lab</a>";
+print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//bioinfo' target='_blank'>Dandekar Lab</a>";
 print "    </div>";
 print "  </header>";
 print "";
@@ -149,7 +149,7 @@ sub startproggi {
     
     if ($SEQUENCELENGTH >= 2500){
             print "<div class='info-warning'>";
-            print "<i>\ti.    Annotated Structure visualization can take a few seconds to load due to sequence length.</i>\n";
+            print "<i>\ti.    Structure visualization can take a few seconds to load due to sequence length.</i>\n";
             print "</div>";
         }
     
@@ -163,7 +163,8 @@ sub startproggi {
 sub analysis {
     chdir $TEMPDIR;
 
-    # creates folding and does structural analysis like stems etc
+    # print "<pre>";
+
     print "<div class='box'>";
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Structural information</div>";
     print "<div class='box-content-structure'>";
@@ -180,69 +181,58 @@ sub analysis {
     print "</div>";
     print "</div>";
 
-    # base composition analysis 
     &composition;
 
-    # trans-splicing analysis
     if ($do_TRANS) {
     print "<div class='box'>";
     &TRANS;
     print "</div>";
     }
 
-    # iron resposive element check
     if ($do_IRE) {
     print "<div class='box'>";	
 	&IRE;
     print "</div>";
     }
 
-    # check for riboswitches
     if ($do_ribo) {
     print "<div class='box'>";	
 	&riboswitch;
     print "</div>";
     }
 
-    # check for Au rich regions
     print "<div class='box'>";
     &ARE;
     print "</div>";
 
-    # check for catalytic RNA sites, including snRNP sites and sm Sites
     print "<div class='box'>";
     &smsite;
     print "</div>";
 
-    # RNA motif scan agaisnt Rfam database  
     if ($do_rnamotif) {
     print "<div class='box'>";
     &RNAMOTIF;
     print "</div>";
     }
 
-    # tRNA scan using tRNAscan-SE
     if ($do_trna) {
     print "<div class='box'>";
     &tRNA;
     print "</div>";
     }
 
-    # RNA binding Protein motif scan
     if ($do_rbp) {
     print "<div class='box'>"; 
     &rbp;
     print "</div>";
     }
 
-    # microRNA scan 
     if ($do_mirna) {
     print "<div class='box'>";
     &microRNA;
     print "</div>";
     }
 
-    # coding potential analysis and UTR prediction
     # --- Capture transcript models ---
     print "<div class='box'>";
     my %transcripts;
@@ -310,12 +300,10 @@ sub analysis {
         \@structured_regions
     );
 
-    # outputs protein seq when coding transcript
     print "<div class='box'>";
     &predprotein;
     print "</div>";
 
-    # miRNA target scan using miranda
     if ($do_mirnatarget) {
     print "<div class='box'>";
     miRNAtarget(\%transcripts);
@@ -324,17 +312,14 @@ sub analysis {
     # Optional: enable if scan_rbs supports multi-transcript
     # scan_rbs(\%transcripts);
 
-    # Cstf motif scan
     print "<div class='box'>";
     &csfce;
     print "</div>";
 
-    # creates annotated folding picture using FORNA
     print "<div class='box'>";
     &createfoldingpicture;
     print "</div>";
 
-    # feature table
     print "<div class='table-container'>";
     &location_table;
     print "</div>";
@@ -730,13 +715,9 @@ sub csfce {
 
     @seq=();
     print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
-    
-    if ($putativeCVfound == 0) {
-        print "<div class='info-warning'>";
-        print "No CstF Motif found.";
-        print "</div>";
-    }
-
+    print "<div class='info-warning'>";
+    print "No CstF Motif found.";
+    print "</div>";
 
     print "</div>";
 }
@@ -805,45 +786,44 @@ sub rbp {
     print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Binding Protein Motif(s) Scan:</div>";
     print "<div class='box-content'>";
 
-    my $yamtk_outfile = "$TEMPDIR/rbp.txt";
-    my $input_seq = "$TEMPDIR/$job.seq";  
+    my $fimo_outfile = "$TEMPDIR/fimo.txt";
+    my $input_seq = "$TEMPDIR/$job.seq";  # path to your .meme file
 
-    # Run YAMTK
-    my $yamtk_cmd = "$YAMTK/yamtk scan -t 0.0001 -m $RBPDB -s $input_seq -o $yamtk_outfile";
-    system($yamtk_cmd);
+    # Run FIMO
+    my $fimo_cmd = "$FIMO/fimo --text --thresh 1e-4 $RBPDB $input_seq > $fimo_outfile";
+    system($fimo_cmd);
 
-    my @yamtk_results;
-    @rbp_locs = ();  #array to store start/end positions
+    my @fimo_results;
+    @rbp_locs = ();  # global array to store start/end positions
 
-    # Parse yamtk output
-    if (-e $yamtk_outfile) {
-        open my $fh, '<', $yamtk_outfile or die "Cannot open YAMTK output: $!";
+    # Parse FIMO output
+    if (-e $fimo_outfile) {
+        open my $fh, '<', $fimo_outfile or die "Cannot open FIMO output: $!";
         while (my $line = <$fh>) {
-            next if $line =~ /^#/;
-            # next if $. == 1;
+            next if $. == 1;
             chomp $line;
-            my ($seq_name, $start, $stop, $strand, $motif, $pvalue, $score, $score_pct, $matched_seq) = split /\t/, $line;
+            my ($motif_id, $alt_id, $seq_name, $start, $stop, $strand, $score, $pvalue, $qvalue, $matched_seq) = split /\t/, $line;
 
             my ($protein_name, $motif_name);
 
-            # extract protein and motif name
-            if ($motif && index($motif, '_') != -1) {
-                ($protein_name, $motif_name) = split(/_/, $motif, 2);
+            if ($alt_id && index($alt_id, '_') != -1) {
+                ($protein_name, $motif_name) = split(/_/, $alt_id, 2);
+            } elsif ($motif_id && index($motif_id, '_') != -1) {
+                ($protein_name, $motif_name) = split(/_/, $motif_id, 2);
             } else {
-                $protein_name = $motif_id;
-                $motif_name   = '';
+                $protein_name = $alt_id || $motif_id;
+                $motif_name = '';
             }
 
-            my $protein_link = "<a href=\"http://rbpdb.ccbr.utoronto.ca/proteins.php?search_term=$protein_name\" target=\"_blank\">$protein_name</a>";
-
-            push @yamtk_results, {
-                motif        => $motif,
-                protein      => $protein_link,
+            push @fimo_results, {
+                motif_id     => $motif_id,
+                alt_id       => $alt_id || $motif_id,
+                protein      => $protein_name,
                 motif        => $motif_name,
                 seq_name     => $seq_name,
                 start        => $start,
                 end          => $stop,
-                strand       => $strand,
+                # strand       => $strand,
                 score        => $score,
                 pvalue       => $pvalue,
                 matched_seq  => $matched_seq,
@@ -855,7 +835,7 @@ sub rbp {
     # remove reduntant hits for each protein+domain combination
     my %best_hits;
     
-    foreach my $hit (@yamtk_results) {
+    foreach my $hit (@fimo_results) {
         my $combination = $hit->{protein} . "\t" . $hit->{motif};
         
         if (!exists $best_hits{$combination} || $hit->{score} > $best_hits{$combination}->{score}) {
@@ -877,7 +857,7 @@ sub rbp {
 
     if ($total > 0) {
         print "<table class='table-result'>\n";
-        print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Strand</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
+        print "<tr><th>Protein</th><th>Motif</th><th>Start</th><th>End</th><th>Score</th><th>p-value</th><th>Matched Sequence</th></tr>\n";
 
         foreach my $hit (@filtered_results) {
             print "<tr>";
@@ -885,7 +865,7 @@ sub rbp {
             print "<td>$hit->{motif}</td>";
             print "<td>$hit->{start}</td>";
             print "<td>$hit->{end}</td>";
-            print "<td>$hit->{strand}</td>";
+            # print "<td>$hit->{strand}</td>";
             print "<td>$hit->{score}</td>";
             print "<td>$hit->{pvalue}</td>";
             print "<td><tt>$hit->{matched_seq}</tt></td>";
@@ -902,139 +882,48 @@ sub rbp {
     print "</div>";
 }
 
-# new ARE routine ti include all new classes of AREs (1,2,3 and core)
-# based on https://pubmed.ncbi.nlm.nih.gov/22242014/; https://pmc.ncbi.nlm.nih.gov/articles/PMC2682044; https://www.pnas.org/doi/10.1073/pnas.1808696116;
-# https://pmc.ncbi.nlm.nih.gov/articles/PMC8728028
 sub ARE {
-    $arepresent = 0;
-    $are_pos = 1;
+    $arepresent=0;
+    $are_pos=1;
     my $are_table_opened = 0;
-    my @all_ares = ();
-    
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>AU-rich regions:</div>";
+    #Check for so called ARE = Au-rich regions; consensus (AUUUA)n of ~50 bases
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Au-rich regions:</div>";
+
     print "<div class='box-content'>";
-    
-    # check papers for patterns (cmyc fore xample)
-    my %are_patterns = (
-        'Class I'   => qr/([au]{0,3}u{2}au{3,5}a[au]{2}[au]{0,3})/i,              # Discontinuous UUAUUUAWW
-        'Class II'  => qr/((?:u{2}au{3}a[au]{0,2}){2,})/i,                        # Overlapping AUUUA motifs
-        'Class III' => qr/(u{15,})/i,                                              # U-rich regions without AUUUA
-        'Core'      => qr/([au]{0,3}uau{3}au[au]{0,3})/i,                         # 13-bp consensus: WWWU(AUUUA)UWWW
-        'Classic'   => qr/(auuua(auuua)+)/i                                        # Original pentamer repeats (strict AUUUA)
-    );
-    
-    # scan ARE 
-    foreach my $are_type (keys %are_patterns) {
-        my $pattern = $are_patterns{$are_type};
-        
-        while ($SEQUENCECHECKED =~ /$pattern/g) {
-            my $match = $1;
-            $are_len = length($match);
-            $are_pos = pos($SEQUENCECHECKED) - $are_len;
-            
-            # Calculate AU content # validation
-            my $au_count = ($match =~ tr/aAuU//);
-            my $total_len = length($match);
-            my $au_percent = ($au_count / $total_len) * 100;
-            
-            # Filter based on ARE type
-            my $passes_filter = 0;
-            if ($are_type eq 'Class III') {
-                # Class III: U-rich only, no AUUUA required, stricter U content
-                my $u_count = ($match =~ tr/uU//);
-                my $u_percent = ($u_count / $total_len) * 100;
-                $passes_filter = 1 if ($are_len >= 15 && $u_percent >= 70 && $match !~ /a[ut]{3}a/i);
-            } else {
-                # Other classes: minimum length of 9 nt and at least 60% AU content
-                $passes_filter = 1 if ($are_len >= 9 && $au_percent >= 60);
+    while ($SEQUENCECHECKED=~/([ag]uuu[ag](uuu[ag])+)/g) {
+        $are_len=length($1);
+        $are_pos=pos($SEQUENCECHECKED)-$are_len;
+        if ($are_len >=9){
+            # Open table only once when first ARE is found
+            if ($are_table_opened == 0) {
+                print "<table class='table-result'>\n";
+                print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th></tr>\n";
+                $are_table_opened = 1;
             }
             
-            if ($passes_filter) {
-                # overlapping regions to avoid duplicates
-                my $is_duplicate = 0;
-                foreach my $existing (@all_ares) {
-                    my ($ex_start, $ex_end) = @{$existing}[1,2];
-                    if (!(($are_pos + $are_len) < $ex_start || $are_pos > $ex_end)) {
-                        # overlap found< - always keep the longer one
-                        if ($are_len > ($ex_end - $ex_start)) {
-                            @{$existing} = ($are_type, $are_pos, $are_pos + $are_len - 1, $match, $au_percent);
-                        }
-                        $is_duplicate = 1;
-                        last;
-                    }
-                }
-                
-                unless ($is_duplicate) {
-                    push @all_ares, [$are_type, $are_pos, $are_pos + $are_len - 1, $match, $au_percent];
-                }
+            $arepresent=1;
+            $mismatchinare=0;
+            @aretemp=split('',$1);
+            for ($arecount=0;$arecount<@aretemp;$arecount++){
+                $mismatchinare++ if ($aretemp[$arecount] eq 'g');
             }
+            
+            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td></tr>\n",
+                   $are_pos, $are_pos+$are_len-1, $1, $mismatchinare;
+            @aurichregion=(@aurichregion,$are_pos+1,$are_pos+$are_len);
         }
     }
-    
-    # sort AREs by position
-    @all_ares = sort { $a->[1] <=> $b->[1] } @all_ares;
-    
-    # Display results
-    if (@all_ares > 0) {
-        print "<table class='table-result'>\n";
-        print "<tr><th><b>ARE</b></th><th>Start</th><th>End</th><th>Sequence</th><th>Mismatches</th><th>Score</th><th>Quality</th></tr>\n";
-        $are_table_opened = 1;
-        $arepresent = 1;
-        
-        foreach my $are (@all_ares) {
-            my ($are_type, $are_start, $are_end, $are_sequence, $are_au_percent) = @$are;
-            $are_len = $are_end - $are_start + 1;
-            
-            # Count mismatches (G and C in the sequence)
-            $mismatchinare = 0;
-            @aretemp = split('', $are_sequence);
-            for ($arecount = 0; $arecount < @aretemp; $arecount++) {
-                $mismatchinare++ if ($aretemp[$arecount] eq 'g' || $aretemp[$arecount] eq 'c');
-            }
-            
-            # Calculate ARE score (simplified version based on AREScore algorithm)
-            my $are_score = 0;
-            # Count AUUUA pentamers (core motif)
-            my $pentamer_count = () = $are_sequence =~ /auuua/gi;
-            $are_score += $pentamer_count * 3;
-            # Add points for AU content
-            $are_score += ($are_au_percent / 100) * 2;
-            # Bonus for U-rich flanking
-            $are_score += 1 if $are_sequence =~ /^u+/i;
-            $are_score += 1 if $are_sequence =~ /u+$/i;
-            # Penalty for G/C content
-            my $gc_count = ($are_sequence =~ tr/gc//);
-            $are_score -= $gc_count * 0.5;
-            $are_score = 0 if $are_score < 0;
-            
-            # quality based on score
-            my $quality;
-            if ($are_score >= 13) {
-                $quality = "Excellent";
-            } elsif ($are_score >= 7) {
-                $quality = "Good";
-            } elsif ($are_score >= 4) {
-                $quality = "Moderate";
-            } else {
-                $quality = "Low";
-            }
 
-            printf "<tr><td>Hit</td><td>%d</td><td>%d</td><td>%s</td><td>%d</td><td>%.2f</td><td>%s</td></tr>\n",
-                   $are_start, $are_end, $are_sequence, $mismatchinare, $are_score, $quality;
-            
-            # Store for downstream analysis (using original variable names)
-            push @aurichregion, ($are_start + 1, $are_end + 1);
-        }
-        
+    # Close table if it was opened
+    if ($are_table_opened == 1) {
         print "</table>\n";
     }
-    
-    if ($arepresent == 0) {
+
+    if ($arepresent==0) {
         print "<div class='info-warning'>";
-        print "No AU-rich region found.";
+        print "No Au-rich region found.";   #     *(AU-rich region of at least 30 nt)<br>";
         print "</div>";
     }
-    
     print "</div>";
 }
 
@@ -1388,7 +1277,7 @@ sub checkstems {
     print "<div class='info-info'>$comment</div>";
     
     if ($hairpin_count > 0 && $stem_count > 0 && $hairpin_count / $stem_count > 0.7) {
-        print "\t\tHigh hairpin content â€” characteristic of miRNA precursors\n";
+        print "\t\tHigh hairpin content — characteristic of miRNA precursors\n";
     }
     
     
@@ -1731,7 +1620,7 @@ sub CPC2 {
 
 	# my $format = "%-10s %-18s %-15s %-10s %-10s %-10s %-15s %-10s %-10s\n";
 
-    my ($orf_start, $peptide_length, $label, $strand);
+    my ($orf_start, $peptide_length, $label);
 
 	# Read file line by line
 	while (my $line = <$fh_cpc2>) {
@@ -1795,48 +1684,20 @@ sub CPC2 {
             print "<td>$hit->{label}</td>";
             print "</tr>";
         }
-        print "</table>";
+        print "</table>"
 
     } else {
         print "<div class='info-warning'>";
         print "No result in CPC2 output\n";
         print "</div>";
     }
-
-    # Inline Kozak (checks only if we have a valid ORF start)
-    my $ok_kozak = 1;  # assume OK unless we detect a strong Kozak
-    if (defined $orf_start && $orf_start > 6 && ($orf_start + 3) <= length($SEQUENCECHECKED)) {
-        my $win = substr($SEQUENCECHECKED, $orf_start - 6, 10);  # extract 10 nt widnow for koyak check -6..+3 around AUG
-        $win = uc $win;
-
-        # flip to coding orientation if negative strand
-        if (defined $strand && $strand eq '-') {
-            $win =~ tr/ACGU/TGCA/; $win = reverse $win;
-        }
-
-        # indices in coding orientation: -3 = [3], +4 = [9]
-        my $minus3 = substr($win, 3, 1);
-        my $plus4  = substr($win, 9, 1);
-
-        my $strong_kozak = (($minus3 eq 'A' || $minus3 eq 'G') && $plus4 eq 'G') ? 1 : 0;
-        $ok_kozak = !$strong_kozak;  # block lncRNA if strong Kozak is present
-    }
-
-    # check for lncRNA
-    if (defined $label && $label eq 'noncoding' && $SEQUENCELENGTH > 200 && $peptide_length < 100 && $ok_kozak == 1) {
-        print "<div class='info-info' style='overflow: hidden; text-overflow: ellipsis;'>";
-        print "<p style='white-space: normal; word-break: break-word;'>Based on its non-coding potential, sequence length, small open reading frame (ORF) length, and the absence or weakness of a Kozak sequence, the given sequence may be classified as a long non-coding RNA (lncRNA). Please check the folding below.</p>";
-        # upper page shows the folding # to be added
-        print "</div>";
-    }
-
-    # Extract cds sequnece 
-    my $cds_nt = substr($SEQUENCECHECKED, $orf_start - 1, $peptide_length * 3);
-
+    
     if (defined $label && $label eq 'coding' && $orf_start > 0 && $peptide_length > 0) {
 
     my $orf_end = $orf_start + ($peptide_length * 3) - 1;
-    
+
+    # Extract forward-oriented sequence regardless of strand
+    my $cds_nt = substr($SEQUENCECHECKED, $orf_start - 1, $peptide_length * 3);
 
     # Reverse complement if necessary
     if ($strand eq '-') {
@@ -1868,7 +1729,6 @@ sub CPC2 {
         &scan_structured_regions;
         print "</div>";
     }
-
     print "</div>";
     return \%transcripts;
     
@@ -2206,128 +2066,13 @@ sub miRNAtarget {
 
 ########################
 # augustus replacing the old genscan; need to check the whole sub for errors
-# Flag inferred UTRs as below confidence when:
+# Flag inferred UTRs as “low confidence” when:
 # ORF is very short
-# ORF start is <15 nt from sequence start (no room for 5' UTR)
+# ORF start is <15 nt from sequence start (no room for 5′ UTR)
 # Sequence ends shortly after ORF (truncated transcript)
 # Provide scoring or confidence per UTR:
-# E.g., "Predicted 5' UTR: 37 bp (contains weak Shine-Dalgarno motif, deltaG = -3.2 kcal/mol)"
+# E.g., "Predicted 5′ UTR: 37 bp (contains weak Shine-Dalgarno motif, ΔG = -3.2 kcal/mol)"
 # Refactored AUGUSTUS + UTR + PolyA logic to handle multiple transcripts
-
-# sub AUGUSTUS {
-
-#     print "<div class='box-header' onclick='toggleBoxContent(this)'>Gene Prediction Analysis:</div>";
-#     print "<div class='box-content'>";
-#     my ($species) = @_;
-#     $species ||= "human";
-#     my $utr_flag = ($species =~ /^(human|fly|zebrafish)$/i) ? "--UTR=on" : "";
-
-#     my $output_gff = "$TEMPDIR/$job.augustus";
-#     my $input_dna  = "$TEMPDIR/$job.dna";
-
-#     my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on $utr_flag --species=$species $input_dna > $output_gff 2>&1";
-#     system($augustus_cmd) == 0 or die "AUGUSTUS run failed: $!";
-
-#     open(my $GFF, '<', $output_gff) or die "Can't open AUGUSTUS output: $!";
-
-#     my %transcripts;
-#     my $current_tid;
-#     my @protein_lines;
-#     my $capturing_protein = 0;
-
-#     while (my $line = <$GFF>) {
-#         chomp $line;
-
-#         if ($line =~ /^# protein sequence = \[(.*)$/) {
-#             $capturing_protein = 1;
-#             push @protein_lines, $1;
-#             next;
-#         }
-#         if ($capturing_protein) {
-#             $line =~ s/^#\s?//;
-#             if ($line =~ /^(.*)\]$/) {
-#                 push @protein_lines, $1;
-#                 $capturing_protein = 0;
-#                 $transcripts{$current_tid}{protein} = join('', @protein_lines);
-#                 @protein_lines = ();
-#                 next;
-#             }
-#             push @protein_lines, $line;
-#             next;
-#         }
-
-#         next if $line =~ /^#/;
-#         my @fields = split("\t", $line);
-#         next unless @fields >= 9;
-
-#         my ($type, $start, $end, $strand, $attr) = @fields[2,3,4,6,8];
-#         my ($tid) = $attr =~ /transcript_id \"(.*?)\"/;
-#         $current_tid = $tid if defined $tid;
-#         next unless defined $tid;
-
-#         $transcripts{$tid}{strand} = $strand if $type eq 'gene';
-#         $transcripts{$tid}{tss} = $start if $type eq 'tss';
-#         $transcripts{$tid}{tts} = $end   if $type eq 'tts';
-#         if ($type eq 'CDS') {
-#             push @{ $transcripts{$tid}{cds} }, [$start, $end];
-#             $transcripts{$tid}{cds_start} //= $start;
-#             $transcripts{$tid}{cds_end} = $end;
-#         }
-#         if ($type eq 'exon') {
-#             push @{ $transcripts{$tid}{exons} }, [$start, $end];
-#         }
-#         $transcripts{$tid}{source} = 'augustus';
-#     }
-#     close $GFF;
-
-#     my $i = 1;
-#     my $j = 1;
-#     if (keys %transcripts == 0) {
-#         print "<div class='info-warning'>";
-#         print "No gene predictions were found.</div>";
-#     } else {
-#     foreach my $tid (sort keys %transcripts) {
-#         my $model = $transcripts{$tid};
-        
-#         my ($gene_id) = $tid =~ /^(g\d+)\./;
-#         print "<h3>Transcript $i (ID: $tid";
-#         print ", gene: $gene_id" if $gene_id;
-#         print ")</h3><br>";
-#         $i++;
-
-#         print "<table class='table-result'>";
-#         print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
-
-#         foreach my $exon (@{ $model->{exons} }) {
-#             my ($start, $end) = @$exon;
-#             my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
-#             foreach my $seg (@segments) {
-#                 my ($seg_start, $seg_end, $type) = @$seg;
-#                 print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
-#                 $j++;
-#             }
-#         }
-#         print "</table>";
-#         $model->{protein} =~ s/\s//g if exists $model->{protein};
-
-#         print "<br>";
-#         }
-#     }
-
-#     @predprot = ();              
-#     foreach my $tid (sort keys %transcripts) {
-#         if (my $protein_seq = $transcripts{$tid}{protein}) {
-#             $protein_seq =~ s/\s//g;
-#             my @residues = split('', $protein_seq);
-#             push @predprot, @residues;
-#             $predprotforAnDom .= $protein_seq;
-#         }
-#     }
-#     print "Parsed type=$type, tid=$tid, start=$start, end=$end<br>" if defined $tid;
-#     print "</div>";
-
-#     return \%transcripts;
-# }
 
 sub AUGUSTUS {
 
@@ -2397,97 +2142,35 @@ sub AUGUSTUS {
 
     my $i = 1;
     my $j = 1;
-    
     if (keys %transcripts == 0) {
         print "<div class='info-warning'>";
         print "No gene predictions were found.</div>";
-
-        # lncRNA check for noncoding transcript
-        if ($SEQUENCELENGTH > 200) {
-            print "<div class='info-info' style='word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>";
-            print "<p style='word-wrap: break-word;'>Based on its non-coding potential, and overall sequence length, the given sequence may be classified as a long non-coding RNA (lncRNA). Please check the folding of the sequence below.</p>";
-            print "</div>";
-        }
-        
     } else {
-        # Process each transcript
-        foreach my $tid (sort keys %transcripts) {
-            my $model = $transcripts{$tid};
-            
-            my ($gene_id) = $tid =~ /^(g\d+)\./;
-            print "<h3>Transcript $i (ID: $tid";
-            print ", gene: $gene_id" if $gene_id;
-            print ")</h3><br>";
-            
-            # Kozak check for this transcript
-            my $orf_start = $model->{cds_start};
-            my $strand = $model->{strand};
-            my $ok_kozak = 1;  # assume OK unless we detect a strong Kozak
-            
-            if (defined $orf_start && $orf_start > 6 && ($orf_start + 3) <= length($SEQUENCECHECKED)) {
-                my $win = substr($SEQUENCECHECKED, $orf_start - 6, 10);  # extract 10 nt widnows to check kozak -6..+3 around AUG (start codon)
-                $win = uc $win; 
-                
-                # check negative strand
-                if (defined $strand && $strand eq '-') {
-                    $win =~ tr/ACGU/UGCA/; 
-                    $win = reverse $win; 
-                }
-                
-                # Indices in coding orientation: -3 = [3], +4 = [9]
-                my $minus3 = substr($win, 3, 1);
-                my $plus4  = substr($win, 9, 1);
-                
-                my $strong_kozak = (($minus3 eq 'A' || $minus3 eq 'G') && $plus4 eq 'G') ? 1 : 0;
-                $ok_kozak = !$strong_kozak;  # flag is 1 if weak Kozak
-                
-                
-                # print "Kozak check = $ok_kozak / $strong_kozak" # debug
-            }
-            
-            $i++;
-            
-            # Check if transcript has CDS (coding) or not (noncoding)
-            my $has_cds = exists $model->{cds} && @{ $model->{cds} } > 0;
-            
-            # Calculate peptide length
-            my $peptide_length = 0;
-            if (exists $model->{protein}) {
-                my $prot = $model->{protein};
-                $prot =~ s/\s//g;
-                $peptide_length = length($prot);
-            }
+    foreach my $tid (sort keys %transcripts) {
+        my $model = $transcripts{$tid};
+        
+        my ($gene_id) = $tid =~ /^(g\d+)\./;
+        print "<h3>Transcript $i (ID: $tid";
+        print ", gene: $gene_id" if $gene_id;
+        print ")</h3><br>";
+        $i++;
 
-            print "<table class='table-result'>";
-            print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
+        print "<table class='table-result'>";
+        print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
 
-            foreach my $exon (@{ $model->{exons} }) {
-                my ($start, $end) = @$exon;
-                my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
-                foreach my $seg (@segments) {
-                    my ($seg_start, $seg_end, $type) = @$seg;
-                    print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
-                    $j++;
-                }
+        foreach my $exon (@{ $model->{exons} }) {
+            my ($start, $end) = @$exon;
+            my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
+            foreach my $seg (@segments) {
+                my ($seg_start, $seg_end, $type) = @$seg;
+                print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
+                $j++;
             }
-            print "</table>";
-            
-            # Check if noncoding (no CDS predicted) AND no protein sequence
-            if (!$has_cds && !exists $model->{protein} && $SEQUENCELENGTH > 200) {
-                print "<div class='info-info' style='word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>";
-                print "<p style='word-wrap: break-word;'><i>Based on its non-coding potential, and sequence length, the given sequence may be classified as a long non-coding RNA (lncRNA). Please check the folding of the sequence below.</i></p>";
-                print "</div>";
-                
-            } elsif ($has_cds && $peptide_length < 100 && $ok_kozak == 1 && $SEQUENCELENGTH > 200) {
-                # lncRNA check for coding transcript with short ORF and weak Kozak
-                print "<div class='info-info' style='word-wrap: break-word; overflow-wrap: break-word; white-space: normal;'>";
-                print "<p style='word-wrap: break-word;'>Based on its sequence length, small open reading frame (ORF) length, and the absence or weakness of the Kozak sequence, the given sequence may be classified as a long non-coding RNA (lncRNA) Please check the folding of the sequence below.</p>";
-                print "</div>";
-            }
-            
-            $model->{protein} =~ s/\s//g if exists $model->{protein};
+        }
+        print "</table>";
+        $model->{protein} =~ s/\s//g if exists $model->{protein};
 
-            print "<br>";
+        print "<br>";
         }
     }
 
@@ -2500,7 +2183,7 @@ sub AUGUSTUS {
             $predprotforAnDom .= $protein_seq;
         }
     }
-    
+    print "Parsed type=$type, tid=$tid, start=$start, end=$end<br>" if defined $tid;
     print "</div>";
 
     return \%transcripts;
@@ -3242,6 +2925,8 @@ print "      content.style.display = 'none';";
 print "    }";
 print "  }";
 print "</script>";
+
+
 
 
 write_file("$TEMPDIR/result.txt", "done\n");
