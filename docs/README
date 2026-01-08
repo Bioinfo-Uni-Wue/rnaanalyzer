@@ -4,4 +4,25 @@ with a folding overview.  These, coupled with coding sequence potential analyis,
 coding. We achieve this using specific/well-known databases and tools built for specific predictions, all coupled in one web application. Furthermore, we also allow 
 users to predict microRNA target predictions present in the given sequence, which can be useful in understanding gene regulation. 
 
-Apart from these, RNAanalyzer also has tRNA scan, iron responsive element identification, UTR prediction, small molecule binding site identification, and can also scan for highly structured regions which are usually involved in regulatory functions. 
+Apart from these, RNAanalyzer also has tRNA scan, iron responsive element identification, UTR prediction, small molecule binding site identification, and can also scan for highly structured regions which are usually involved in regulatory functions.
+
+RNAanalyzer3 requires these dependencies to run:
+FCGIWRAP
+Perl > 5.26
+Perl CGI 
+BioPerl
+Python > 3.8
+BioPython
+
+Tools required by RNAanalyzer:
+ViennaRNA v2.7.0
+FORNAC 
+tRNAscan-SE 2.0.12
+CPC2 v1.0.1
+Augustus v3.5.0
+Hmmer v3.4
+miRanda v3.3a
+YAMTK v2.0.0
+Infernal v1.1.5 
+
+The tools should be installed in bin directory located at the root directory of Rnaanalyzer. But can be installed in any location followed by location changes in the main webserver.cgi script. Please find the license information of the tools in the respective folder.

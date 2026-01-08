@@ -3,6 +3,8 @@ use strict;
 use warnings;
 use Exporter 'import';
 use File::Path qw(make_path);
+use Digest::SHA qw(hmac_sha256);   # Core/standard module
+use MIME::Base64 qw(encode_base64);# Core/standard module
 our @EXPORT_OK = qw(get_next_job_id);
 
 sub get_next_job_id {
@@ -35,7 +37,17 @@ sub get_next_job_id {
     print $fh $id + 1;
     close $fh;
 
-    return $id;
+    # secret phrase for creating the hash
+    my $SECRET = 'rnaanalyzer-bioinfo';
+
+    # HMAC-SHA256(id, secret), then URL-safe Base64, then take first 16 chars
+    my $digest = hmac_sha256("$id", $SECRET);
+    my $b64    = encode_base64($digest, '');   # no newline
+    $b64 =~ tr|+/=|-_|d;                       # URL-safe, strip '=' padding
+    my $opaque = substr($b64, 0, 6);          # length 16 (tweakable)
+
+    return $opaque;
+
 }
 
 1;

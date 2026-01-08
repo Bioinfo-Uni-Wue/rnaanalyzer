@@ -35,7 +35,7 @@ print <<'HTML';
   <link rel="stylesheet" href="/css/batchresults.css">
 </head><body>
 <header>
-    <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//">    <!--- change after putting on server -->
+    <a href="http://localhost/">    <!--- change after putting on server -->
       <img src="../images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
@@ -43,8 +43,8 @@ print <<'HTML';
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html" target="_blank">Help</a> |
-      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html" target="_blank">Contact</a> |
+      <a href="http://localhost/about.html" target="_blank">Help</a> |
+      <a href="http://localhost/contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
@@ -66,7 +66,7 @@ unless ($is_refresh) {
 
 my $max_visits = 10;          # Maximum visits allowed
 my $time_frame = 60;          # Time frame in seconds (e.g., 60 seconds)
-my $log_file = "../tmp/ip_log.txt";  # Log file to store IP
+my $log_file = "/storage/srv/bioapps/rnaanalyzer/tmp/ip_log.txt";  # Log file to store IP
 
 # Get the visitor's IP address
 my $ip_address = remote_addr();
@@ -116,7 +116,7 @@ if (open(my $log_fh, '>', $log_file)) {
 use File::Find;
 use File::Path qw(remove_tree);
 use POSIX qw(strftime);
-my $jobdir="../tmp/jobs";
+my $jobdir="/storage/srv/bioapps/rnaanalyzer/tmp/jobs";
 my $time_threshold = time()-30*24*60*60; # Roughly 30 days
 
 sub wanted {

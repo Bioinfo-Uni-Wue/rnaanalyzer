@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <!--  <meta name="viewport" content="width=device-width, initial-scale=1.0"/> -->
-  <title>RNA Analyzer</title>
+  <title>RNAanalyzer3</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
   <header>
-    <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de/">
+    <a href="http://localhost/">
       <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
@@ -17,11 +17,11 @@
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//tutorial.html" target="_blank">Tutorial</a> |
+      <a href="http://localhost/tutorial.html" target="_blank">Tutorial</a> |
                 
-      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html" target="_blank">Help</a> |
+      <a href="http://localhost/about.html" target="_blank">Help</a> |
                 
-      <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html" target="_blank">Contact</a> |
+      <a href="http://localhost/contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
@@ -30,8 +30,9 @@
       <form action="../cgi-bin/batchsubmit.cgi" method="post" enctype="multipart/form-data" onsubmit="return validateForm(event)">
 
       <section>
-        <p>With this web application, you can search your RNA/DNA for several known RNA structures and retrieve general information about your sequence.</p>
-        <p>Please have a look at our <a href="tutorial.html" target="_blank">tutorial</a> on how to use our webserver.</p>
+        <p>With RNA Analyzer<sup>3</sup>, you can search your RNA/DNA for several known RNA structures and retrieve general information about your sequence.</p>
+        <p>Please have a look at our <a href="tutorial.html" target="_blank">tutorial</a> on how to use our webserver. Users can also retrieve the results for older jobs with the Job ID. </p>
+	<p><b>RNA Analyzer<sup>3</sup> is free and open to all users without login requirements.</b></p>
       </section>
 
       <section>
@@ -40,7 +41,8 @@
 
 		<div class="info-box tip"><strong>Tip 1: </strong>Press the Example button to fill a ready to submit example. </div>
 
-        <div class="info-box tip"><strong>Tip 2: </strong>If your sequence is too long you can always divide it into several sequences as RNAanalyzer accepts upto 5 sequences at once.</div>
+		<div class="info-box tip"><strong>Tip 2: </strong>RNA Analyzer<sup>3</sup> accepts seqeunces up to 20,000 nucleotides. If your sequence is too long you can always divide it into several sequences as RNAanalyzer accepts upto 5 sequences at once.</div>
+		<div class="info-box warning"><strong>Info: </strong> Features involving folding of entire sequence is limited to 5000 nucleotides.</strong></div>
       </section>
 
       <section>
@@ -104,7 +106,7 @@
       <label><input type="checkbox" name="mirna_target" value="ON" unchecked />
         miRNA Target scan
       </label>
-      <div class ="info-box warning">can take a few minutes based on input sequence length</div>
+      <div class ="info-box warning">can take up to a few minutes based on input sequence length</div>
       </section> 
       </div>
     </form>
@@ -112,7 +114,7 @@
     <section>
       <form class="inline-form" action="../cgi-bin/retrieve_job.cgi" method="get">
         <label for="job_id">Retrieve a Previous Job:</label>
-        <input type="text" id="job_id" name="job_id" placeholder="Enter Job Number eg., 1741" required>
+        <input type="text" id="job_id" name="job_id" placeholder="Enter Job ID eg., 7tUQdn" required>
         <input type="submit" value="Submit">
       </form>
     </section>
@@ -207,10 +209,10 @@
       <div class="bottom-left">
       <div class="text-group">
         <p><strong>About</strong></p>
-        <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html">Help</a>
-        <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//tutorial.html">Tutorial</a>
-        <a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html">Contact</a>
-	<a href="https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//license.html">Licenses & Attributions</a>
+        <a href="http://localhost/about.html">Help</a>
+        <a href="http://localhost/tutorial.html">Tutorial</a>
+        <a href="http://localhost/contact.html">Contact</a>
+	<a href="http://localhost/license.html">Licenses & Attributions</a>
         
       </div>
       <div class="text-group"> 

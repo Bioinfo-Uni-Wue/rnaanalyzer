@@ -1,14 +1,16 @@
 package RNASERVER::IRE;
 
 use strict;
-use lib "../../bin/ViennaRNA-2.7.0/interfaces/Perl";
+use lib "$ENV{HOME}/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl";
 use lib "/usr/lib/perl5/5.26.1";
+use lib "$ENV{HOME}/rnaanalyzer/cgi-bin/";
 use RNA;
 use warnings;
 
 $RNA::noLonelyPairs=1;	#important for correct use of the RNA-module!
 
 # uses RNAsubopt from viennaRNA 
+# $pathtornasuboptandrnafold='/storage/srv/bioapps/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt'; #Please locate your version of RNAfold / RNAsubopt
 # added more comments for better understanding for future updates
 
 sub suboptimalfindire {
@@ -26,8 +28,8 @@ sub suboptimalfindire {
     my $hit_before_cds_cutoff = 200;
     my $hit_after_cds_cutoff = 2000;
     
-    # change path to RNAsubopt
-    my $rnasubopt_path='rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt';
+    # Path to RNAsubopt executable
+    my $rnasubopt_path='/storage/srv/bioapps/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt';
     
     my @subopt_hits = ();
     
@@ -123,20 +125,20 @@ sub suboptimalfindire {
                 }
                 elsif ($upper_stem_paired >= $upper_stem_cutoff_bad && 
                        $lower_stem_paired >= $lower_stem_cutoff_bad) {
-                    $pass_hit = 2; # Marginal hit
+                    $pass_hit = 2; # not a good hit
                 }
             }
             
             # Store hit data if it passes quality filters
             if ($pass_hit > 0) {
                 push @subopt_hits, 
-                     $loop_position - 10,           # [0] Loop position (corrected for padding)
-                     $pass_hit,                     # [1] Quality (1=good, 2=marginal)
-                     $fold_string,                  # [2] Folded sequence
-                     $folding_structures[$structure_index], # [3] Secondary structure
-                     $folding_energies[$structure_index],   # [4] Folding energy
-                     $upper_stem_paired,            # [5] Upper stem paired count
-                     $lower_stem_paired;            # [6] Lower stem paired count
+                     $loop_position - 10,           # Loop position (corrected for padding)
+                     $pass_hit,                     # Quality (1=good, 2=bad)
+                     $fold_string,                  # Folded sequence
+                     $folding_structures[$structure_index], # Secondary structure
+                     $folding_energies[$structure_index],   # Folding energy
+                     $upper_stem_paired,            # Upper stem paired count
+                     $lower_stem_paired;            # Lower stem paired count
             }
         }
     }

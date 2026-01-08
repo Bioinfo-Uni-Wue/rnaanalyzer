@@ -15,7 +15,7 @@ use File::Path qw(make_path);
 use Cwd qw(abs_path);
 use CGI qw(:standard escapeHTML);
 use Bio::Seq;
-
+use List::Util qw(min);
 
 $debug=0;
 
@@ -33,6 +33,7 @@ $RBSFINDER=abs_path('../bin/rbs-finder'); #rbs finder
 $YAMTK=abs_path('../bin/yamtk'); #yamtk scan folder
 $RBPDB=abs_path('../databases/rbpdb/motifs.meme');
 $RIBOSWDB=abs_path('../databases/riboswitches/riboswitch.cm'); #riboswitch location 
+$BINDIR=abs_path('../cgi-bin'); #bin directory
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
 $MAXFORNALENGTH=5000;
@@ -98,16 +99,16 @@ print "  <title>Batch Results</title>";
 print "  <link rel='stylesheet' href='/css/results.css'>";
 print "</head><body>";
 print "<header>";
-print "    <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de/'>";    # change after putting on server
-print "      <img src='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
+print "    <a href='http://localhost/'>";    # change after putting on server
+print "      <img src='http://localhost//images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
 print "    </a>";
 print "    <div class='header-text'>";
 print "      <h1>RNA Analyzer<sup>3</sup></h1>";
 print "      <p>Webserver for RNA Sequence Overview</p>";
 print "    </div>";
 print "    <div class='header-links'>";
-print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//about.html' target='_blank'>About</a> |";
-print "      <a href='https://rnaanalyzer.bioapps.biozentrum.uni-wuerzburg.de//contact.html' target='_blank'>Contact</a> |";
+print "      <a href='http://localhost/about.html' target='_blank'>About</a> |";
+print "      <a href='http://localhost/contact.html' target='_blank'>Contact</a> |";
 print "      <a href='https://www.biozentrum.uni-wuerzburg.de/bioinfo' target='_blank'>Dandekar Lab</a>";
 print "    </div>";
 print "  </header>";
@@ -339,6 +340,7 @@ sub analysis {
     &location_table;
     print "</div>";
 
+    &make_txt;
     # &drawcoloredsequence;
 
     # print "</pre>";
@@ -500,7 +502,7 @@ sub IRE {
     $irelineprintout = 0;
     
     print "<link rel='stylesheet' href='/css/fornac.css'>";
-    print "<script src='/js/d3.v3.min.js'></script>";
+    print "<script src='https://d3js.org/d3.v3.min.js'></script>";
     print "<script src='/js/fornac.js'></script>";
 
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Element(s):</div>";
@@ -531,7 +533,7 @@ sub IRE {
         
         # Create main results table
         print "<table class='table-result'>\n";
-        print "<tr><th>Position</th><th>Sequence</th><th>Possible Structure(s)</th><th>Energy</th><th>Quality</th><th>View Structure</th></tr></thead>\n";
+        print "<tr><th>Position</th><th>Sequence</th><th>Possible Structure(s)</th><th>Energy</th><th>Quality</th><th class='no-print'>View Structure</th></tr></thead>\n";
         
         my $position_counter = 1;
         my $structure_counter = 0;  # for displaying strcutures
@@ -547,7 +549,7 @@ sub IRE {
             
             for my $i (0..$#structures) {
                 my $struct = $structures[$i];
-                my $quality_text = $struct->{quality} == 1 ? "Good" : "Marginal";
+                my $quality_text = $struct->{quality} == 1 ? "Good" : "Bad";
                 
                 # adding forna visualization variables 
                 $structure_counter++;  # Increment for each structure
@@ -570,7 +572,7 @@ sub IRE {
                 print "<td>$quality_text</td>";
                 
                 # adding structure visualization
-                print "<td>";
+                print "<td class='no-print'>";
                 print "<button onclick=\"toggleStructure$structure_counter()\" style='padding: 5px 10px;'>View</button>";
                 print "<div id='$div_id' style='width: 250px; height: 250px; display: none; margin: 10px; overflow: hidden;'></div>\n";
                 print "</td>";
@@ -729,7 +731,7 @@ sub csfce {
     }
 
     @seq=();
-    print " Those elements are an indication for a processing protein binding motif<br>" if ($putativeCVfound==1);
+    print "<div class='info-info'>Those elements are an indication for a processing protein binding motif.</div>" if ($putativeCVfound==1);
     
     if ($putativeCVfound == 0) {
         print "<div class='info-warning'>";
@@ -1216,8 +1218,8 @@ sub createfolding {
         print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
 
         # Add svg-pan-zoom script
-        print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
-        print "<script>\n";
+        print "<script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom\@3.6.2/dist/svg-pan-zoom.min.js'></script>\n";
+	print "<script>\n";
         print "  svgPanZoom('#static_rna_ss', {\n";
         print "    zoomEnabled: true,\n";
         print "    controlIconsEnabled: true,\n";
@@ -1377,18 +1379,16 @@ sub checkstems {
     my $avg_spacing = $structure_length / ($stem_count || 1);
     
     if ($stem_count >= 15 && $avg_spacing < 100) {
-        $comment = "Highly structured RNA can be likely rRNA, tRNA, or any other regulatory RNA\n";
-    } elsif ($hairpin_count >= 1 && $stem_count <= 3) {
-        $comment = "Simple structured RNA, possible miRNA, siRNA, or regulatory element\n";
+        $comment = "Highly structured RNA.\n";
     } elsif ($stem_count >= 1) {
-        $comment = "Some secondary structure detected, may have biological significance\n";
+        $comment = "Some secondary structure detected, may have biological significance.\n";
     } else {
-        $comment = "Minimal secondary structure\n";
+        $comment = "Minimal secondary structure.\n";
     }
     print "<div class='info-info'>$comment</div>";
     
     if ($hairpin_count > 0 && $stem_count > 0 && $hairpin_count / $stem_count > 0.7) {
-        print "\t\tHigh hairpin content â€” characteristic of miRNA precursors\n";
+        print "\t\tHigh hairpin content characteristic of miRNA precursors\n";
     }
     
     
@@ -1590,7 +1590,7 @@ sub RNAMOTIF {
     my $i = 0;
 
     print "<link rel='stylesheet' href='/css/fornac.css'>";
-    print "<script src='/js/d3.v3.min.js'></script>";
+    print "<script src='https://d3js.org/d3.v3.min.js'></script>";
     print "<script src='/js/fornac.js'></script>";
 
 	print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA motif(s) Scan:</div>";
@@ -1608,10 +1608,15 @@ sub RNAMOTIF {
         push @rna_motif, $from, $to;
 
         ### Extract motif subsequence from full $seq
-        my $start = $from - 1;
-        my $length = $to - $from + 1;
-        my $motif_seq = substr($SEQUENCECHECKED, $start, $length);
-
+        my $start = min($from, $to);
+        my $length = abs($to - $from) + 1;
+        my $motif_seq = substr($SEQUENCECHECKED, $start - 1, $length);
+	
+	if ($from > $to) {
+    	
+    	$motif_seq = reverse($motif_seq);
+	$motif_seq =~ tr/acgu/ugca/;
+	}
         # print ("Motif Seq: $motif_seq\n");
 
         ### Fold subsequence using RNAfold
@@ -1686,7 +1691,7 @@ sub RNAMOTIF {
 		# # Print stored results
 		# print @results;
         print "<table class='table-result'>";
-        print "<tr><th>Match</th><th>Family</th><th>From</th><th>To</th><th>Score</th><th>E-value</th><th>Description</th><th>Structure</th></tr>\n";
+        print "<tr><th>Match</th><th>Family</th><th>From</th><th>To</th><th>Score</th><th>E-value</th><th>Description</th><th class='no-print'>View Structure</th></tr>\n";
 
         foreach my $hit (@results) {
             print "<tr>";
@@ -1697,7 +1702,7 @@ sub RNAMOTIF {
             print "<td>$hit->{score}</td>";
             print "<td>$hit->{evalue}</td>";
             print "<td>$hit->{description}</td>";
-            print "<td>$hit->{structure}</td>";
+            print "<td class='no-print'>$hit->{structure}</td>";
             print "</tr>";
         }
         
@@ -2959,12 +2964,12 @@ sub createfoldingpicture {
         print "<div id='rna_ss'></div>";
         print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>";
         print "<b>Download Folding As: </b>\n";
-        print "<a href='$svg_url' target='_blank'><button>SVG File</button></a>";
-        print "<a href='$ps_url' target='_blank'><button>PS File</button></a>\n";
+        print "<a class='no-print' href='$svg_url' target='_blank'><button>SVG File</button></a>";
+        print "<a class='no-print' href='$ps_url' target='_blank'><button>PS File</button></a>\n";
 
         # Include required scripts
         print "<link rel='stylesheet' href='/css/fornac.css'>\n";
-        print "<script src='/js/d3.v3.min.js'></script>\n";
+        print "<script src='https://d3js.org/d3.v3.min.js'></script>\n";
         print "<script src='/js/fornac.js'></script>";
 
         my $color_text = "";
@@ -3243,8 +3248,26 @@ print "    }";
 print "  }";
 print "</script>";
 
+# Download options
+print "<br>";
+print "<div class='download-bttn'>";
+print "<a class='no-print' href='http://localhost/cgi-bin/download_pdf.cgi?job=$job'><button>Download Results as PDF</button></a>";
+print "<a class='no-print' href='/tmp/jobs/job_$job/result_file.txt'><button>Download Results as TEXT</button></a>";
+print "</div>";
 
 write_file("$TEMPDIR/result.txt", "done\n");
 
 print "</div></main></body></html>";
+
+sub make_txt {
+
+    my $html_file = "$TEMPDIR/result.html";
+    my $txt_file = "$TEMPDIR/result_file.txt";
+
+    my $cmd = "python3.11 $BINDIR/download_txt.py -i $html_file -o $txt_file";
+    my $output = `$cmd`;
+    # print "Python Error: $output\n" if $?;
+
+}
+
 close $out;

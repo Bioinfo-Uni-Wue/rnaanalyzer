@@ -8,12 +8,7 @@ my $q = CGI->new;
 
 my $job_id = $q->param('job_id');
 
-# Basic sanitization: only digits allowed
-if (!$job_id || $job_id !~ /^\d+$/) {
-    print $q->header();
-    print "<p>Invalid job number.</p>";
-    exit;
-}
+$job_id =~ s/\s+//g;
 
 my $results_dir = "../tmp/jobs/job_$job_id";
 my $result_file = "$results_dir/result.html";

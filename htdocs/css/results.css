@@ -348,6 +348,16 @@ a:hover {
   color: #690e13;
 }
 
+.download-bttn {
+  display: flex;
+  justify-content: center; /* horizontal */
+  align-items: center;     /* vertical */
+  height: 100%;            /* or a fixed height */
+}
+
+@media print {
+  .no-print { display: none !important; }
+}
 
 /* @media (max-width: 480px) {
   .header-text h1 {
