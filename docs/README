@@ -1,9 +1,5 @@
-RNAanalyzer is webserver which provides a rundown of the regulatory features present in any given sequence. RNAanalyzer has built-in several motif searches, including Rfam, which 
-can identify regulatory motifs in a given sequence. RNAanalyzer also incorporates RNAfold from the ViennaRNA package to give the user structural information along 
-with a folding overview.  These, coupled with coding sequence potential analyis, can help annotate the nature of the sequence which can be regulatory or protein 
-coding. We achieve this using specific/well-known databases and tools built for specific predictions, all coupled in one web application. Furthermore, we also allow 
-users to predict microRNA target predictions present in the given sequence, which can be useful in understanding gene regulation. 
-
+RNAanalyzer is webserver which provides a rundown of the regulatory features present in any given sequence. RNAanalyzer has built-in several motif searches, including Rfam, which can identify regulatory motifs in a given sequence. RNAanalyzer also incorporates RNAfold from the ViennaRNA package to give the user structural information along with a folding overview.  These, coupled with coding sequence potential analyis, can help annotate the nature of the sequence which can be regulatory or protein 
+coding. We achieve this using specific/well-known databases and tools built for specific predictions, all coupled in one web application. Furthermore, we also allow users to predict microRNA target predictions present in the given sequence, which can be useful in understanding gene regulation. 
 Apart from these, RNAanalyzer also has tRNA scan, iron responsive element identification, UTR prediction, small molecule binding site identification, and can also scan for highly structured regions which are usually involved in regulatory functions.
 
 RNAanalyzer3 requires these dependencies to run:
