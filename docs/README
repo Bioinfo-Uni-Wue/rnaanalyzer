@@ -1,7 +1,7 @@
-RNAanalyzer is webserver which provides a rundown of the regulatory features present in any given sequence. RNAanalyzer has built-in several motif searches, including Rfam, which can identify regulatory motifs in a given sequence. RNAanalyzer also incorporates RNAfold from the ViennaRNA package to give the user structural information along with a folding overview.  These, coupled with coding sequence potential analyis, can help annotate the nature of the sequence which can be regulatory or protein 
-coding. We achieve this using specific/well-known databases and tools built for specific predictions, all coupled in one web application. Furthermore, we also allow users to predict microRNA target predictions present in the given sequence, which can be useful in understanding gene regulation. 
+RNAanalyzer is webserver which provides a rundown of the regulatory features present in any given sequence. RNAanalyzer has built-in several motif searches, including Rfam, which can identify regulatory motifs in a given sequence. RNAanalyzer also incorporates RNAfold from the ViennaRNA package to give the user structural information along with a folding overview.  These, coupled with coding sequence potential analyis, can help annotate the nature of the sequence which can be regulatory or protein coding. We achieve this using specific/well-known databases and tools built for specific predictions, all coupled in one web application. Furthermore, we also allow users to predict microRNA target predictions present in the given sequence, which can be useful in understanding gene regulation. 
 Apart from these, RNAanalyzer also has tRNA scan, iron responsive element identification, UTR prediction, small molecule binding site identification, and can also scan for highly structured regions which are usually involved in regulatory functions.
 
+RNAanalyzer3 is implemented in Perl (CGI) and uses HTML and JavaScript for the front end.
 RNAanalyzer3 requires these dependencies to run:
 FCGIWRAP
 Perl > 5.26
@@ -10,7 +10,7 @@ BioPerl
 Python > 3.8
 BioPython
 
-Tools required by RNAanalyzer:
+It also incorporates various tools for the many analysis it offers which are required for an optimum run. The lisence information of these tools are present in the LICENSE folder. The tools should be installed in bin directory located at the root directory of Rnaanalyzer. But can be installed in any location followed by location changes in the main webserver.cgi script. Please find the license information of the tools in the respective folder.
 ViennaRNA v2.7.0
 FORNAC 
 tRNAscan-SE 2.0.12
@@ -21,4 +21,3 @@ miRanda v3.3a
 YAMTK v2.0.0
 Infernal v1.1.5 
 
-The tools should be installed in bin directory located at the root directory of Rnaanalyzer. But can be installed in any location followed by location changes in the main webserver.cgi script. Please find the license information of the tools in the respective folder.
