@@ -10,7 +10,7 @@ BioPerl
 Python > 3.8
 BioPython
 
-It also incorporates various tools for the many analysis it offers which are required for an optimum run. The lisence information of these tools are present in the LICENSE folder. The tools should be installed in bin directory located at the root directory of Rnaanalyzer. But can be installed in any location followed by location changes in the main webserver.cgi script. Please find the license information of the tools in the respective folder.
+It also incorporates various tools for the many analysis it offers which are required for an optimum run. The lisence information of these tools are present in the LICENSE folder. The tools should be installed in bin directory located at the root directory of Rnaanalyzer. But can be installed in any location followed by location changes in the main webserver.cgi script. The license information for each tool can be found in their respective folder inside LICENSE directory.
 ViennaRNA v2.7.0
 FORNAC 
 tRNAscan-SE 2.0.12
