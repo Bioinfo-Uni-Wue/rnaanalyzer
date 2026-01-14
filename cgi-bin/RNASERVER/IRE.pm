@@ -10,7 +10,7 @@ use warnings;
 $RNA::noLonelyPairs=1;	#important for correct use of the RNA-module!
 
 # uses RNAsubopt from viennaRNA 
-# $pathtornasuboptandrnafold='/storage/srv/bioapps/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt'; #Please locate your version of RNAfold / RNAsubopt
+# $pathtornasuboptandrnafold='; #Please locate your version of RNAfold / RNAsubopt
 # added more comments for better understanding for future updates
 
 sub suboptimalfindire {
@@ -29,7 +29,7 @@ sub suboptimalfindire {
     my $hit_after_cds_cutoff = 2000;
     
     # Path to RNAsubopt executable
-    my $rnasubopt_path='/storage/srv/bioapps/rnaanalyzer/bin/ViennaRNA-2.7.0/bin/RNAsubopt';
+    my $rnasubopt_path='path/to/RNAsubopt';
     
     my @subopt_hits = ();
     
