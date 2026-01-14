@@ -117,7 +117,7 @@ print $js_fh $renderer_js;
 close $js_fh;
 
 local $ENV{NODE_PATH} = $NODE_PATH;
-local $ENV{CHROME_PATH} = "/storage/srv/bioapps/rnaanalyzer/bin/node/node_modules/\@puppeteer/browsers/chromium/linux-1563611/chrome-linux/chrome";
+local $ENV{CHROME_PATH} = "path/to/chromium"; # add path to chromium before running
 
 
 # capture output
