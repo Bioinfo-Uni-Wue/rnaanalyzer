@@ -1,0 +1,11 @@
+bin/
+databases/
+.vscode/
+tmp/
+install/
+id_github
+id_github.pub
+facts
+nohup.out
+ai_summary.pl
+htdocs/images/

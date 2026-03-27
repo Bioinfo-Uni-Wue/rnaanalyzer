@@ -3,42 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0"> -->
-    <title>Information on Trans-splicing</title>
+    <title>RNA Analyzer3 Help</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <header>
-    <a href="http://localhost/">
+    <a href="localhost/">
       <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
-	    <h1>RNA Analyzer<sup>2</sup></h1>
+	    <h1>RNA Analyzer<sup>3</sup></h1>
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="http://localhost/about.html" target="_blank">Help</a> |
-      <a href="http://localhost/contact.html" target="_blank">Contact</a> |
+      <a href="localhost/about.html" target="_blank">Help</a> |
+      <a href="localhost/contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
 
 <body>
 <main>
-    <h1>Information on Iron-responsive Element</h1>
+    <h1>Iron-responsive Element</h1>
     <br><br>
+    <p>The IRE module of RNAanalyzer<sup>3</sup> detects canonical iron-responsive elements, which are well established in literature. The module recognizes the IRE hairpins and rejects if there are disruptions in the loop, bulge, or stem, which goes against the defined strict motif architecture.</p>
     <p>This regulatory RNA element contains a specific binding site for the iron-regulatory protein (IRP, which was formerly called IRE-BP, IRF, FRP or p90, and of which in the meantime two different versions, IRP1 and IRP2, have been identified). Reduced cellular iron levels increase binding of IRP to iron-responsive elements <i>in</i> mRNA. Binding switches off translation of the ferritin mRNA, but stabilizes the transferrin receptor transcript.</p>
     
     <p>Iron-responsive elements (IREs) in the 5' UTR of several mRNAs bind the iron regulatory protein (IRP). The IRE-IRP complex blocks the recruitment of the 40S ribosomal subunit. Examples are IREs in the 5' UTR of human and murine ferritin H-chain mRNA, murine and human erythroid aminolevulinic acic synthase (eALAS) mRNA, porcine heart mitochondrial aconitase mRNA and <i>Drosophila</i> succinate dehydrogenase mRNA.</p>
+    <p>Newly described IREs have been described but only one is functionally validated found in <i>PFN2</i> gene</p>
     
     <div class="image-center">
-        <img src="./images/ire1.jpg" alt="Iron-responsive element structure" class="responsive-image">
+        <img src="./images/IRE.png" alt="Iron-responsive element structure" class="responsive-image">
     </div>
-    
-    <p>The 3' UTR of mammalian transferrin-receptor (TfR) mRNA contains a complex structure consisting of five iron-response elements (IREs) to which the IRE binding-protein (IRP) binds when cellular iron is limiting. This interaction at the 3' UTR prolongs the half-life of TfR mRNA by stabilizing the transcript against specific endo-nucleolytic cleavage.</p>
-    
-    <div class="image-center">
-        <img src="./images/ire2.jpg" alt="Transferrin-receptor mRNA structure" class="responsive-image">
-    </div>
+
+    <h3>References:</h3>
+    <ul>
+        <li>Dandekar, T., Stripecke, R., Gray, N.K., Goossen, B., Constable, A., Johansson, H.E. and Hentze, M.W. (1991) Identification of a novel iron-responsive element in murine and human erythroid delta-aminolevulinic acid synthase mRNA. Embo j, 10, 1903-1909.</li>
+        <li>Henderson, B.R., Menotti, E. and Kühn, L.C. (1996) Iron regulatory proteins 1 and 2 bind distinct sets of RNA target sequences. J Biol Chem, 271, 4900-4908.</li>
+        <li>Luscieti, S., Galy, B., Gutierrez, L., Reinke, M., Couso, J., Shvartsman, M., Di Pascale, A., Witke, W., Hentze, M.W., Pilo Boyl, P. et al. (2017) The actin-binding protein profilin 2 is a novel regulator of iron homeostasis. Blood, 130, 1934-1945.</li>
+    </ul>
 </main>
 
 </body>

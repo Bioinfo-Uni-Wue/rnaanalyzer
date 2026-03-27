@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <!--  <meta name="viewport" content="width=device-width, initial-scale=1.0"/> -->
-  <title>RNAanalyzer3</title>
+  <title>RNA Analyzer3</title>
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
   <header>
-    <a href="http://localhost/">
+    <a href="localhost/">
       <img src="images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
@@ -17,11 +17,11 @@
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="http://localhost/tutorial.html" target="_blank">Tutorial</a> |
+      <a href="localhost/tutorial.html" target="_blank">Tutorial</a> |
                 
-      <a href="http://localhost/about.html" target="_blank">Help</a> |
+      <a href="localhost/about.html" target="_blank">Help</a> |
                 
-      <a href="http://localhost/contact.html" target="_blank">Contact</a> |
+      <a href="localhost/contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
@@ -77,8 +77,49 @@
         Protein Binding motif scan</label>
         <label title="Check for Trans-splicing motifs for C. elegans and S. mansoni"><input type="checkbox" name="TRANS" value="ON" checked />
         Trans-splicing structure</label>
-	<label title="Check for Riboswitches"><input type="checkbox" name="RIBO" value="ON" checked />
+	      <label title="Check for Riboswitches"><input type="checkbox" name="RIBO" value="ON" checked />
         Riboswitches</label>
+      </div>
+      <br>
+      <div class="checkbox-group">
+        <fieldset class="option-group">
+        <p><b>Structure visualization mode:</b></p>
+        <label>
+          <input type="radio" name="structure_mode" value="standard" checked>
+          MFE
+        </label>
+        <label>
+          <input type="radio" name="structure_mode" value="centroid">
+          Centroid
+        </label>
+        <label>
+          <input type="radio" name="structure_mode" value="pseudoknot">
+          Pseudoknot <span style="font-size: 0.8em; color: #666; font-weight: normal; position: relative; top: 1px;"> *limited to visualization</span>
+        </label>
+      </fieldset>
+
+      <label title="Draw annotated structure">
+        <input type="checkbox" id="annotated" name="annotated" value="ON" checked>
+        Draw annotated structure
+      </label>
+
+      <label title="Run Suboptimal Structure Prediction">
+        <input type="checkbox" id="subopt" name="subopt" value="ON" >
+        Suboptimal structures <span id="subopt-note" style="font-size: 0.8em; color: #666; font-weight: normal; position: relative; top: 1px;"></span>
+      </label>
+
+      <div id="visualization-options">
+        <fieldset class="option-group">
+          <label>
+            <input type="radio" name="viewer" value="default" checked>
+            Default (VARNA)
+          </label>
+          <label>
+            <input type="radio" name="viewer" value="forna">
+            FORNA
+          </label>
+        </fieldset>
+      </div>
       </div>
       <div class ="info-box info">Check our <a href="about.html" target="_blank">Help page</a> for more information on the motif scans.</div>
       </section>
@@ -165,43 +206,117 @@
 	  
 	  // adding estiamte calcualtion for entered text in the input field. follows same logic as in batchsubmit.cgi
 	  
-	  const estimatePer250 = 5; // same as your $estimate_per_250nt (seconds per 250 chars)
+	const estimatePer250 = 5; // seconds per 250 chars
 
-	  function updateTimeEstimate() {
-		const input = document.getElementById('SEQUENCE');
-		const out   = document.getElementById('time-estimate');
+  function updateTimeEstimate() {
+    const input = document.getElementById('SEQUENCE');
+    const out   = document.getElementById('time-estimate');
 
-		const maxLength = input.value.length;  // how many characters are currently typed
-		
-		if (maxLength === 0) {
-		  out.textContent = '0';
-		  return;
-		}
-		
-		
-		let predictedTimeSeconds = Math.floor((maxLength / 250) * estimatePer250);
-		let predictedTimeMinutes = predictedTimeSeconds / 60.0;
+    // example option element
+    const subopt = document.getElementById('subopt');
 
-		if (predictedTimeMinutes < 1) {
-		  predictedTimeMinutes = 1;
-		}
+    const maxLength = input.value.length;
 
-		let formatted;
-		if (Number.isInteger(predictedTimeMinutes)) {
-		  formatted = String(predictedTimeMinutes);
-		} else {
-		  formatted = predictedTimeMinutes.toFixed(1);
-		}
+    if (maxLength === 0) {
+      out.textContent = '0';
+      return;
+    }
 
-		out.textContent = '> ' + formatted;
-	  }
+    let predictedTimeSeconds = Math.floor((maxLength / 250) * estimatePer250);
 
-	  // Update when user types
-	  document.getElementById('SEQUENCE').addEventListener('input', updateTimeEstimate);
+    // add 1 minute if selected
+    if (subopt && subopt.checked) {
+      predictedTimeSeconds += 60;
+    }
 
-	  // Optional: run once at page load
-	  updateTimeEstimate();
-    
+    let predictedTimeMinutes = predictedTimeSeconds / 60.0;
+
+    if (predictedTimeMinutes < 1) {
+      predictedTimeMinutes = 1;
+    }
+
+    let formatted;
+    if (Number.isInteger(predictedTimeMinutes)) {
+      formatted = String(predictedTimeMinutes);
+    } else {
+      formatted = predictedTimeMinutes.toFixed(1);
+    }
+
+    out.textContent = '> ' + formatted;
+  }
+
+  // Update when user types
+  document.getElementById('SEQUENCE').addEventListener('input', updateTimeEstimate);
+
+  // Update when option changes
+  document.getElementById('subopt').addEventListener('change', updateTimeEstimate);
+
+  // Run once at page load
+  updateTimeEstimate();
+    // end of estimate calculation
+
+    // JavaScript to toggle visualization options based on "Draw annotated structure" checkbox
+    const annotatedCheckbox = document.getElementById('annotated');
+    const visualizationOptions = document.getElementById('visualization-options');
+    const viewerRadios = document.querySelectorAll('input[name="viewer"]');
+    const structureModeRadios = document.querySelectorAll('input[name="structure_mode"]');
+    const defaultViewer = document.querySelector('input[name="viewer"][value="default"]');
+
+    function toggleVisualizationOptions() {
+      const annotated = annotatedCheckbox.checked;
+      const structureMode = document.querySelector('input[name="structure_mode"]:checked')?.value;
+
+      const enabled = annotated && structureMode !== 'pseudoknot';
+
+      if (!enabled) {
+        defaultViewer.checked = true;
+      }
+
+      visualizationOptions.classList.toggle('disabled', !enabled);
+
+      viewerRadios.forEach(radio => {
+        radio.disabled = !enabled;
+      });
+    }
+
+    annotatedCheckbox.addEventListener('change', toggleVisualizationOptions);
+    structureModeRadios.forEach(radio => {
+      radio.addEventListener('change', toggleVisualizationOptions);
+    });
+
+    toggleVisualizationOptions();
+
+    // JS to remove subopt option when sequence is longer then 1500nt (since it can cause long runtimes and is not suitable for longer sequences)
+    function updateSuboptAvailability() {
+    const input = document.getElementById('SEQUENCE');
+    const subopt = document.getElementById('subopt');
+    const note = document.getElementById('subopt-note');
+
+    if (!input || !subopt) return;
+
+    // remove whitespace/newlines so only sequence characters count
+    const seqLength = input.value.replace(/\s+/g, '').length;
+
+    if (seqLength > 1500) {
+      subopt.checked = false;
+      subopt.disabled = true;
+
+      if (note) {
+        note.textContent = 'Suboptimal folding is disabled for sequences longer than 1500 nt.';
+      }
+    } else {
+      subopt.disabled = false;
+
+      if (note) {
+        note.textContent = '';
+      }
+    }
+}
+
+document.getElementById('SEQUENCE').addEventListener('input', updateSuboptAvailability);
+
+// run once on page load
+updateSuboptAvailability();
 	</script>
 
   <section class="links">
@@ -209,10 +324,10 @@
       <div class="bottom-left">
       <div class="text-group">
         <p><strong>About</strong></p>
-        <a href="http://localhost/about.html">Help</a>
-        <a href="http://localhost/tutorial.html">Tutorial</a>
-        <a href="http://localhost/contact.html">Contact</a>
-	<a href="http://localhost/license.html">Licenses & Attributions</a>
+        <a href="localhost/about.html">Help</a>
+        <a href="localhost/tutorial.html">Tutorial</a>
+        <a href="localhost/contact.html">Contact</a>
+	<a href="localhost/license.html">Licenses & Attributions</a>
         
       </div>
       <div class="text-group"> 

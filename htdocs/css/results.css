@@ -355,6 +355,33 @@ a:hover {
   height: 100%;            /* or a fixed height */
 }
 
+.sequence-container {
+  word-wrap: break-word;      /* Older browsers */
+  overflow-wrap: break-word;  /* Modern standard */
+  word-break: break-all;      /* Forces break even if no spaces exist */
+  white-space: normal;        /* Ensures it doesn't stay on one line */
+  font-family: monospace;     /* Good for sequences */
+}
+
+.sanitized-out-wrap {
+    text-align: right;
+}
+
+.sanitized-out-btn {
+    display: inline-block;
+    padding: 2px 5px;
+    border: 1px solid #c7c7c7;
+    background: #ffffff;
+    color: #000;
+    text-decoration: none;
+    border-radius: 2px;
+}
+
+#visualization-options.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+  }
+
 @media print {
   .no-print { display: none !important; }
 }
