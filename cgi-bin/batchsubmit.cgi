@@ -35,7 +35,7 @@ print <<'HTML';
   <link rel="stylesheet" href="/css/batchresults.css">
 </head><body>
 <header>
-    <a href="http://localhost/">    <!--- change after putting on server -->
+    <a href="localhost/">    <!--- change after putting on server -->
       <img src="../images/logo.png" alt="RNA Analyzer Logo" class="logo" />
     </a>
     <div class="header-text">
@@ -43,8 +43,8 @@ print <<'HTML';
       <p>Webserver for RNA Sequence Overview</p>
     </div>
     <div class="header-links">
-      <a href="http://localhost/about.html" target="_blank">Help</a> |
-      <a href="http://localhost/contact.html" target="_blank">Contact</a> |
+      <a href="localhost/about.html" target="_blank">Help</a> |
+      <a href="localhost/contact.html" target="_blank">Contact</a> |
       <a href="https://www.biozentrum.uni-wuerzburg.de/bioinfo" target="_blank">Dandekar Lab</a>
     </div>
   </header>
@@ -66,7 +66,7 @@ unless ($is_refresh) {
 
 my $max_visits = 10;          # Maximum visits allowed
 my $time_frame = 60;          # Time frame in seconds (e.g., 60 seconds)
-my $log_file = "/storage/srv/bioapps/rnaanalyzer/tmp/ip_log.txt";  # Log file to store IP
+my $log_file = "/rnaanalyzer/tmp/ip_log.txt";  # Log file to store IP
 
 # Get the visitor's IP address
 my $ip_address = remote_addr();
@@ -116,7 +116,7 @@ if (open(my $log_fh, '>', $log_file)) {
 use File::Find;
 use File::Path qw(remove_tree);
 use POSIX qw(strftime);
-my $jobdir="/storage/srv/bioapps/rnaanalyzer/tmp/jobs";
+my $jobdir="/rnaanalyzer/tmp/jobs";
 my $time_threshold = time()-30*24*60*60; # Roughly 30 days
 
 sub wanted {
@@ -152,7 +152,15 @@ my $species   = $q->param("species") // '';
 my $mirna_target    =  $q->param("mirna_target") // '';
 my $rbp       = $q->param("RBP") // '';
 my $ribo      = $q->param("RIBO") // '';
+my $annotated   = $q->param("annotated") // '';
+my $subopt     = $q->param("subopt") // '';
 
+my $structure_mode = $q->param("structure_mode") // 'standard';
+my $pseudoknot = ($structure_mode eq 'pseudoknot') ? 1 : 0;
+my $centroid   = ($structure_mode eq 'centroid')   ? 1 : 0;
+
+my $viewer = $q->param("viewer") // 'default';
+my $fornac   = ($viewer eq 'forna') ? 1 : 0;
 
 my @job_ids = $q->multi_param('job_ids');
 my $is_refresh = scalar @job_ids > 0;
@@ -246,7 +254,12 @@ unless ($is_refresh) {
             species         => $species,
             mirna_target    => $mirna_target,
             RBP             => $rbp,
-	    ribo            => $ribo,
+            centroid        => $centroid,
+	        ribo            => $ribo,
+            annotated       => $annotated,
+            fornac          => $fornac,
+            pseudoknot      => $pseudoknot,
+            subopt          => $subopt,
             dnarna          => $sanitized->{type},
             sequence_name   => $sanitized->{name},
             sequence_clean  => $sanitized->{cleaned_seq},
@@ -271,10 +284,10 @@ unless ($is_refresh) {
     my $predicted_time = int(($count / 250) * $estimate_per_250nt);
     $predicted_time = $predicted_time / 60.0;  #for minutes
 
-    #    #mirnatargetscan takes time so adding a min for this 
-    #if ($mirna_target) {
-    #    $predicted_time += 1;
-    #}
+       #subopt takes time so adding a min for this 
+    if ($subopt) {
+       $predicted_time += 1;
+    }
 
     $predicted_time = 1 if $predicted_time < 1;
     if ($predicted_time == int($predicted_time)) {
@@ -289,9 +302,8 @@ unless ($is_refresh) {
 sub sanitize_sequence {
     my ($fasta_block) = @_;
     $fasta_block =~ s/\r//g;  # Remove carriage returns from windows or older systems 
-    if (length($fasta_block) > 20_000) {      # how much shall be the input length?
-      die "Input too long.";
-    }
+    # Allow multiple sequences in one submission; per-sequence length limit is enforced after cleaning
+    # and sanitization to avoid rejecting valid multi-FASTA input.
 
     # Extract header and sequence
     my ($header, $seq_body);
@@ -338,18 +350,10 @@ sub sanitize_sequence {
     $cleaned_seq ||= '';
     my $length = length($cleaned_seq);
 
-    # Determine RNA or DNA
-    # my $ucount = ($cleaned_seq =~ tr/u//);
-    # my $tcount = ($cleaned_seq =~ tr/t//);  # Should be 0, but included for safety
-    # my $type = 'unknown';
-    # if ($ucount > $tcount) {
-    #     $type = 'RNA';
-    # } elsif ($tcount > $ucount) {
-    #     $type = 'DNA';
-    # }
-    # $type = 'unknown' if ($ucount > 20 && $tcount > 20);
-
-
+    # Enforce per-sequence limit (20,000 nt max) after sanitization
+    if ($length > 20_000) {
+        die "Input too long. Each sequence is limited to 20000 nucleotides.";
+    }
 
     return {
         name        => $header,

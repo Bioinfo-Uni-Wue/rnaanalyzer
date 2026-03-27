@@ -7,7 +7,7 @@ use FindBin qw($Bin);
 
 # -------- CONFIG --------
 
-my $BASE_HREF = "http://localhost/";      # or "/"
+my $BASE_HREF = "localhost/";      # or "/"
 
 my $NODE      = "../bin/node/bin/node";     # <-- adjust to your actual node
 my $NODE_PATH = "../bin/node/node_modules";
@@ -117,7 +117,7 @@ print $js_fh $renderer_js;
 close $js_fh;
 
 local $ENV{NODE_PATH} = $NODE_PATH;
-local $ENV{CHROME_PATH} = "path/to/chromium"; # add path to chromium before running
+local $ENV{CHROME_PATH} = "/rnaanalyzer/bin/node/node_modules/\@puppeteer/browsers/chromium/linux-1563611/chrome-linux/chrome";
 
 
 # capture output

@@ -16,6 +16,11 @@ use Cwd qw(abs_path);
 use CGI qw(:standard escapeHTML);
 use Bio::Seq;
 use List::Util qw(min);
+use RNASERVER::SanitizedOut qw(sanitized_output_link);
+use RNASERVER::FoldDiagram qw(
+    render_raw_fold_svg
+    render_annotated_fold_svg
+);
 
 $debug=0;
 
@@ -34,6 +39,9 @@ $YAMTK=abs_path('../bin/yamtk'); #yamtk scan folder
 $RBPDB=abs_path('../databases/rbpdb/motifs.meme');
 $RIBOSWDB=abs_path('../databases/riboswitches/riboswitch.cm'); #riboswitch location 
 $BINDIR=abs_path('../cgi-bin'); #bin directory
+$JAVA=abs_path('../bin/jdk-11/bin/java'); #java location
+$VARNA_JAR= abs_path('../bin/jdk-11/varna/VARNAv3-93.jar'); #varna location
+$IPKNOT=abs_path('../bin/ipknot/bin'); #IPKnot location
 $MAXFOLDINGLEN=5000;
 $MAXFOLDINGLENUTR=5000;
 $MAXFORNALENGTH=5000;
@@ -47,7 +55,11 @@ $job = $job_id;
 
 
 $TEMPDIR = abs_path("../tmp/jobs/job_$job");
+$download_dir = ("/tmp/jobs/job_$job");
 
+# a directory to store sanitzed out for users
+$raw_out = ("$TEMPDIR/raw_out");
+mkdir $raw_out unless -d $raw_out;
 
 unless (-d $TEMPDIR) {
     make_path($TEMPDIR) or die "Can't create job dir: $TEMPDIR";
@@ -77,6 +89,11 @@ my $species             = $params->{species};
 my $do_mirnatarget      = $params->{mirna_target};
 my $do_rbp              = $params->{RBP};
 my $do_ribo             = $params->{ribo};
+my $do_centroid         = $params->{centroid};
+my $do_annotated        = $params->{annotated};
+my $do_fornac            = $params->{fornac};
+my $do_pseudoknot         = $params->{pseudoknot};
+my $do_subopt             = $params->{subopt};
 # my $dnarna              = $params->{dnarna};
 my $SEQNAMECHECKED      = $params->{sequence_name};
 my $SEQUENCECHECKED     = $params->{sequence_clean};
@@ -99,17 +116,17 @@ print "  <title>Batch Results</title>";
 print "  <link rel='stylesheet' href='/css/results.css'>";
 print "</head><body>";
 print "<header>";
-print "    <a href='http://localhost/'>";    # change after putting on server
-print "      <img src='http://localhost//images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
+print "    <a href='localhost/'>";    # change after putting on server
+print "      <img src='localhost//images/logo.png' alt='RNA Analyzer Logo' class='logo' />";
 print "    </a>";
 print "    <div class='header-text'>";
 print "      <h1>RNA Analyzer<sup>3</sup></h1>";
 print "      <p>Webserver for RNA Sequence Overview</p>";
 print "    </div>";
 print "    <div class='header-links'>";
-print "      <a href='http://localhost/about.html' target='_blank'>About</a> |";
-print "      <a href='http://localhost/contact.html' target='_blank'>Contact</a> |";
-print "      <a href='https://www.biozentrum.uni-wuerzburg.de/bioinfo' target='_blank'>Dandekar Lab</a>";
+print "      <a href='localhost/about.html' target='_blank'>About</a> |";
+print "      <a href='localhost/contact.html' target='_blank'>Contact</a> |";
+print "      <a href='' target='_blank'>Dandekar Lab</a>";
 print "    </div>";
 print "  </header>";
 print "";
@@ -150,7 +167,7 @@ sub startproggi {
     
     if ($SEQUENCELENGTH >= 2500){
             print "<div class='info-warning'>";
-            print "<i>\ti.    Annotated Structure visualization can take a few seconds to load due to sequence length.</i>\n";
+            print "<i>\ti. Annotated Structure visualization can take a few seconds to load due to sequence length. Please wait till the page loads.</i>\n";
             print "</div>";
         }
     
@@ -170,6 +187,9 @@ sub analysis {
     print "<div class='box-content-structure'>";
     if (length $SEQUENCECHECKED <= $MAXFOLDINGLEN) {
         &createfolding;
+        if ($do_subopt) {
+            &subopt;
+        }
         &checkstems;
         &stemggpairs;
     } else {
@@ -330,10 +350,18 @@ sub analysis {
     &csfce;
     print "</div>";
 
-    # creates annotated folding picture using FORNA
+    # creates annotated folding picture using Varna
+    if (!($do_annotated && $do_fornac)){
     print "<div class='box'>";
     &createfoldingpicture;
     print "</div>";
+    }
+
+    if ($do_annotated && $do_fornac) {
+    print "<div class='box'>";
+    &createfoldingpictureFornac;
+    print "</div>";
+    }
 
     # feature table
     print "<div class='table-container'>";
@@ -349,25 +377,17 @@ sub analysis {
 sub TRANS{
 	#this checkes the ciona-consensus !		
 			@transcionareturnvalues=RNASERVER::TRANS2::ciona($SEQUENCECHECKED); ## Ist das der CIONA ??? Auf jeden Fall aber SCHISOTSOMA
-			print "<div class='box-header' onclick='toggleBoxContent(this)'>Trans-Splicing Analysis:</div>";
+			print "<div class='box-header' onclick='toggleBoxContent(this)'>Trans-Splicing Analysis:<a href='localhost/TRANSinfo.html' target='_blank' onclick='event.stopPropagation();' style='display:inline-block; margin-left:6px; width:16px; height:16px; line-height:16px; text-align:center; border-radius:50%; background:#ccc; color:#000; font-size:14px; text-decoration:none;' title='Help'>?</a></div>";
 			#print "<b> <big>Putative trans-splicing Schistosoma-consensus</b></big> search:";
             print "<div class='box-content'>";
 			if (@transcionareturnvalues==1) {
 				print "<div class='info-warning'>";
-				print "<b>Schistosoma:</b>\tNo Trans-splicing element found.<br>";
+				print "<b>Schistosoma:</b>\tNo Trans-splicing element(s) found.<br>";
                 print "</div>";
 			}
 			else {
 				$hits=pop @transcionareturnvalues;
 				for ($count=0;$count<$hits;$count++){
-					# print " Schistosoma: <br>";
-					# print "  Position:   $transcionareturnvalues[$count*6+0] with 35 bp ustream region<br>";
-					# $transcionareturnvalues[$count*6+4]=uc ($transcionareturnvalues[$count*6+4]);
-					# $transcionareturnvalues[$count*6+2]=uc ($transcionareturnvalues[$count*6+2]);
-					# print "  Stem1:      $transcionareturnvalues[$count*6+4]<br>";
-					# print "  Structure:  $transcionareturnvalues[$count*6+5]<br>";
-					# print "  Energy:     $transcionareturnvalues[$count*6+3]<br>";
-					# print "  Sm-Site:    $transcionareturnvalues[$count*6+2] at pos: $transcionareturnvalues[$count*6+1]<br>";
 
                     print "<h3>Schistosoma:</h3>\n";
                     print "<table class='table-result'>\n";
@@ -391,24 +411,14 @@ sub TRANS{
 			if (@transcelegansvalues==1){
 				#print "No hit detected<br>";
                 print "<div class='info-warning'>";
-				print "<b>C. elegans:</b>\tNo Trans-splicing element found.";
+				print "<b>C. elegans:</b>\tNo Trans-splicing element(s) found.";
                 print "</div>";
 			}
 			else {
 				$hits=pop @transcelegansvalues;
 				for ($count=0;$count<$hits;$count++){
 					$transcelegansvalues[$count*10+5]=uc($transcelegansvalues[$count*10+5]);
-					# print " C.elegans:<br>  Position:   $transcelegansvalues[$count*10+0] with 21 bp ustream region ; pointing to ggua of stem1<br>";
-					
-					# print "  Stem1:      $transcelegansvalues[$count*10+1]<br>";
-					# print "  Structure:  $transcelegansvalues[$count*10+2]<br>";
-					# print "  Stem2:      $transcelegansvalues[$count*10+3]<br>";
-					# print "  Structure:  $transcelegansvalues[$count*10+4]<br>";
-					# print "  Sm-Site:    $transcelegansvalues[$count*10+5]<br>";
-					# print "  Stem3:      $transcelegansvalues[$count*10+6]<br>";
-					# print "  Structure:  $transcelegansvalues[$count*10+7]<br>";
-					# print "  Leader:     $transcelegansvalues[$count*10+8]<br>" if ($transcelegansvalues[$count*10+8] !=0);
-					# print "  Leader:     none<br>" if ($transcelegansvalues[$count*10+8] == 0);
+
                     print "\n<h3>C. elegans:</h3>\n";
 
                     print "<table class='table-result'>\n";
@@ -436,189 +446,132 @@ sub TRANS{
     # print "DEBUG: @transsplicing";
 }
 
-# sub IRE {
-#     @irereturnvalues = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
-#     $irelineprintout = 0;
-#     print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Element(s):</div>";
-#     print "<div class='box-content'>";
-    
-#     if (@irereturnvalues > 1) {
-#         # Group results by position
-#         my %positions;
-#         for (my $count = 0; $count <= @irereturnvalues - 1; $count += 7) {
-#             my $pos = $irereturnvalues[$count + 0];
-#             push @{$positions{$pos}}, {
-#                 position => $irereturnvalues[$count + 0],
-#                 quality => $irereturnvalues[$count + 1],
-#                 sequence => $irereturnvalues[$count + 2],
-#                 structure => $irereturnvalues[$count + 3],
-#                 energy => $irereturnvalues[$count + 4]
-#             };
-#         }
-        
-#         # Display each position with its structures
-#         foreach my $pos (sort {$a <=> $b} keys %positions) {
-#             my @structures = @{$positions{$pos}};
-            
-#             print "<table class='table-result'>\n";
-#             print "<tr><th>Position</th><td>$pos</td></tr>\n";
-#             print "<tr><th>Sequence</th><td>$structures[0]->{sequence}</td></tr>\n";
-            
-#             @ire = (@ire, $pos - 16, $pos + 22);
-            
-#             # Display all structures for this position
-#             for (my $i = 0; $i < @structures; $i++) {
-#                 my $struct_num = $i + 1;
-#                 my $struct = $structures[$i];
-                
-#                 print "<tr><th>Structure $struct_num</th><td>$struct->{structure}</td></tr>\n";
-#                 printf "<tr><th>Energy $struct_num</th><td>%.2f kcal/mol</td></tr>\n", $struct->{energy};
-                
-#                 my $quality_text = ($struct->{quality} == 1) ? "good" : "bad";
-#                 print "<tr><th>Quality $struct_num</th><td>$quality_text</td></tr>\n";
-                
-#                 # Add separator line between structures (except for the last one)
-#                 if ($i < @structures - 1) {
-#                     print "<tr><td colspan='2' style='border-bottom: 1px dashed #ccc; padding: 5px;'></td></tr>\n";
-#                 }
-#             }
-            
-#             print "</table>";
-#         }
-        
-#         $irelineprintout = 1;
-        
-#     } else {
-#         print "<div class='info-warning'>";
-#         print "Iron-resp Ele.: None";
-#         print "</div>";
-#     }
-    
-#     print "</div>";
-# }
 
 sub IRE {
-    my @ire_return_values = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
+    my @ire_return_values  = RNASERVER::IRE::suboptimalfindire($SEQUENCECHECKED);
+    my @epas1_return_values = RNASERVER::IRE::find_epas1_ire($SEQUENCECHECKED);
+
+    my @all_ire_hits = (@ire_return_values, @epas1_return_values);
+
     $irelineprintout = 0;
-    
+
     print "<link rel='stylesheet' href='/css/fornac.css'>";
     print "<script src='https://d3js.org/d3.v3.min.js'></script>";
     print "<script src='/js/fornac.js'></script>";
 
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Element(s):</div>";
+    # print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Element(s):</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Iron-resp Element(s): <a href='localhost/IREinfo.html' target='_blank' onclick='event.stopPropagation();' style='display:inline-block; margin-left:6px; width:16px; height:16px; line-height:16px; text-align:center; border-radius:50%; background:#ccc; color:#000; font-size:14px; text-decoration:none;' title='Help'>?</a></div>";
     print "<div class='box-content'>";
-    
-    if (@ire_return_values > 1) {
-        # Group results by position
+
+    if (@all_ire_hits > 1) {
+
         my %positions;
-        for (my $count = 0; $count <= @ire_return_values - 1; $count += 7) {
-            my $pos = $ire_return_values[$count];
-            push @{$positions{$pos}}, {
-                position => $ire_return_values[$count],
-                quality => $ire_return_values[$count + 1],
-                sequence => $ire_return_values[$count + 2],
-                structure => $ire_return_values[$count + 3],
-                energy => $ire_return_values[$count + 4]
+
+        for (my $count = 0; $count <= $#all_ire_hits; $count += 8) {
+            my $pos = $all_ire_hits[$count];
+
+            push @{ $positions{$pos} }, {
+                position  => $all_ire_hits[$count],
+                quality   => $all_ire_hits[$count + 1],
+                sequence  => $all_ire_hits[$count + 2],
+                structure => $all_ire_hits[$count + 3],
+                energy    => $all_ire_hits[$count + 4],
+                upper     => $all_ire_hits[$count + 5],
+                lower     => $all_ire_hits[$count + 6],
+                label     => $all_ire_hits[$count + 7],
             };
         }
-        
-        # Add summary info
-        my $total_positions = keys %positions;
+
+        my $total_positions  = scalar keys %positions;
         my $total_structures = 0;
-        $total_structures += @{$positions{$_}} for keys %positions;
-        
+        $total_structures += @{ $positions{$_} } for keys %positions;
+
         print "<div class='info-info'>";
         print "<strong>Found:</strong> $total_structures structure(s) at $total_positions position(s)";
         print "</div>";
-        
-        # Create main results table
-        print "<table class='table-result'>\n";
-        print "<tr><th>Position</th><th>Sequence</th><th>Possible Structure(s)</th><th>Energy</th><th>Quality</th><th class='no-print'>View Structure</th></tr></thead>\n";
-        
-        my $position_counter = 1;
-        my $structure_counter = 0;  # for displaying strcutures
 
-        foreach my $pos (sort {$a <=> $b} keys %positions) {
-            my @structures = @{$positions{$pos}};
-            my $row_count = @structures;
-            
+        print "<table class='table-result'>\n";
+        print "<tr><th>Position</th><th>Sequence</th><th>Label</th><th>Structure</th><th>Energy</th><th>Quality</th><th class='no-print'>View Structure</th></tr>\n";
+
+        my $structure_counter = 0;
+
+        foreach my $pos (sort { $a <=> $b } keys %positions) {
+            my @structures = @{ $positions{$pos} };
+            my $row_count  = @structures;
+
             push @ire, ($pos - 16, $pos + 22);
-            
-            # Sort structures by energy (most stable first)
-            @structures = sort { $a->{energy} <=> $b->{energy} } @structures;
-            
-            for my $i (0..$#structures) {
+
+            # sort by quality first, then energy
+            @structures = sort {
+                   $a->{quality} <=> $b->{quality}
+                || $a->{energy}  <=> $b->{energy}
+            } @structures;
+
+            for my $i (0 .. $#structures) {
                 my $struct = $structures[$i];
                 my $quality_text = $struct->{quality} == 1 ? "Good" : "Bad";
-                
-                # adding forna visualization variables 
-                $structure_counter++;  # Increment for each structure
-                my $div_id = "rna_ss_$structure_counter";
-                my $sequence = $struct->{sequence};
+
+                $structure_counter++;
+                my $div_id    = "rna_ss_$structure_counter";
+                my $sequence  = $struct->{sequence};
                 my $structure = $struct->{structure};
-                # my $energy = $struct->{energy};
 
                 print "<tr>";
-                
-                # Position counter with rowspan for multiple structures
+
                 if ($i == 0) {
-                    # print "<td rowspan='$row_count'>$position_counter</td>";
                     print "<td rowspan='$row_count'>$pos</td>";
                     print "<td rowspan='$row_count'>$struct->{sequence}</td>";
+                    print "<td rowspan='$row_count'>$struct->{label}</td>";
                 }
-                
+
                 print "<td>$struct->{structure}</td>";
                 printf "<td>%.2f</td>", $struct->{energy};
                 print "<td>$quality_text</td>";
                 
-                # adding structure visualization
                 print "<td class='no-print'>";
                 print "<button onclick=\"toggleStructure$structure_counter()\" style='padding: 5px 10px;'>View</button>";
                 print "<div id='$div_id' style='width: 250px; height: 250px; display: none; margin: 10px; overflow: hidden;'></div>\n";
                 print "</td>";
-                
+
                 print "</tr>\n";
-                
-                # Add the JavaScript for this structure
+
                 print "<script>\n";
-                print "  function toggleStructure$structure_counter() {\n";
-                print "    var el = document.getElementById('$div_id');\n";
-                print "    if (el.style.display === 'none') {\n";
-                print "      el.style.display = 'block';\n";
-                print "      var container = new fornac.FornaContainer('#$div_id', {\n";
-                print "        animation: false,\n";
-                print "        applyForce: false,\n";
-                print "        labelInterval: 0,\n";
-                print "        allowPanningAndZooming: true,\n";
-                print "        structurePadding: 0,\n";
-                print "        drawBackground: false,\n";
-                print "        layout: 'naview'\n";
-                print "      });\n";
-                print "      var options = {\n";
-                print "        structure: '$structure',\n";
-                print "        sequence: '$sequence'\n";
-                print "      };\n";
-                print "      container.addRNA(options.structure, options);\n";
-                print "    } else {\n";
-                print "      el.innerHTML = '';\n";
-                print "      el.style.display = 'none';\n";
-                print "    }\n";
+                print "function toggleStructure$structure_counter() {\n";
+                print "  var el = document.getElementById('$div_id');\n";
+                print "  if (el.style.display === 'none') {\n";
+                print "    el.style.display = 'block';\n";
+                print "    var container = new fornac.FornaContainer('#$div_id', {\n";
+                print "      animation: false,\n";
+                print "      applyForce: false,\n";
+                print "      labelInterval: 0,\n";
+                print "      allowPanningAndZooming: true,\n";
+                print "      structurePadding: 0,\n";
+                print "      drawBackground: false,\n";
+                print "      layout: 'naview'\n";
+                print "    });\n";
+                print "    var options = {\n";
+                print "      structure: '$structure',\n";
+                print "      sequence: '$sequence'\n";
+                print "    };\n";
+                print "    container.addRNA(options.structure, options);\n";
+                print "  } else {\n";
+                print "    el.innerHTML = '';\n";
+                print "    el.style.display = 'none';\n";
                 print "  }\n";
+                print "}\n";
                 print "</script>\n";
             }
-            
-            $position_counter++;
         }
-        
+
         print "</table>\n";
         $irelineprintout = 1;
-        
+
     } else {
         print "<div class='info-warning'>";
-        print "<b>Iron-resp Ele.:</b> None";
+        print "<b>No Iron Response Element(s) recognized.</b>";
         print "</div>";
     }
-    
+
     print "</div>";
 }
 
@@ -735,7 +688,7 @@ sub csfce {
     
     if ($putativeCVfound == 0) {
         print "<div class='info-warning'>";
-        print "No CstF Motif found.";
+        print "No CstF Motif(s) found.";
         print "</div>";
     }
 
@@ -796,7 +749,7 @@ sub stemggpairs {
                         print "</table>\n";
                     }
 
-    print "<div class='info-warning'>No Stem GG Pair Found.</div>" if ($stemggpairfound==0); 
+    print "<div class='info-warning'>No Stem GG Pair(s) Found.</div>" if ($stemggpairfound==0); 
     @sequ=();
     $str='';
 
@@ -895,9 +848,24 @@ sub rbp {
         }
 
         print "</table>";
+        # print "<br>";
+        # print "<div class='download-bttn'>";
+        # print "<a class='no-print' href='$download_dir/rbp.txt'><button>Check Raw Output</button></a>";
+        # print "</div>";
+
+        # testing output link for redacted file
+        print "<br>";
+        print "<div class='sanitized-out-wrap'>";
+        print sanitized_output_link(
+            raw_file => $yamtk_outfile,
+            out_dir  => $raw_out,
+            out_path => "/tmp/jobs/job_$job_id/raw_out",
+            out_name => "rbp_yamtk_raw.out",
+        );
+        print "</div>";
     } else {
 		print "<div class='info-warning'>";
-        print "<b>No Protein Binding Motif found above threshold.</b>\n";
+        print "<b>No Protein Binding Motif(s) found above threshold.</b>\n";
 		print "</div>";
 	}
 
@@ -1099,8 +1067,6 @@ sub tRNA {
     if ($total > 0) {
         print "<table class='table-result'>\n";
         print  "<tr><th>Name</th><th>Start</th><th>End</th><th>Length</th><th>Type</th><th>Anticodon</th><th>Anticodon Pos</th><th>Score</th></tr>\n";
-        # printf $format, "Name", "Position", "Length", "Type", "Anticodon", "Anticodon Pos", "Score";
-        # print "-" x 85, "\n";
         
         # Sort by score descending (higher scores are better)
         @results = sort { $b->{score} <=> $a->{score} } @results;
@@ -1120,9 +1086,20 @@ sub tRNA {
         }
 
         print "</table>";
+        
+        print "<br>";
+        print "<div class='sanitized-out-wrap'>";
+        print sanitized_output_link(
+            raw_file => $trnascan_output,
+            out_dir  => $raw_out,
+            out_path => "/tmp/jobs/job_$job_id/raw_out",
+            out_name => "tRNAscan_raw.out",
+        );
+        print "</div>";
+
     } else {
         print "<div class='info-warning'>";
-        print "No region matching a tRNA was found.";
+        print "No region(s) matching a tRNA was found.";
         print "</div>";
     }
     
@@ -1131,7 +1108,7 @@ sub tRNA {
 }
 
 sub smsite {
-    print "<div class='box-header' onclick='toggleBoxContent(this)'>Catalytic RNA site(s) scan:</div>";
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>Sm site / snRNP motif scan:</div>";
     print "<div class='box-content'>";
     $smlength=-1;
     $smpos=-1;
@@ -1166,67 +1143,212 @@ sub smsite {
         print "</table>\n";
     }
     
-    print "<div class='info-warning'><b>No snRNP-motifs found.</b></div>" if ($leadlineprinted==0);
+    print "<div class='info-warning'><b>No snRNP-motif(s) found.</b></div>" if ($leadlineprinted==0);
     
     ##### OUTPUT if Seq is RNA has no cds but smsite --> structured perhaps catalytic RNA !
 
-    if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1 && @smsite>0){
-        print "<br>As I could not detect a coding sequence on this RNA, but there are 1 or more sn-RNP motifs (sm-sites),<br>it might be possible that this is a catalytic RNA!!<br>";
-    }
+    # if ($grepanswer=~/NO EXONS/ && $ORIGINchecked==1 && @smsite>0){
+    #     print "<br>Could not detect a coding sequence on this RNA, but there are 1 or more sn-RNP motifs (sm-sites),<br>it might be possible that this is a catalytic RNA.<br>";
+    # }
     print "</div>";
+}
+
+sub subopt{
+    my $infile = "$TEMPDIR/$job.seq";
+    my $subopt_file = "$TEMPDIR/$job.raw.subopt";
+    my $sorted_subopt_file = "$TEMPDIR/$job.sorted10.subopt";
+
+    my $cmd = "cat $infile | $VIENNARNAFOLDDIR/RNAsubopt --noLP > $subopt_file 2>/dev/null";
+
+    system($cmd) == 0 or die "RNAsubopt failed, exit code: $?";
+
+    my $top_n = 10;
+
+    open(my $fh, '<', $subopt_file) or die "Cannot open $subopt_file: $!\n";
+
+    my @rows;
+
+    while (my $line = <$fh>) {
+        chomp $line;
+        next if $line =~ /^\s*$/;
+
+        # store header line
+        if ($line =~ /^>/) {
+            $header = $line;
+            next;
+        }
+
+        # store sequence line, e.g.
+        # GAGC... -115.30 1.00
+        if ($line =~ /^[ACGUTNacgutn]+\s+-?\d+(?:\.\d+)?\s+\d+(?:\.\d+)?\s*$/) {
+            $seqline = $line;
+            next;
+        }
+
+        # parse structure + energy
+        if ($line =~ /^([().]+)\s+(-?\d+(?:\.\d+)?)\s*$/) {
+            push @rows, [$1, $2 + 0];
+        }
+    }
+
+    close $fh;
+
+    @rows = sort { $a->[1] <=> $b->[1] } @rows;
+
+    my $last = $#rows < $top_n - 1 ? $#rows : $top_n - 1;
+    my @top_results = $last >= 0 ? @rows[0 .. $last] : ();
+
+    open(my $out, '>', $sorted_subopt_file) or die "Cannot write $sorted_subopt_file: $!\n";
+
+    print $out "$header\n"  if $header ne '';
+    print $out "$seqline\n" if $seqline ne '';
+
+    for my $r (@top_results) {
+        print $out $r->[0], "\t", $r->[1], "\n";
+    }
+
+    close $out;
 }
 
 sub createfolding {
     # comment out by liang
     # new ViennaRNA does not have the old FOLD program but rather incorporated in the same program RNAfold AA
-		my $infile = "$TEMPDIR/$job.seq";
-        my $outfile = "$TEMPDIR/$job.foldout";
+    # this is the new routine to run RNAfold and RNAplot to get the structure and the svg for display
+    #### revision AA: changed rnaplot with varna to keep cosnistensy with annotated structure #########
+
+    my $infile = "$TEMPDIR/$job.seq";
+    my $foldout_file = "$TEMPDIR/$job.foldout";
+    my $err_file     = "$TEMPDIR/$job.ipknot.err";
+
+    my $seq = "";
+
+    our $structure = "";
+    our $energy    = "";
+    our @structure = ();
+
+    if ($do_pseudoknot) {
+        my $cmd = "$IPKNOT/ipknot $infile > $foldout_file";
+        system($cmd) == 0 or die "IPknot failed";
+
+        open(my $fh, '<', $foldout_file) or die "Can't open output: $!";
+        my $header      = <$fh>;
+        $seq            = <$fh>;
+        my $struct_line = <$fh>;
+        close($fh) or die "Can't close output: $!";
+
+        defined $header      or die "Missing header line in $foldout_file\n";
+        defined $seq         or die "Missing sequence line in $foldout_file\n";
+        defined $struct_line or die "Missing structure line in $foldout_file\n";
+
+        chomp($header, $seq, $struct_line);
+
+        $energy = "No energy info available when using pseudoknot prediction";
+        $structure  = $struct_line;
+        @structure  = split('', $structure);
+    }
+    else {
+        my $rnafold_opts = "";
+        $rnafold_opts .= "-p" if $do_centroid;
 
         die "Infile not found: $infile" unless -e $infile;
-        die "RNAfold binary not found: $VIENNARNAFOLDDIR/RNAfold" unless -x "$VIENNARNAFOLDDIR/RNAfold";
-        my $cmd = "cat $infile | $VIENNARNAFOLDDIR/RNAfold > $outfile 2>&1";
-        system("$cmd") == 0 or die "RNAfold failed";
-        # write_file("$TEMPDIR/debug_command.sh", "#!/bin/bash\n$cmd\n");
-        # chmod 0755, "$TEMPDIR/debug_command.sh";
-        open(my $fh, '<', $outfile) or die "Can't open output";
-        <$fh>;  # skip FASTA header
-        my $seq = <$fh>;
-        my $struct_line = <$fh>;
+        die "RNAfold binary not found: $VIENNARNAFOLDDIR/RNAfold"
+            unless -x "$VIENNARNAFOLDDIR/RNAfold";
 
-        $struct_line =~ /([().]+)\s+\(([-\d.]+)\)/;
-        @structure = split('', $1);
-        $structure = $1;
-        $energy = $2;
+        my $cmd = "cat $infile | $VIENNARNAFOLDDIR/RNAfold $rnafold_opts -d2 --noLP > $foldout_file 2>&1";
+        system($cmd) == 0 or die "RNAfold failed";
+
+        open(my $fh, '<', $foldout_file) or die "Can't open output: $!";
+        my @lines = <$fh>;
+        close($fh) or die "Can't close output: $!";
+
+        chomp @lines;
+
+        my $centroid_struct = "";
+        my $centroid_energy = undef;
+        my $mfe_found       = 0;
+
+        for my $line (@lines) {
+            next if $line =~ /^>/;
+
+            if (!$seq && $line =~ /^[ACGUTNacgutn]+$/) {
+                $seq = $line;
+                next;
+            }
+
+            if (!$mfe_found && $line =~ /^([().]+)\s+\(\s*([^)]+?)\s*\)$/) {
+                $structure = $1;
+                $energy    = $2;
+                @structure = split('', $structure);
+                $mfe_found = 1;
+                next;
+            }
+
+            if ($do_centroid && !$centroid_struct && $line =~ /^([().]+)\s+\{\s*([^}\s]+)\s+d=([^\}\s]+)\s*\}$/) {
+                $centroid_struct = $1;
+                $centroid_energy = $2;
+                next;
+            }
+        }
+
+        die "Sequence not found in RNAfold output" unless $seq;
+        die "MFE structure not found in RNAfold output" unless $mfe_found;
+
+        if ($do_centroid && $centroid_struct) {
+            $structure = $centroid_struct;
+            $energy    = $centroid_energy if defined $centroid_energy;
+            @structure = split('', $structure);
+        }
+    }
 
 
-        my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
+    my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
 
-        # Make sure RNAplot output is ready
-        system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
+    my $raw_svg = render_raw_fold_svg(
+        java      => $JAVA,
+        jar       => $VARNA_JAR,
+        sequence  => $seq,
+        structure => $structure,
+        svg_out   => $svg_file,
+        layout    => $LAYOUT,
+        padding   => 60,
+        width     => 2200,
+        height    => 1400,
+    );
 
-        # Read SVG file content
-        open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
-        my $svg_content = do { local $/; <$svgfh> };
-        close($svgfh);
+    # Read SVG file content
+    open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
+    my $svg_content = do { local $/; <$svgfh> };
+    close($svgfh);
 
-        # Add ID to <svg> tag if not present
-        $svg_content =~ s/<svg /<svg id="static_rna_ss" width="100%" height="600" style="background:white;" /;
+    # Add ID to <svg> tag if not present
+    $svg_content =~ s/<svg\b/<svg id="static_rna_ss" width="100%" height="600" style="background:#FAFBFC;"/;
 
-        # Output
-        print "<h3>RNA Structure (Annotated Structure Below):</h3>\n";
-        print "$svg_content\n";
-        print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
+    # Output
+    print "<h3>RNA Structure (Annotated Structure Below):</h3>\n";
+    print "$svg_content\n";
+    print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
 
-        # Add svg-pan-zoom script
-        print "<script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom\@3.6.2/dist/svg-pan-zoom.min.js'></script>\n";
-	print "<script>\n";
-        print "  svgPanZoom('#static_rna_ss', {\n";
-        print "    zoomEnabled: true,\n";
-        print "    controlIconsEnabled: true,\n";
-        print "    fit: true,\n";
-        print "    center: true\n";
-        print "  });\n";
-        print "</script>\n";
+    # Add svg-pan-zoom script
+    print "<script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom\@3.6.2/dist/svg-pan-zoom.min.js'></script>\n";
+    print "<script>\n";
+    print "  svgPanZoom('#static_rna_ss', {\n";
+    print "    zoomEnabled: true,\n";
+    print "    controlIconsEnabled: true,\n";
+    print "    fit: true,\n";
+    print "    center: true\n";
+    print "  });\n";
+    print "</script>";
+
+    
+    print "<div class='sanitized-out-wrap'>";
+    print sanitized_output_link(
+        raw_file => $foldout_file,
+        out_dir  => $raw_out,
+        out_path => "/tmp/jobs/job_$job_id/raw_out",
+        out_name => "RNAfold_raw.out",
+    );
+    print "</div>";
+
 		
 }
 
@@ -1369,9 +1491,19 @@ sub checkstems {
     # Output results
     print "<table class='table-result'>";
     print "<tr><th>Length</th><td>$SEQUENCELENGTH</td></tr>\n";
-    print "<tr><th>Energy</th><td>$energy kcal/mol</td></tr>\n";
-    print "<tr><th>Stems</th><td>$stem_count stem structure(s)</td></tr>\n";
-    print "<tr><th>Hairpins</th><td>$hairpin_count hairpin(s)</td></tr>\n";
+    if ($do_pseudoknot) {
+        print "<tr><th>Energy</th><td>$energy</td></tr>\n";
+    } else {
+        print "<tr><th>Energy</th><td>$energy kcal/mol</td></tr>\n";
+        print "<tr><th>Stems</th><td>$stem_count stem structure(s)</td></tr>\n";
+        print "<tr><th>Hairpins</th><td>$hairpin_count hairpin(s)</td></tr>\n";
+    }
+
+    # the line to download suboptimal output if selected by user
+    if ($do_subopt) {
+        print "<tr><th>Alternate Structure(s)</th><td><tt><a class='sanitized-out-btn' href='/tmp/jobs/job_$job_id/$job.sorted10.subopt' target='_blank' rel='noopener noreferrer'>View Predicted Alternate Structures</a></tt></td></tr>\n";
+    }
+    
     
     print "</table>";
     # Prediction logic
@@ -1444,22 +1576,54 @@ sub checkstemsonly {
     my $struct;
     my @structure;
     my $energy;
+    my $structure_string = '';
     
     # Handle RNA folding or structure input
     if ($inwhattodo == 1 && length $inseq <= $MAXFOLDINGLENUTR) {
-        @struct = `echo $inseq | $VIENNARNAFOLDDIR/RNAfold`; 
-        if ($? != 0) { ##added by AA, error handling
+        my $rnafold_opts = $do_centroid ? "-p" : "";
+        my @struct = `echo $inseq | $VIENNARNAFOLDDIR/RNAfold $rnafold_opts -d2 --noLP 2>&1`;
+        if ($? != 0) {
             return ("RNAfold failed", 0);
         }
-        $struct[1] =~ /([().]+) \(([+-. 0-9]+)\)/;
-        @structure = split('', $1);
-        $energy = $2;
+
+        chomp @struct;
+
+        my $centroid_struct = "";
+        my $centroid_energy = undef;
+        my $mfe_found       = 0;
+
+        for my $line (@struct) {
+            next if $line =~ /^>/;
+
+            if (!$mfe_found && $line =~ /^([().]+)\s+\(\s*([^)]+?)\s*\)$/) {
+                @structure = split('', $1);
+                $structure_string = $1;
+                $energy    = $2;
+                $mfe_found = 1;
+                next;
+            }
+
+            if ($do_centroid && !$centroid_struct && $line =~ /^([().]+)\s+\{\s*([^}\s]+)\s+d=([^\}\s]+)\s*\}$/) {
+                $centroid_struct = $1;
+                $centroid_energy = $2;
+                next;
+            }
+        }
+
+        if ($do_centroid && $centroid_struct) {
+            @structure = split('', $centroid_struct);
+            $structure_string = $centroid_struct;
+            $energy    = $centroid_energy if defined $centroid_energy;
+        }
+
+        return ("RNAfold parse failed", 0) unless @structure;
     }
     if ($inwhattodo == 1 && length $inseq > $MAXFOLDINGLENUTR) {
         return ("Too long for detection", 1); 
     }
     if ($inwhattodo == 0) {
         @structure = split ('', $inseq);
+        $structure_string = $inseq;
         $energy = 0;
     }
 
@@ -1545,7 +1709,9 @@ sub checkstemsonly {
     $fldstemszu = $fldstemsauf;
     
     # Return results in same format as original
-    return ($fldstemsauf, $fldstemszu, $energy);
+    # added option to return structure as well
+    # print "structure string: $structure_string\n";
+    return ($fldstemsauf, $fldstemszu, $energy, $structure_string);
 }
 
 sub predprotein {
@@ -1556,10 +1722,11 @@ sub predprotein {
         print "<i>Protein is predicted from CPC2 output.</i><br>";
     }
 	if (@predprot>1){
-		# print "<br>";	
+		# print "<br>";
+		
 		for ($count1=1;$count1<=@predprot;$count1++) {
 			print $predprot[$count1-1];
-			# print "<br>" if ($count1%120==0);
+			
 		}
 	print "<br>";
 	}
@@ -1612,20 +1779,26 @@ sub RNAMOTIF {
         my $length = abs($to - $from) + 1;
         my $motif_seq = substr($SEQUENCECHECKED, $start - 1, $length);
 	
-	if ($from > $to) {
-    	
-    	$motif_seq = reverse($motif_seq);
-	$motif_seq =~ tr/acgu/ugca/;
-	}
+        if ($from > $to) {
+            
+            $motif_seq = reverse($motif_seq);
+            $motif_seq =~ tr/acgu/ugca/;
+        }
         # print ("Motif Seq: $motif_seq\n");
 
         ### Fold subsequence using RNAfold
-        my $cmd = qq{echo "$motif_seq" | $VIENNARNAFOLDDIR/RNAfold --noPS 2>/dev/null};
-        my $foldout = `$cmd`;  
-        my @fold_lines = split("\n", $foldout);
+        # my $cmd = qq{echo "$motif_seq" | $VIENNARNAFOLDDIR/RNAfold --noPS 2>/dev/null};
+        # my $foldout = `$cmd`;  
+        # my @fold_lines = split("\n", $foldout);
 
-        my $dot_bracket = '';
-        $dot_bracket = $1 if $fold_lines[1] && $fold_lines[1] =~ /([().]+)\s+\([^)]+\)/;
+        # my $dot_bracket = '';
+        # $dot_bracket = $1 if $fold_lines[1] && $fold_lines[1] =~ /([().]+)\s+\([^)]+\)/;
+        
+        # replaced running rnafold again to use chemstems only
+        my @check_stem = &checkstemsonly($motif_seq, 1);
+
+        my $dot_bracket = $check_stem[3];
+
         # print "Structure: $dot_bracket\n";
         # now save the results 
 		my $family_link = "<a href=\"https://rfam.org/family/$family\" target=\"_blank\">$family</a>";
@@ -1708,9 +1881,19 @@ sub RNAMOTIF {
         
         print "</table>";
 
+        print "<br>";
+        print "<div class='sanitized-out-wrap'>";
+        print sanitized_output_link(
+            raw_file => $output_file,
+            out_dir  => $raw_out,
+            out_path => "/tmp/jobs/job_$job_id/raw_out",
+            out_name => "cmscan_rfam_raw.out",
+        );
+        print "</div>";        
+
 	} else {
         print "<div class='info-warning'>";
-		print "No RNA motif recognized\n";
+		print "No RNA motif(s) recognized\n";
         print "</div>";
     }
     print "</div>";
@@ -1801,6 +1984,16 @@ sub CPC2 {
             print "</tr>";
         }
         print "</table>";
+
+        print "<br>";
+        print "<div class='sanitized-out-wrap'>";
+        print sanitized_output_link(
+            raw_file => "$cpc_output.txt",
+            out_dir  => $raw_out,
+            out_path => "/tmp/jobs/job_$job_id/raw_out",
+            out_name => "cpc2_raw.out",
+        );
+        print "</div>";
 
     } else {
         print "<div class='info-warning'>";
@@ -1968,9 +2161,21 @@ sub microRNA {
             }
             print "</table>";
 			print "<div class='info-warning'>Total microRNA hits found:</b> $total</div>";
+
+            print "<br>";
+            print "<div class='sanitized-out-wrap'>";
+            print sanitized_output_link(
+                raw_file => $mirbase_out,
+                out_dir  => $raw_out,
+                out_path => "/tmp/jobs/job_$job_id/raw_out",
+                out_name => "nhmmer_mirscan_raw.out",
+            );
+            print "</div>";
+
+            
 		} else {
             print "<div class='info-warning'>";
-			print "No regions matching a mircroRNA was found.\n";
+			print "No region(s) matching a mircroRNA found.\n";
             print "</div>";
         }
 
@@ -2088,6 +2293,16 @@ sub riboswitch {
         
         print "</table>";
 
+        print "<br>";
+        print "<div class='sanitized-out-wrap'>";
+        print sanitized_output_link(
+            raw_file => $ribosw_out,
+            out_dir  => $raw_out,
+            out_path => "/tmp/jobs/job_$job_id/raw_out",
+            out_name => "cmscan_riboswitch_raw.out",
+        );
+        print "</div>"; 
+
 	} else {
         print "<div class='info-warning'>";
 		print "No Riboswitch sequence recognized\n";
@@ -2101,10 +2316,10 @@ sub riboswitch {
 # trying to implement only 3' UTR scan so it less intesive but still biologically relevant with fallback.
 sub miRNAtarget {
     my ($transcripts_ref) = @_;
-    my $mirna_db     = "$MIRBASE/mature.fa";
-    my $raw_out      = "$TEMPDIR/$job.miranda.out";
-    my $miranda_out  = "$TEMPDIR/$job.miranda.tsv";
-    my $utr_fasta    = "$TEMPDIR/$job.utr3.fa";
+    my $mirna_db             = "$MIRBASE/mature.fa";
+    my $miranda_raw_out      = "$TEMPDIR/$job.miranda.out";
+    my $miranda_out          = "$TEMPDIR/$job.miranda.tsv";
+    my $utr_fasta            = "$TEMPDIR/$job.utr3.fa";
 
     my $seq = $SEQUENCECHECKED;
     $seq =~ tr/uU/tT/;
@@ -2148,7 +2363,7 @@ sub miRNAtarget {
 
     close $fa_out;
 
-    my $cmd = "python3 $MIRANDA/miranda_wrapper.py --parsed_out $miranda_out --miranda_bin $MIRANDA/miranda --tmpdir $TEMPDIR --job_id $job  $mirna_db $utr_fasta $raw_out";
+    my $cmd = "python3 $MIRANDA/miranda_wrapper.py --parsed_out $miranda_out --miranda_bin $MIRANDA/miranda --tmpdir $TEMPDIR --job_id $job  $mirna_db $utr_fasta $miranda_raw_out";
     my $exit_code = system($cmd);
     if ($exit_code != 0) {
         print "miRanda wrapper execution failed with exit code: $exit_code\n";
@@ -2205,6 +2420,17 @@ sub miRNAtarget {
         push @regions, [$start, $end];
     }
     print "</table>";
+    
+    print "<br>";
+    print "<div class='sanitized-out-wrap'>";
+    print sanitized_output_link(
+        raw_file => $miranda_raw_out,
+        out_dir  => $raw_out,
+        out_path => "/tmp/jobs/job_$job_id/raw_out",
+        out_name => "miranda_mirtarget_raw.out",
+    );
+    print "</div>";
+
     print "</div>";
     return @regions;
 }
@@ -2219,121 +2445,6 @@ sub miRNAtarget {
 # E.g., "Predicted 5' UTR: 37 bp (contains weak Shine-Dalgarno motif, deltaG = -3.2 kcal/mol)"
 # Refactored AUGUSTUS + UTR + PolyA logic to handle multiple transcripts
 
-# sub AUGUSTUS {
-
-#     print "<div class='box-header' onclick='toggleBoxContent(this)'>Gene Prediction Analysis:</div>";
-#     print "<div class='box-content'>";
-#     my ($species) = @_;
-#     $species ||= "human";
-#     my $utr_flag = ($species =~ /^(human|fly|zebrafish)$/i) ? "--UTR=on" : "";
-
-#     my $output_gff = "$TEMPDIR/$job.augustus";
-#     my $input_dna  = "$TEMPDIR/$job.dna";
-
-#     my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on $utr_flag --species=$species $input_dna > $output_gff 2>&1";
-#     system($augustus_cmd) == 0 or die "AUGUSTUS run failed: $!";
-
-#     open(my $GFF, '<', $output_gff) or die "Can't open AUGUSTUS output: $!";
-
-#     my %transcripts;
-#     my $current_tid;
-#     my @protein_lines;
-#     my $capturing_protein = 0;
-
-#     while (my $line = <$GFF>) {
-#         chomp $line;
-
-#         if ($line =~ /^# protein sequence = \[(.*)$/) {
-#             $capturing_protein = 1;
-#             push @protein_lines, $1;
-#             next;
-#         }
-#         if ($capturing_protein) {
-#             $line =~ s/^#\s?//;
-#             if ($line =~ /^(.*)\]$/) {
-#                 push @protein_lines, $1;
-#                 $capturing_protein = 0;
-#                 $transcripts{$current_tid}{protein} = join('', @protein_lines);
-#                 @protein_lines = ();
-#                 next;
-#             }
-#             push @protein_lines, $line;
-#             next;
-#         }
-
-#         next if $line =~ /^#/;
-#         my @fields = split("\t", $line);
-#         next unless @fields >= 9;
-
-#         my ($type, $start, $end, $strand, $attr) = @fields[2,3,4,6,8];
-#         my ($tid) = $attr =~ /transcript_id \"(.*?)\"/;
-#         $current_tid = $tid if defined $tid;
-#         next unless defined $tid;
-
-#         $transcripts{$tid}{strand} = $strand if $type eq 'gene';
-#         $transcripts{$tid}{tss} = $start if $type eq 'tss';
-#         $transcripts{$tid}{tts} = $end   if $type eq 'tts';
-#         if ($type eq 'CDS') {
-#             push @{ $transcripts{$tid}{cds} }, [$start, $end];
-#             $transcripts{$tid}{cds_start} //= $start;
-#             $transcripts{$tid}{cds_end} = $end;
-#         }
-#         if ($type eq 'exon') {
-#             push @{ $transcripts{$tid}{exons} }, [$start, $end];
-#         }
-#         $transcripts{$tid}{source} = 'augustus';
-#     }
-#     close $GFF;
-
-#     my $i = 1;
-#     my $j = 1;
-#     if (keys %transcripts == 0) {
-#         print "<div class='info-warning'>";
-#         print "No gene predictions were found.</div>";
-#     } else {
-#     foreach my $tid (sort keys %transcripts) {
-#         my $model = $transcripts{$tid};
-        
-#         my ($gene_id) = $tid =~ /^(g\d+)\./;
-#         print "<h3>Transcript $i (ID: $tid";
-#         print ", gene: $gene_id" if $gene_id;
-#         print ")</h3><br>";
-#         $i++;
-
-#         print "<table class='table-result'>";
-#         print "<tr><th>Exon</th><th>Start</th><th>End</th><th>Type</th></tr>";
-
-#         foreach my $exon (@{ $model->{exons} }) {
-#             my ($start, $end) = @$exon;
-#             my @segments = split_exon_by_cds($start, $end, @{ $model->{cds} });
-#             foreach my $seg (@segments) {
-#                 my ($seg_start, $seg_end, $type) = @$seg;
-#                 print "<tr><td>Exon $j</td><td>$seg_start</td><td>$seg_end</td><td>$type</td></tr>";
-#                 $j++;
-#             }
-#         }
-#         print "</table>";
-#         $model->{protein} =~ s/\s//g if exists $model->{protein};
-
-#         print "<br>";
-#         }
-#     }
-
-#     @predprot = ();              
-#     foreach my $tid (sort keys %transcripts) {
-#         if (my $protein_seq = $transcripts{$tid}{protein}) {
-#             $protein_seq =~ s/\s//g;
-#             my @residues = split('', $protein_seq);
-#             push @predprot, @residues;
-#             $predprotforAnDom .= $protein_seq;
-#         }
-#     }
-#     print "Parsed type=$type, tid=$tid, start=$start, end=$end<br>" if defined $tid;
-#     print "</div>";
-
-#     return \%transcripts;
-# }
-
 sub AUGUSTUS {
 
     print "<div class='box-header' onclick='toggleBoxContent(this)'>Gene Prediction Analysis:</div>";
@@ -2345,7 +2456,7 @@ sub AUGUSTUS {
     my $output_gff = "$TEMPDIR/$job.augustus";
     my $input_dna  = "$TEMPDIR/$job.dna";
 
-    my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on $utr_flag --species=$species $input_dna > $output_gff 2>&1";
+    my $augustus_cmd = "$AUGUSTUS --softmasking=0 --protein=on --/augustus/verbosity=0 $utr_flag --species=$species $input_dna > $output_gff 2>&1";
     system($augustus_cmd) == 0 or die "AUGUSTUS run failed: $!";
 
     open(my $GFF, '<', $output_gff) or die "Can't open AUGUSTUS output: $!";
@@ -2476,6 +2587,16 @@ sub AUGUSTUS {
                 }
             }
             print "</table>";
+            
+            print "<br>";
+            print "<div class='sanitized-out-wrap'>";
+            print sanitized_output_link(
+                raw_file => $output_gff,
+                out_dir  => $raw_out,
+                out_path => "/tmp/jobs/job_$job_id/raw_out",
+                out_name => "augustus_raw.out",
+            );
+            print "</div>";   
             
             # Check if noncoding (no CDS predicted) AND no protein sequence
             if (!$has_cds && !exists $model->{protein} && $SEQUENCELENGTH > 200) {
@@ -2701,6 +2822,11 @@ sub predict_utrs {
     return (\@new5primeutr, \@new3primeutr, \@utrprintout, \@utr, \@polyasignal, \@polyatail);
 }
 
+# planned upgrade to UTR subroutine
+# new subroutine for UTR prediction with fallback to longest ORF inference when AUGUSTUS predictions are not available.
+# Also adds motif scanning and confidence flagging based on ORF length and proximity to sequence ends.
+
+
 sub refineUTRwithPolyA {
     my ($sequence, $cds_end, $strand, $seq_length) = @_;
     $sequence =~ tr/uU/tT/;
@@ -2898,68 +3024,62 @@ sub normalize_transcript_features {
     # print "DEBUG (normalize): final polyatail   = @$polyatail_ref\n";
 }
 
-sub createfoldingpicture {
+sub createfoldingpictureFornac {
     my $seq_file       = "$TEMPDIR/$job.seq";
     my $foldout_file   = "$TEMPDIR/$job.foldout";
 
     # Print HTML content
     print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Structure Analysis:</div>";
     print "<div class='box-content-structure'>";
-
-        
-
-	# if ($SEQUENCELENGTH <= $MAXFOLDINGLEN && $SEQUENCELENGTH > $MAXFORNALENGTH) {
-    #     my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
-
-    #     # Make sure RNAplot output is ready
-    #     system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
-
-    #     # Read SVG file content
-    #     open(my $svgfh, '<', $svg_file) or die "Cannot open SVG file: $!";
-    #     my $svg_content = do { local $/; <$svgfh> };
-    #     close($svgfh);
-
-    #     # Add ID to <svg> tag if not present
-    #     $svg_content =~ s/<svg /<svg id="rna_ss" width="650" height="650" /;
-
-    #     # Output
-    #     print "<h3>RNA Structure Visualization:</h3>\n";
-    #     print "$svg_content\n";
-    #     print "<p style='font-size: 0.9em; color: gray;'> Drag to pan, scroll to zoom</p>\n";
-
-    #     # Add svg-pan-zoom script
-    #     print "<script src='/js/svg-pan-zoom.min.js'></script>\n";
-    #     print "<script>\n";
-    #     print "  svgPanZoom('#rna_ss', {\n";
-    #     print "    zoomEnabled: true,\n";
-    #     print "    controlIconsEnabled: true,\n";
-    #     print "    fit: true,\n";
-    #     print "    center: true\n";
-    #     print "  });\n";
-    #     print "</script>\n";
-    # }
-
-
-
+    
     if ($SEQUENCELENGTH <= $MAXFOLDINGLEN) {
         
         my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
         my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
         my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
 
-        # # Make sure RNAplot output is ready
-        # system("$VIENNARNAFOLDDIR/RNAplot --infile=$TEMPDIR/$job.foldout -f svg --filename-full");
-
-        # Read sequence and structure from RNAfold output
-        open(my $fh, '<', $foldout_file) or die "Cannot open foldout file: $!";
-        my $header = <$fh>;  # Skip header line (e.g. >job123)
-        my $sequence = <$fh>;
-        chomp($sequence);
-        my $structure_line = <$fh>;
-        chomp($structure_line);
-        $structure_line =~ /^([().]+)\s+/;
-        my $structure = $1;
+        open(my $fh, '<', $foldout_file) or die "Can't open output: $!";
+        my @lines = <$fh>;
         close($fh);
+
+        chomp @lines;
+
+        my $seq             = "";
+        my $centroid_struct = "";
+        my $mfe_found       = 0;
+
+        for my $line (@lines) {
+            next if $line =~ /^>/;
+
+            if (!$seq && $line =~ /^[ACGUTNacgutn]+$/) {
+                $seq = $line;
+                next;
+            }
+
+            # first normal structure line = MFE
+            if (!$mfe_found && $line =~ /^([().]+)\s+\(([-\d.]+)\)$/) {
+                $structure = $1;
+                $energy    = $2;
+                @structure = split('', $structure);
+                $mfe_found = 1;
+                next;
+            }
+
+            # centroid line from RNAfold -p
+            if ($do_centroid && !$centroid_struct && $line =~ /^([().]+)\s+\{.+\}$/) {
+                $centroid_struct = $1;
+                next;
+            }
+        }
+
+        die "Sequence not found in RNAfold output" unless $seq;
+        die "MFE structure not found in RNAfold output" unless $mfe_found;
+
+        # override displayed structure if centroid requested and found
+        if ($do_centroid && $centroid_struct) {
+            $structure  = $centroid_struct;
+            @structure  = split('', $structure);
+        }
           
         print "<div id='rna_ss'></div>";
         print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>";
@@ -3111,7 +3231,7 @@ sub createfoldingpicture {
         print "    var scrollY = window.scrollY;\n";  # prevent scrolling lock to forna
         print "    \n";
         print "    container = new fornac.FornaContainer(\"#rna_ss\", {\n";
-        print "      animation: false,\n";
+	    print "      animation: false,\n";
         print "      labelInterval: 50,\n";
         print "      allowPanningAndZooming: true,\n";
         print "      drawBackground: false,\n";
@@ -3128,6 +3248,205 @@ sub createfoldingpicture {
         print "    window.scrollTo(0,scrollY);\n";   # prevent scrolling lock to forna
         print "  });\n";
         print "</script>";
+
+        # creating legend for visual interpretation 
+        print "<div class='legend'>";
+        print "<div class='legend-title'>Legend:</div>";
+        print "<div class='legend-items'>";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: lightblue; margin-left: 10px;'></span> UTRs\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: green; margin-left: 10px;'></span> CDS\t";
+		print "<span style='display: inline-block; width: 12px; height: 12px; background: lime; margin-left: 10px;'></span> PolyA Signal/PolyA Tail\t";
+		print "<span style='display: inline-block; width: 12px; height: 12px; background: red; margin-left: 0px;'></span> RNA Motifs\t";
+		print "<span style='display: inline-block; width: 12px; height: 12px; background: yellow; margin-left: 10px;'></span> MiRNA\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: orange; margin-left: 10px;'></span> TRNA\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: purple; margin-left: 10px;'></span> SM-site/snRNP-motif\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: royalblue; margin-left: 10px;'></span> Riboswitches(s)";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: cyan; margin-left: 10px;'></span> TRANS-splicing\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: lightcoral; margin-left: 10px;'></span> IRE(s)\t";
+        print "<span style='display: inline-block; width: 12px; height: 12px; background: pink; margin-left: 10px;'></span> Protein Binding Site(s)";
+
+        print "</div>";
+        print "</div>";
+
+    } else {
+        print "<div class='info-error'>";
+        print "<br><b>Maximum folding limit reached</b><br>";
+        print "</div>";
+    }
+
+    print "</div>";
+}
+
+sub createfoldingpicture {
+    #### revision AA: updated folding structure , uses VARNA for visualization and annotation, with custom feature highlighting. 
+    #### Also added download options for both raw and annotated structures which was not possible with FORNA
+    #### This also helps in the structure simialrity of the both the figures adn visualization looks is convinient to interpret
+
+    my $seq_file       = "$TEMPDIR/$job.seq";
+    my $foldout_file   = "$TEMPDIR/$job.foldout";
+    my $annotated_svg    = "$TEMPDIR/${SEQNAMECHECKED}_ss_ann.svg";
+
+    # Print HTML content
+    print "<div class='box-header' onclick='toggleBoxContent(this)'>RNA Structure Analysis:</div>";
+    print "<div class='box-content-structure'>";
+
+
+    if ($SEQUENCELENGTH <= $MAXFOLDINGLEN) {
+        
+        my $svg_file = "$TEMPDIR/${SEQNAMECHECKED}_ss.svg";
+        my $ps_url  = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.ps";
+        my $annotated_svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss_ann.svg";
+        my $svg_url = "/tmp/jobs/job_$job/${SEQNAMECHECKED}_ss.svg";
+
+        open(my $fh, '<', $foldout_file) or die "Can't open output: $!";
+        my @lines = <$fh>;
+        close($fh);
+
+        chomp @lines;
+
+        my $seq             = "";
+        my $centroid_struct = "";
+        my $mfe_found       = 0;
+
+        if ($do_pseudoknot) {
+
+            my $header      = $lines[0];
+            my $seq_line    = $lines[1];
+            my $struct_line = $lines[2];
+
+            $seq = $seq_line;
+
+            # if you still use -E and it works sometimes:
+            if ($header =~ /\(e=([-\d.]+)\)/) {
+                $energy = $1;
+            } else {
+                $energy = "No energy info available when using pseudoknot prediction";
+            }
+
+            $structure = $struct_line;
+            @structure = split('', $structure);
+            $mfe_found = 1;
+        }
+    
+        else {
+            for my $line (@lines) {
+                next if $line =~ /^>/;
+
+                if (!$seq && $line =~ /^[ACGUTNacgutn]+$/) {
+                    $seq = $line;
+                    next;
+                }
+
+                # first normal structure line = MFE
+                if (!$mfe_found && $line =~ /^([().]+)\s+\(\s*([^)]+?)\s*\)$/) {
+                    
+                    $structure = $1;
+                    $energy    = $2;
+                    @structure = split('', $structure);
+                    $mfe_found = 1;
+                    next;
+                }
+
+                # centroid line from RNAfold -p
+                if ($do_centroid && !$centroid_struct && $line =~ /^([().]+)\s+\{\s*([^}\s]+)\s+d=([^\}\s]+)\s*\}$/) {
+                    $centroid_struct = $1;
+                    next;
+                }
+            }
+
+            die "Sequence not found in RNAfold output" unless $seq;
+            die "MFE structure not found in RNAfold output" unless $mfe_found;
+
+            # override displayed structure if centroid requested and found
+            if ($do_centroid && $centroid_struct) {
+                $structure  = $centroid_struct;
+                @structure  = split('', $structure);
+            }
+        }
+
+        ## keeping debug lines for later use
+        # print "DEBUG: MFE structure = $structure, energy = $energy\n";
+        # print "DEBUG: Centroid structure = $centroid_struct\n" if $do_centroid;
+        # print "DEBUG: Sequence length = " . length($seq) . "\n";
+
+        my %feature_styles = (
+            utr          => { color => '#ADD8E6', mode => 'region' },
+            exons        => { color => '#268b26', mode => 'region' },
+            polyA_signal => { color => '#00FF00', mode => 'region' },
+            polyA_tail   => { color => '#32CD32', mode => 'region' },
+            motif        => { color => '#FF0000', mode => 'region' },
+            mirna        => { color => '#FFD700', mode => 'region' },
+            trna         => { color => '#FFA500', mode => 'region' },
+            sm           => { color => '#FF00FF', mode => 'region' },
+            riboswitch   => { color => '#4169E1', mode => 'region' },
+            transsplice  => { color => '#00FFFF', mode => 'region' },
+            ire          => { color => '#F08080', mode => 'region' },
+            rbp          => { color => '#FFC0CB', mode => 'region' },
+        );
+
+        my %features = (
+            utr          => \@utr,
+            exons        => \@exons,
+            polyA_signal => \@polyasignal,
+            polyA_tail   => \@polyatail,
+            motif        => \@rna_motif,
+            mirna        => \@mirna_loc,
+            trna         => \@trna_loc,
+            sm           => \@sm,
+            riboswitch   => \@ribosw,
+            transsplice  => \@transsplicing,
+            ire          => \@ire,
+            rbp          => \@rbp_locs,
+        );
+
+        my $annotated_svg = render_annotated_fold_svg(
+            java      => $JAVA,
+            jar       => $VARNA_JAR,
+            #foldout   => $foldout_file,
+            sequence  => $seq,
+            structure => $structure,
+            svg_out   => $annotated_svg,
+            layout    => $LAYOUT,
+            features  => \%features,
+            styles    => \%feature_styles,
+            padding   => 60,
+            width     => 2200,
+            height    => 1400,
+        );
+
+        #print "DEBUG: Annotated SVG generated at $annotated_svg\n";
+
+        # same logic as above to read and display the annotated SVG (sub createfolding)
+
+        # Read SVG file content
+        open(my $anno_svgfh, '<', $annotated_svg) or die "Cannot open annotated SVG file: $!";
+        my $anno_svg_content = do { local $/; <$anno_svgfh> };
+        close($anno_svgfh);
+
+        # Add ID to <svg> tag if not present
+        $anno_svg_content =~ s/<svg\b/<svg id="rna_ss" width="100%" height="800" style="background:#FAFBFC;"/;
+
+        # Output
+        print "<h3>RNA Structure (Annotated Structure Below):</h3>\n";
+        print "$anno_svg_content\n";
+        print "<p style='font-size: 0.9em; color: gray; text-align: center;'> Drag to pan, scroll to zoom</p>\n";
+
+        # Add svg-pan-zoom script
+        print "<script src='https://cdn.jsdelivr.net/npm/svg-pan-zoom\@3.6.2/dist/svg-pan-zoom.min.js'></script>\n";
+	    print "<script>\n";
+        print "  svgPanZoom('#rna_ss', {\n";
+        print "    zoomEnabled: true,\n";
+        print "    controlIconsEnabled: true,\n";
+        print "    fit: true,\n";
+        print "    center: true\n";
+        print "  });\n";
+        print "</script>\n";
+
+
+        print "<b>Download Annotated Structure: </b>\n";
+        print "<a class='no-print' href='$annotated_svg_url' target='_blank'><button>Annotated RNA Structure</button></a>";
+        print "<a class='no-print' href='$svg_url' target='_blank'><button>Raw RNA Structure</button></a>";
+
 
         # creating legend for visual interpretation 
         print "<div class='legend'>";
@@ -3251,11 +3570,12 @@ print "</script>";
 # Download options
 print "<br>";
 print "<div class='download-bttn'>";
-print "<a class='no-print' href='http://localhost/cgi-bin/download_pdf.cgi?job=$job'><button>Download Results as PDF</button></a>";
-print "<a class='no-print' href='/tmp/jobs/job_$job/result_file.txt'><button>Download Results as TEXT</button></a>";
+print "<a class='no-print' href='localhost/cgi-bin/download_pdf.cgi?job=$job'><button>Download Results as PDF</button></a>";
+print "<a class='no-print' href='$download_dir/result_file.txt'><button>Download Results as TEXT</button></a>";
 print "</div>";
 
 write_file("$TEMPDIR/result.txt", "done\n");
+
 
 print "</div></main></body></html>";
 

@@ -2,13 +2,10 @@ package RNASERVER::TRANS2;
 
 use Cwd qw(abs_path);
 use strict;
-use lib "$ENV{HOME}/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl";
+use lib '/rnaanalyzer/bin/ViennaRNA-2.7.0/interfaces/Perl';
 use RNA;
 use RNASERVER::COMMON;
 
-#Attention !! Often recivied an error "Process terminated with exit code 0" But only got this error while debugging with Komodo 1.2 (beta)
-# In normal use, this shouldn't happen. Maybe some return code ist missing, but once got "Indentifier too long" ?????
-# Wohl eher der normale return-code, nur warum ist der 0 ?? Naja wohl egal. weil nirgends 1 zurueckgegeben wird
 
 sub celegans {
     $RNA::noLonelyPairs=1;
@@ -166,9 +163,9 @@ sub celegans {
                             $motifsum=$a1+$a2+$b1+$b2+$b3+$b4+$b5;
                            
                             #Jetzt wird gecheckt ob eine Sm-Site downstream in der Naehe ist.
-			    #my $newupperlimit;
-			   #$newupperlimit=80;
-			   #$newupperlimit=
+                            #my $newupperlimit;
+                            #$newupperlimit=80;
+                            #$newupperlimit=
                             for ($seqscan6=$trans1+9;$seqscan6<=$trans1+80;$seqscan6++) {
                                 #$smsitepresent=0;
                                 #$alternativsmcheck=substr($gensq,($trans1+9),$trans1+80);
